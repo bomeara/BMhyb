@@ -262,7 +262,8 @@ GetVModified <- function(x, phy, flow, actual.params) {
 		V.modified[recipient.index, donor.index] <- (1-flow$m[flow.index]) * V.original[recipient.index, donor.index] + (flow$m[flow.index]) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
 		#covariance managed, now to manage the variance
-		V.modified[recipient.index, recipient.index] <- V.original[recipient.index, recipient.index] + vh
+		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (flow$m[flow.index]^2 + (1- flow$m[flow.index])^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
+        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyd/issues/1
 	}
 	diag(V.modified) <- diag(V.modified)+SE
 	return(V.modified)
