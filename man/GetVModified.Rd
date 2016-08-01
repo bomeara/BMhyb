@@ -5,17 +5,17 @@
 	}
 
 \description{
-	A function returns the variance covariance function for the network model under the Brownian motion for trait evolution. 
+	A function returns the variance covariance function for the network model under the Brownian motion for trait evolution.
 	}
 
 \usage{
-	GetVModified(x, phy, flow, actual.params)
+	GetVModified(x, phy, flow, actual.params, m)
 	}
 
 \arguments{
   \item{x}{
-	  vector of the parameters: including rate of evolution \eqn{\sigma^2}, overall mean \eqn{\mu}, measurement error SE, hybrid vigor \eqn{\beta}, and variation at the burst of hybridization \eqn{v_H}. 
- 	} 
+	  vector of the parameters: including rate of evolution \eqn{\sigma^2}, overall mean \eqn{\mu}, measurement error SE, hybrid vigor \eqn{\beta}, and variation at the burst of hybridization \eqn{v_H}.
+ 	}
  \item{phy}{
  	a class of phylo tree.
  	}
@@ -23,8 +23,11 @@
  	a struture of gene flow.
  	}
  \item{actual.params}{
- 	The parameters that are related to the hybridzation including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}. 	
+ 	The parameters that are related to the hybridzation including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}.
  	}
+	\item{m}{
+  	The fraction of genes that come from the left parent. Almost always set to 0.5.
+  }
 }
 
 \details{
@@ -32,7 +35,7 @@
 	}
 
 \value{
- 	the variance covariance matrix of size equal to the number of species on the tip of the phylogeny. 
+ 	the variance covariance matrix of size equal to the number of species on the tip of the phylogeny.
  }
 
 \author{
@@ -40,17 +43,17 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
 	}
-	
+
 \examples{
 	#set the number of non hybrid species
-	ntax.nonhybrid<-4	
+	ntax.nonhybrid<-4
 	#set the number of hybrid species
 	ntax.hybrid<-1
 	#simulate a network
-	network<-SimulateNetwork(ntax.nonhybrid=ntax.nonhybrid, ntax.hybrid=ntax.hybrid, 
-	flow.proportion=0.5, origin.type='clade', birth = 1, death = 0.5, sample.f = 0.5, 
+	network<-SimulateNetwork(ntax.nonhybrid=ntax.nonhybrid, ntax.hybrid=ntax.hybrid,
+	flow.proportion=0.5, origin.type='clade', birth = 1, death = 0.5, sample.f = 0.5,
 	tree.height = 1, allow.ghost=FALSE)
 	#assign the parameter values
 	sigma.sq <- 0.01;mu <- 1;SE <- 0

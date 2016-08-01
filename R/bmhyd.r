@@ -233,7 +233,7 @@ AdjustForDet <- function(phy, max.attempts=100) {
 	return(phy)
 }
 
-GetVModified <- function(x, phy, flow, actual.params) {
+GetVModified <- function(x, phy, flow, actual.params, m=0.5) {
 	bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]

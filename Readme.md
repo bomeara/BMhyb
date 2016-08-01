@@ -4,5 +4,5 @@ To install it (but see caveat above):
 
 ```
 install.packages("BMhyb")
-devtools::install_github("bomeara/bmhyb")
+devtools::install_github("bomeara/BMhyb")
 ```
