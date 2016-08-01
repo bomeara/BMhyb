@@ -3,6 +3,6 @@ This is a package for doing comparative methods on networks. It's been in peer r
 To install it (but see caveat above):
 
 ```
-install.packages("bmhyd")
-devtools::install_github("bomeara/bmhyd")
+install.packages("BMhyb")
+devtools::install_github("bomeara/bmhyb")
 ```

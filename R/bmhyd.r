@@ -10,23 +10,23 @@ AkaikeWeight<-function(Delta.AICc.Array){
 # se.function<-function(cov.matrix,var.name){
 #   name.Index<-which(rownames(cov.matrix)==var.name)
 #   if( length(name.Index)==1){
-#     return( cov.matrix[name.Index,name.Index])    
+#     return( cov.matrix[name.Index,name.Index])
 #   }else{return(0)}
 # }
-# 
+#
 # var.model.Index.function<-
 #   function(cov.matrix,var.name){
 #     name.Index<-which(rownames(cov.matrix)==var.name)
 #     if( length(name.Index)==1){
-#       return( cov.matrix[name.Index,name.Index])    
+#       return( cov.matrix[name.Index,name.Index])
 #     }else{return(0)}
 #   }
-# 
+#
 # weight.para.value<-
 #   function(para.vect,weight){
 #     return(sum(para.vect*weight))
 #   }
-# 
+#
 
 ####################################################################
 ###################### MAIN PROGRAM ################################
@@ -40,7 +40,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #m = the fraction of the recipient trait that comes from the source. In the case of an equal hybridization between the recipient's sister on the tree and the donor, this is 0.5. In other cases where only, say, 10% of the recipient's quantitative trait
 #	loci come from the donor, it would be 0.1
 #time.from.root.donor = the time, counting forward FROM THE ROOT, when the gene flow happened from the donor. It may not be the same as time.from.root.recipient, as it may have spent time in a now extinct ghost lineage first (though time.from.root.donor <= time.from.root.recipient). It's treated as a one time event, which makes sense in the case of a single allopolyploid speciation event, probably less so in the case
-#	of ongoing gene flow. Too bad. 
+#	of ongoing gene flow. Too bad.
 #time.from.root.recipient = the time, counting forward FROM THE ROOT, when the gene flow happened from the donor
 #If the gene flow happened to or from a lineage with multiple descendant species, use one row for each pair. For example, if lineage (A,B) had 20% of their genes coming in from lineage (C,D,E) at 14.5 MY since the root (not back in time), you would have
 #	a flow data.frame of
@@ -54,12 +54,12 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE) {
 	if(min(flow$m)<0) {
-		stop("Min value of flow is too low; should be between zero and one")	
+		stop("Min value of flow is too low; should be between zero and one")
 	}
 	if(max(flow$m)>1) {
-		stop("Max value of flow is too high; should be between zero and one")	
+		stop("Max value of flow is too high; should be between zero and one")
 	}
 	results<-list()
 	#hessians <- list()
@@ -73,7 +73,7 @@ BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	}
 	all.sims<-list()
 	if(verbose) {
-		print("Getting starting values from Geiger")	
+		print("Getting starting values from Geiger")
 	}
 
 	starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=data*NA, ncores=1)$opt
@@ -113,7 +113,7 @@ BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			if(times.without.improvement%%4==0) {
 				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)
 			} else {
-				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)					
+				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)
 			}
 			#print("new.run best.run")
 			#print(c(new.run$value, best.run$value))
@@ -155,7 +155,7 @@ BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 
 		if(get.se) {
 			if(verbose) {
-				print("Now doing simulation to estimate parameter uncertainty")	
+				print("Now doing simulation to estimate parameter uncertainty")
 			}
 			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation)
 			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
@@ -180,14 +180,14 @@ BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			}
 			free.index=0
 			for(parameter in sequence(5)) {
-				
+
 				if(free.parameters[parameter]) { #is estimated
 					free.index <- free.index + 1
 					ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
 					ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
 				} else {
 					ci.vector[1+2*(parameter-1)] <- results.vector.full[parameter]
-					ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]	
+					ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]
 				}
 			}
 		}
@@ -200,7 +200,7 @@ BMhyd <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
 	if(store.sims) {
-		return(list(results=results.summary, sims=all.sims))	
+		return(list(results=results.summary, sims=all.sims))
 	}
 	return(results.summary)
 }
@@ -241,14 +241,14 @@ GetVModified <- function(x, phy, flow, actual.params) {
 	SE <- x[length(x)]
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
-		bt<-x[bt.location]	
+		bt<-x[bt.location]
 	}
 	vh.location <- which(names(actual.params)=="vh")
 	if(length(vh.location)==1) {
-		vh<-x[vh.location]	
+		vh<-x[vh.location]
 	}
 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
-	V.original <- sigma.sq * times.original 
+	V.original <- sigma.sq * times.original
 	V.modified <- V.original
 	for (flow.index in sequence(dim(flow)[1])) {
 		recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
@@ -263,7 +263,7 @@ GetVModified <- function(x, phy, flow, actual.params) {
 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
 		#covariance managed, now to manage the variance
 		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (flow$m[flow.index]^2 + (1- flow$m[flow.index])^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
-        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyd/issues/1
+        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
 	}
 	diag(V.modified) <- diag(V.modified)+SE
 	return(V.modified)
@@ -278,14 +278,14 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 	SE <- x[length(x)]
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
-		bt<-x[bt.location]	
+		bt<-x[bt.location]
 	}
 	vh.location <- which(names(actual.params)=="vh")
 	if(length(vh.location)==1) {
-		vh<-x[vh.location]	
+		vh<-x[vh.location]
 	}
 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
-	V.original <- sigma.sq * times.original 
+	V.original <- sigma.sq * times.original
 
 	means.original <- rep(mu, Ntip(phy))
 	names(means.original) <- rownames(V.original)
@@ -320,11 +320,11 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	SE <- x[length(x)]
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
-		bt<-x[bt.location]	
+		bt<-x[bt.location]
 	}
 	vh.location <- which(names(actual.params)=="vh")
 	if(length(vh.location)==1) {
-		vh<-x[vh.location]	
+		vh<-x[vh.location]
 	}
 	V.modified <- GetVModified(x, phy, flow, actual.params)
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
@@ -333,44 +333,44 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	}
 	data <- data[match(names(means.modified), names(data))]
 	if(length(data)!=length(means.modified)) {
-		stop("Mismatch between names of taxa in data vector and on phy")	
+		stop("Mismatch between names of taxa in data vector and on phy")
 	}
 	#if(length(which(eigen(V.modified)$values<0))>0) {
 	#	last.bad <- V.modified
-	#	return(badval)	
+	#	return(badval)
 	#}
-	NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified))) 
-	
+	NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
+
 	if(min(V.modified)<0 || sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
-    	NegLogML<-badval 
+    	NegLogML<-badval
 	}
 	matrix.condition <- kappa(V.modified, exact=TRUE)
 	#print("condition")
 	#print(kappa(V.modified, exact=TRUE))
 	#print("log(condition)")
 	#print(log(kappa(V.modified, exact=TRUE)))
-	
+
 	#pretty<-c(NegLogML, log(matrix.condition))
 	#names(pretty) <- c("NegLogL", "log(matrix.condition")
 	#print(pretty)
-	#The ratio  of the largest to smallest singular value in the singular value decomposition of a matrix. The base- logarithm of  is an estimate of how many base- digits are lost in solving a linear system with that matrix. In other words, it 
+	#The ratio  of the largest to smallest singular value in the singular value decomposition of a matrix. The base- logarithm of  is an estimate of how many base- digits are lost in solving a linear system with that matrix. In other words, it
 	#estimates worst-case loss of precision. A system is said to be singular if the condition number is infinite, and ill-conditioned if it is too large, where "too large" means roughly  the precision of matrix entries.
 	#if(rcond(V.modified) < .Machine$double.eps^2){
 	if(log(matrix.condition) > precision) {
-		proportions <- seq(from=1, to=0, length.out=101) 
+		proportions <- seq(from=1, to=0, length.out=101)
 		lnl.vector <- rep(NA, length(proportions))
 		max.diff <- 0
 		for(i in sequence(length(proportions))) {
 			V.modified.by.proportions<-(1-proportions[i]) * V.modified + proportions[i] * diag(dim(V.modified)[1]) * diag(V.modified)
-			local.lnl <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified.by.proportions)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified.by.proportions))) 
+			local.lnl <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified.by.proportions)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified.by.proportions)))
 			if(i>6) {
 				very.local.lnl <- lnl.vector[(i-6):(i-1)]
 				max.diff <- max(abs(very.local.lnl[-1] - very.local.lnl[-length(very.local.lnl)])) #looking locally for jumps in the likelihood
 				current.diff <- abs(local.lnl - lnl.vector[i-1])
 				if(current.diff > 2 * max.diff) {
 					#print(paste("breaking after ", i))
-					break() #the modified matrix is still poorly conditioned, so stop here	
-				}	
+					break() #the modified matrix is still poorly conditioned, so stop here
+				}
 			}
 			lnl.vector[i] <- local.lnl
 		}
@@ -379,7 +379,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 		NegLogML <- predict(smooth.spline(proportions, lnl.vector), data.frame(proportions =0.000))$y
 		#plot(c(0, proportions), c(NegLogML, lnl.vector), type="n")
 		#points(proportions, lnl.vector, pch=20)
-		#points(0, NegLogML, col="red")	
+		#points(0, NegLogML, col="red")
 		if(abs(NegLogML - lnl.vector[length(lnl.vector)]) >0.0000001) {	#means this point was extrapolated b/c the likelihood surface got strange
 			if(allow.extrapolation) {
 				warning("VCV matrix was ill-conditioned, so used splines to estimate its likelihood (allow.extrapolation=TRUE). This could lead to very bad estimates of the likelihood")
@@ -430,7 +430,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 				total.range <- range(results[,j+1], na.rm=TRUE)
 				width.ratio <- diff(returned.range)/diff(total.range)
 				if(is.na(width.ratio)) {
-					width.ratio=1	
+					width.ratio=1
 				}
 				if(width.ratio > 0.5) { #we are not sampling widely enough
 					min.multipliers[j] <- min.multipliers[j] * 0.9
@@ -442,7 +442,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 			}
 		}
 		if (verbose && i%%100==0) {
-			print(paste(i, "of", n.points, "done"))	
+			print(paste(i, "of", n.points, "done"))
 		}
 	}
 	return(results)
@@ -478,14 +478,14 @@ GetClade <- function(phy, clade.size) {
 	counts <- sapply(subtrees, Ntip)
 	matches<-subtrees[which(counts==clade.size)]
 	if(length(matches)==0) {
-		return(NA)	
+		return(NA)
 	}
 	lucky <- matches[sample.int(length(matches),1)][[1]]
-	return(findMRCA(phy, tips=lucky$tip.label, type="node"))	
+	return(findMRCA(phy, tips=lucky$tip.label, type="node"))
 }
 
 GetAncestor <- function(phy, node) {
-	return(phy$edge[which(phy$edge[,2]==node),1])	
+	return(phy$edge[which(phy$edge[,2]==node),1])
 }
 
 
@@ -499,7 +499,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 	phy <-  sim.bd.taxa.age(n=ntax.nonhybrid+ntax.hybrid, numbsim=1, lambda=birth, mu=death, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
 	if(origin.type=="clade" && ntax.hybrid==1) {
 		warning("For ntax.hybrid = 1 and clade sampling, this will do individual sampling instead (which is equivalent in this case)")
-		origin.type<-"individual"	
+		origin.type<-"individual"
 	}
 	if(origin.type=="clade") {
 		while(is.na(GetClade(phy, ntax.hybrid))) { #not all trees of a given size have a clade of a given size, so may need to resimulate it
@@ -515,7 +515,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 			focal.node <- GetClade(phy, ntax.hybrid)
 			if(is.na(focal.node)) {
 				done=FALSE
-				break()	
+				break()
 			}
 			recipients <- phy$tip.label[getDescendants(phy, node=focal.node)]
 			recipients <- recipients[!is.na(recipients)] #since we want just the tips
@@ -540,7 +540,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 		qualifying.upper <- qualifying.upper[which(phy$edge[qualifying.upper,2]!=focal.node)] #let's not hybridize with ourselves
 		qualifying.all <- qualifying.upper[qualifying.upper %in% qualifying.lower]
 		if(length(qualifying.all)==0) {
-			break()	
+			break()
 		}
 		donor.edge <- sample(qualifying.all, 1)
 		donors <- phy$tip.label[getDescendants(phy, phy$edge[donor.edge,2])]
@@ -548,12 +548,12 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 		time.in <- runif(1, min=max(all.heights[donor.edge,1],shortest.from.root), max=longest.from.root)
 		time.out <- runif(1, min=all.heights[donor.edge,1], max=min(time.in, all.heights[donor.edge,2]))
 		if (!allow.ghost) {
-			time.in <- runif(1, min=max(shortest.from.root, all.heights[donor.edge,1]), max=min(longest.from.root, all.heights[donor.edge,2])) #if no ghost lineages, must move from the overlapping interval	
+			time.in <- runif(1, min=max(shortest.from.root, all.heights[donor.edge,1]), max=min(longest.from.root, all.heights[donor.edge,2])) #if no ghost lineages, must move from the overlapping interval
 			time.out <- time.in
-		}		
+		}
 		pairs <- expand.grid(donors, recipients)
 		for (pairs.index in sequence(dim(pairs)[1])) {
-			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], m=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))	
+			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], m=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))
 		}
 		if(length(used.recipients)==ntax.hybrid) {
 			done=TRUE
@@ -578,10 +578,10 @@ PlotNetwork <- function(phy, flow, col.non="black", col.hybrid="red", col.donor=
 	label.colors <- rep(col.non, Ntip(phy))
 	for (i in sequence(Ntip(phy))) {
 		if	(names(getNode(phy4, xxyy$torder))[i] %in% flow$donor) {
-			label.colors[i]<-col.donor	
+			label.colors[i]<-col.donor
 		}
 		if	(names(getNode(phy4, xxyy$torder))[i] %in% flow$recipient) {
-			label.colors[i]<-col.hybrid	
+			label.colors[i]<-col.hybrid
 		}
 
 	}
@@ -638,9 +638,9 @@ AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
 		if(length(taxa.to.retain)>1) {
 			pulled.clade <- drop.tip(phy, phy$tip.label[!phy$tip.label %in% taxa.to.retain])
 		} else {
-			pulled.clade <- structure(list(edge = structure(c(3L, 3L, 1L, 2L), .Dim = c(2L, 
-2L)), edge.length = rep(flow.clades$time.from.root.recipient[i],2), 
-    tip.label = c(taxa.to.retain, "DUMMY"), Nnode = 1L), .Names = c("edge", 
+			pulled.clade <- structure(list(edge = structure(c(3L, 3L, 1L, 2L), .Dim = c(2L,
+2L)), edge.length = rep(flow.clades$time.from.root.recipient[i],2),
+    tip.label = c(taxa.to.retain, "DUMMY"), Nnode = 1L), .Names = c("edge",
 "edge.length", "tip.label", "Nnode"), class = "phylo")
 		}
 		pulled.clade$tip.label <- paste(pulled.clade$tip.label, suffix, sep="")
@@ -649,7 +649,7 @@ AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
 			attachment.crown.node <- findMRCA(phy.merged, tips=donor.taxa, type=c("node"))
 		}
 		attachment.stem.node <- GetAncestor(phy.merged, attachment.crown.node)
-		
+
 		pulled.clade$root.edge<-max(branching.times(phy)) - max(branching.times(pulled.clade)) - flow.clades$time.from.root.donor[i]
 
 		phy.merged <- bind.tree(phy.merged, pulled.clade, attachment.crown.node, position=phy.merged$edge.length[which(phy.merged$edge[,2]==attachment.crown.node)] - (flow.clades$time.from.root.donor[i]-nodeheight(phy.merged, attachment.stem.node)))
@@ -693,7 +693,7 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 	return(tips)
 }
 
-#The following short function comes from Ken Takagi at  https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/ 
+#The following short function comes from Ken Takagi at  https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/
 Plot_ConvexHull<-function(xcoord, ycoord, lcolor){
 	hpts <- chull(x = xcoord, y = ycoord)
 	hpts <- c(hpts, hpts[1])
@@ -703,7 +703,7 @@ Plot_ConvexHull<-function(xcoord, ycoord, lcolor){
 ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 	#sims is a data.frame with the sim results
 	if(is.null(params.of.interest)) {
-		params.of.interest <- colnames(sims)[-1]	
+		params.of.interest <- colnames(sims)[-1]
 	}
 	sims$neglnL <- sims$neglnL - min(sims$neglnL)
 	for (param.1 in sequence(length(params.of.interest)-1)) {
@@ -732,5 +732,5 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 						#contour(interp(points.to.fit[,1], points.to.fit[,2], points.to.fit[,3]), xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], levels=c(1, 2, 5, 10))
 			points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20)
 		}
-	}	
+	}
 }
