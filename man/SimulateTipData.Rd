@@ -16,22 +16,22 @@
   \item{phy}{
 	phylo object
 	}
-	
+
   \item{flow}{
 	data.frame of the flow parameters
 	}
-	
+
   \item{params}{
-  	named vector of BMhyd parameter values
+  	named vector of BMhyb parameter values
   	}
-  
+
   \item{suffix}{
 	taxa are duplicated on the network; this suffix distinguishes them
 	 }
 }
- \details{	
-	This function simulates tip data on a network, under a BMhyd model. 
-	} 
+ \details{
+	This function simulates tip data on a network, under a BMhyb model.
+	}
 
 
 \value{
@@ -43,9 +43,9 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
 	}
-	
+
 \examples{
 #add example later. Perhaps using cichlid
 
