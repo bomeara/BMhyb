@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL) {
 	if(min(flow$m)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -75,9 +75,22 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	if(verbose) {
 		print("Getting starting values from Geiger")
 	}
+  starting.from.geiger<-NA
+  starting.values <- NA
+  geiger.SE <- data*NA
+  if(!is.null(measurement.error)) {
+    if(length(measurement.error)==1) {
+      geiger.SE <- rep(measurement.error), length(geiger.SE))
+    } else {
+      geiger.SE <- measurement.error
+    }
+    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
 
-	starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=data*NA, ncores=1)$opt
-	starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+  } else {
+	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+  }
 	if(verbose) {
 		print("Done getting starting values")
 	}
@@ -99,7 +112,10 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
 			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
 		}
-		best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)
+    if(!is.null(measurement.error)) {
+      free.parameters[which(names(free.parameters)=="SE")]<-FALSE
+    }
+		best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
 		if(verbose) {
 			results.vector<-c(step.count, best.run$value, best.run$par)
 			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
@@ -111,9 +127,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			times.without.improvement <- times.without.improvement+1
 			new.run <- best.run
 			if(times.without.improvement%%4==0) {
-				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)
+				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
 			} else {
-				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation)
+				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
 			}
 			#print("new.run best.run")
 			#print(c(new.run$value, best.run$value))
@@ -256,12 +272,15 @@ AdjustForDet <- function(phy, max.attempts=100) {
 	return(phy)
 }
 
-GetVModified <- function(x, phy, flow, actual.params, m=0.5) {
+GetVModified <- function(x, phy, flow, actual.params, m=0.5, measurement.error=NULL) {
 	bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]
 	mu <- x[2]
-	SE <- x[length(x)]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+}
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
 		bt<-x[bt.location]
@@ -288,7 +307,11 @@ GetVModified <- function(x, phy, flow, actual.params, m=0.5) {
 		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (flow$m[flow.index]^2 + (1- flow$m[flow.index])^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
 	}
-	diag(V.modified) <- diag(V.modified)+SE^2
+  if(is.null(measurement.error)) {
+	   diag(V.modified) <- diag(V.modified)+SE^2
+  } else {
+    diag(V.modified) <- diag(V.modified)+measurement.error^2
+  }
 	return(V.modified)
 }
 
@@ -298,7 +321,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 	vh <- 0
 	sigma.sq <- x[1]
 	mu <- x[2]
-	SE <- x[length(x)]
+	#SE <- x[length(x)]
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
 		bt<-x[bt.location]
@@ -334,13 +357,16 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL) {
 	badval<-(0.5)*.Machine$double.xmax
 	bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]
 	mu <- x[2]
-	SE <- x[length(x)]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+   }
 	bt.location <- which(names(actual.params)=="bt")
 	if(length(bt.location)==1) {
 		bt<-x[bt.location]
@@ -349,7 +375,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	if(length(vh.location)==1) {
 		vh<-x[vh.location]
 	}
-	V.modified <- GetVModified(x, phy, flow, actual.params)
+	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error)
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
     	return(badval)

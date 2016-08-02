@@ -29,18 +29,51 @@
   \item{likelihood.precision}{a numerical value used for verifying the convergent of the estimation.}
   \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, the VCV matrix was ill-conditioned, so used splines to estimate its likelihood.}
   \item{n.points}{How many simulations to do to estimate confidence interval}
+  \item{measurement.error}{Estimate or fixed (see details)}
 	}
 
 \details{Function BMhyb fits likelihood models for continuous characters. It incorporates phylogenetic tree, structure of gene flow 	and comparative data. The full likelihood model includes several parameters: the ancenstral state \eqn{\mu}, the overall variation 	\eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE. The 	struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. 	The thrid column is the information about the heritibaility factor m which is a fraction of the recipient trait that comes from 	the source. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root 		when the gene flow happened from the donor. The fifth column, recipient time, records time from the root of the recipient that 		counting forward from the root when the gene flow happened from the donor. For detail modeling, see the manuscript in Jhwueng and
 	O'Meara (2015). The function allows some fixed values of parameters and treat others as free parameters: model 1 fixes \eqn{\beta}
 	at 1 but 	allow \eqn{v_H} to vary; model 2 allows \eqn{\beta} to vary but fixes \eqn{v_H} at 0; model 3 fixes \eqn{\beta} at 1
 	and \eqn{v_H} 	at 0; and model 4 allows both to vary.  BMhyb fits the model through maximum likelihood technique, it returns
-	MLEs. When setting 	the get.se to TRUE, the BMhyb will do simulation to estimate parameter uncertainty and the confidence
+	MLEs. When setting 	the get.se to TRUE, the BMhyb will do simulations to estimate parameter uncertainty and the confidence
 	intervals by adaptive 		confidence interval sampling method(see manuscript in Jhwueng and O'Meara). It setting plot.se to be
 	TRUE, BMhyb will be saved the 	CI in PDF file once the simulations are finished.  Model averaged parameter estimates are
 	calculated by the Akaike weight. As an 	input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
-	flow and a comparative data. Currently the 	method is develop for univariate analysis where the comparative data includes a single
+	flow and a comparative data. Currently the 	method is developed for univariate analysis where the comparative data includes a single
 	trait for analyses.
+
+  \eqn{\measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
+  If you enter a single value (which could be zero if you measure your species really, really well), it uses this as fixed measurement error
+  for all species. You can also enter a vector of measurement errors to allow species to have different ones; order should match that of taxa
+  in vcv.phylo(phy).
+
+  Parameter units matter; by convention, they are not reported in comparative methods, but that's unfortunate. If your analysis is of species
+  body length, let's say you measure it in meters. You should probably log transform the measurements to fit the assumptions of Brownian
+  motion (equal chance of a change by 1% per MY, regardless of scale, rather than equal chance of gaining a meter in length, regardless of
+  whether the initial size is 10 m or 0.001 m; values can go arbitrarily bigger or smaller, rather than being bounded by zero). If this is
+  the case:
+
+  \eqn{data}: you should give this to the function in log(meters). I.e., if you measure sharks of length 1 m, 1.2 m, and 3 m, you
+  should pass in 0.00, 0.18, and 1.10 as the traits.
+  \eqn{measurement.error}: if you're not having the program calculate it, this should also be in units of log(meters). If you can
+  measure shark length +/- 0.01 m, then this would be -4.61.
+
+  The program returns variables that also have units. Assuming your tree has branch lengths in millions of years:
+  \eqn{sigma-squared}, the rate of evolution, is in (log(meters))^2 / MY
+  \eqn{mu}, the ancestral state, is in log(meters)
+  \eqn{beta}, the scalar, is unitless. A value of 1.3 suggests that species formed from hybridization are 1.3 times larger than
+  parent species. Note this is true for traits in log space (so in this case, for example, we'd expect a hybrid coming from
+  species 2 m long to be 2.6 m long), but if you're using non-log transformed data the meaning of beta is different.
+  \eqn{vH} is the variance that comes from a hybridization event. In this case, (log(meters))^2.
+  \eqn{SE} is the inferred measurement error. It's in log(meters) units.
+
+  If you wanted to compare things on the same scale, take into account the units. For example, you could compare the
+  amount of variance for a species generated by one hybridization event:
+  \eqn{sigma-squared} * tree height = variance coming from Brownian motion on the tree
+  \eqn{vH} = variance coming from the hybridization event
+  \eqn{SE^2} = variance coming from measurement error.
+
  	}
 
 \value{
