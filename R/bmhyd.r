@@ -375,7 +375,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	if(length(vh.location)==1) {
 		vh<-x[vh.location]
 	}
-	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error)
+	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
     	return(badval)
