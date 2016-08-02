@@ -288,7 +288,7 @@ GetVModified <- function(x, phy, flow, actual.params, m=0.5) {
 		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (flow$m[flow.index]^2 + (1- flow$m[flow.index])^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
 	}
-	diag(V.modified) <- diag(V.modified)+SE
+	diag(V.modified) <- diag(V.modified)+SE^2
 	return(V.modified)
 }
 
