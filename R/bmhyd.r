@@ -80,7 +80,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   geiger.SE <- data*NA
   if(!is.null(measurement.error)) {
     if(length(measurement.error)==1) {
-      geiger.SE <- rep(measurement.error), length(geiger.SE))
+      geiger.SE <- rep(measurement.error, length(geiger.SE))
     } else {
       geiger.SE <- measurement.error
     }
