@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000) {
 	if(min(flow$m)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -157,7 +157,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			if(verbose) {
 				print("Now doing simulation to estimate parameter uncertainty")
 			}
-			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation)
+			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points)
 			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
 			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
 			if(plot.se) {
@@ -203,6 +203,29 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 		return(list(results=results.summary, sims=all.sims))
 	}
 	return(results.summary)
+}
+
+PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
+  model.sims <- results$sims[[model.index]]
+  best.likelihood <- min(model.sims$neglnL)
+  model.sims.in <- subset(model.sims, neglnL < best.likelihood+region)
+  model.sims.out <- subset(model.sims, neglnL >= best.likelihood+region)
+  best.run <- model.sims[which.min(model.sims$neglnL)[1],]
+  number.free.parameters <- dim(model.sims)[2] - 1
+  free.parameters <- colnames(model.sims)[-1]
+  if(make.pdf) {
+    pdf(file=paste("Model",model.index, "_uncertainty_plot.pdf", sep=""), height=5, width=5*number.free.parameters)
+  }
+  par(mfcol=c(1, number.free.parameters))
+  for(parameter in sequence(number.free.parameters)) {
+    plot(x=model.sims[,parameter+1], y=model.sims[,1], type="n", xlab=free.parameters[parameter], ylab="NegLnL", bty="n", ylim=c(min(model.sims[,1]), min(model.sims[,1])+10))
+    points(x=model.sims.in[,parameter+1], y=model.sims.in[,1], pch=16, col="black")
+    points(x=model.sims.out[,parameter+1], y=model.sims.out[,1], pch=16, col="gray")
+    points(x= best.run[parameter+1], y= best.run[1], pch=1, col="red", cex=1.5)
+  }
+  if(make.pdf) {
+    dev.off()
+  }
 }
 
 DetPass <- function(phy) {
