@@ -81,8 +81,11 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   if(!is.null(measurement.error)) {
     if(length(measurement.error)==1) {
       geiger.SE <- rep(measurement.error, length(geiger.SE))
+      names(geiger.SE) <- phy$tip.label
     } else {
       geiger.SE <- measurement.error
+      names(geiger.SE) <- phy$tip.label
+
     }
     starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
     starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
@@ -173,7 +176,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			if(verbose) {
 				print("Now doing simulation to estimate parameter uncertainty")
 			}
-			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points)
+			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error)
 			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
 			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
 			if(plot.se) {
@@ -455,8 +458,8 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	return(NegLogML[1])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, ...) {
-	starting<-fn(par, ...)
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, ...) {
+	starting<-fn(par, measurement.error=measurement.error, ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
 	}
@@ -472,7 +475,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		while(is.na(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
-		results[i+1,] <- c(fn(sim.points, ...), sim.points)
+		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, ...), sim.points)
 		if (i%%20==0) {
 			for (j in sequence(length(par))) {
 				returned.range <- range(results[which((results[,1]-min(results[,1], na.rm=TRUE))<desired.delta), j+1], na.rm=TRUE)
