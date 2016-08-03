@@ -171,8 +171,13 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
 			names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
 		}
-
-		if(get.se) {
+    weird.result <- FALSE
+    if(best.run$value>1e100) {
+      weird.result = TRUE
+      warning(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale"))
+      print(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale"))
+    }
+		if(get.se & !weird.result) {
 			if(verbose) {
 				print("Now doing simulation to estimate parameter uncertainty")
 			}
