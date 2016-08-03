@@ -9,7 +9,7 @@
 	}
 
 \usage{
-	GetVModified(x, phy, flow, actual.params, m)
+	GetVModified(x, phy, flow, actual.params)
 	}
 
 \arguments{
@@ -25,9 +25,6 @@
  \item{actual.params}{
  	The parameters that are related to the hybridzation including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}.
  	}
-	\item{m}{
-  	The fraction of genes that come from the left parent. Almost always set to 0.5.
-  }
 }
 
 \details{

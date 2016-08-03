@@ -11,7 +11,7 @@
 \usage{
 	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000)
+	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, do.kappa.check=TRUE)
 	}
 
 \arguments{
@@ -30,7 +30,10 @@
   \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, the VCV matrix was ill-conditioned, so used splines to estimate its likelihood.}
   \item{n.points}{How many simulations to do to estimate confidence interval}
   \item{measurement.error}{Estimate or fixed (see details)}
-	}
+  \item{do.kappa.check}{Check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
+  \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices}
+  \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
+}
 
 \details{Function BMhyb fits likelihood models for continuous characters. It incorporates phylogenetic tree, structure of gene flow 	and comparative data. The full likelihood model includes several parameters: the ancenstral state \eqn{\mu}, the overall variation 	\eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE. The 	struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. 	The thrid column is the information about the heritibaility factor m which is a fraction of the recipient trait that comes from 	the source. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root 		when the gene flow happened from the donor. The fifth column, recipient time, records time from the root of the recipient that 		counting forward from the root when the gene flow happened from the donor. For detail modeling, see the manuscript in Jhwueng and
 	O'Meara (2015). The function allows some fixed values of parameters and treat others as free parameters: model 1 fixes \eqn{\beta}
@@ -106,6 +109,6 @@
 	\donttest{
 	BMhyb(tips,network$phy,network$flow, opt.method="Nelder-Mead", models=3, verbose=TRUE,
 	get.se=FALSE, plot.se=FALSE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	likelihood.precision=0.001, allow.extrapolation=FALSE)
+	likelihood.precision=0.001, allow.extrapolation=TRUE)
 	}
 	}

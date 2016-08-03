@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, measurement.error=NULL, do.kappa.check=TRUE, number.of.proportions=101, number.of.proportions.adaptive=101) {
 	if(min(flow$m)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -88,11 +88,11 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 
     }
     starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
 
   } else {
 	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0, starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
   }
 	if(verbose) {
 		print("Done getting starting values")
@@ -118,7 +118,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
     if(!is.null(measurement.error)) {
       free.parameters[which(names(free.parameters)=="SE")]<-FALSE
     }
-		best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
+		best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
 		if(verbose) {
 			results.vector<-c(step.count, best.run$value, best.run$par)
 			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
@@ -130,9 +130,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 			times.without.improvement <- times.without.improvement+1
 			new.run <- best.run
 			if(times.without.improvement%%4==0) {
-				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
+				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
 			} else {
-				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error)
+				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
 			}
 			#print("new.run best.run")
 			#print(c(new.run$value, best.run$value))
@@ -174,14 +174,14 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
     weird.result <- FALSE
     if(best.run$value>1e100) {
       weird.result = TRUE
-      warning(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale"))
-      print(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale"))
+      warning(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
+      print(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
     }
 		if(get.se & !weird.result) {
 			if(verbose) {
 				print("Now doing simulation to estimate parameter uncertainty")
 			}
-			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error)
+			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive)
 			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
 			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
 			if(plot.se) {
@@ -280,7 +280,7 @@ AdjustForDet <- function(phy, max.attempts=100) {
 	return(phy)
 }
 
-GetVModified <- function(x, phy, flow, actual.params, m=0.5, measurement.error=NULL) {
+GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]
@@ -302,6 +302,7 @@ GetVModified <- function(x, phy, flow, actual.params, m=0.5, measurement.error=N
 	V.modified <- V.original
 	for (flow.index in sequence(dim(flow)[1])) {
 		recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
+    m <- flow$m[flow.index]
 		if(length(recipient.index)!=1) {
 			stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
 		}
@@ -309,10 +310,10 @@ GetVModified <- function(x, phy, flow, actual.params, m=0.5, measurement.error=N
 		if(length(donor.index)!=1) {
 			stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
 		}
-		V.modified[recipient.index, donor.index] <- (1-flow$m[flow.index]) * V.original[recipient.index, donor.index] + (flow$m[flow.index]) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
+		V.modified[recipient.index, donor.index] <- (1-m) * V.original[recipient.index, donor.index] + (m) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
 		#covariance managed, now to manage the variance
-		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (flow$m[flow.index]^2 + (1- flow$m[flow.index])^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
+		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (m^2 + (1- m)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
 	}
   if(is.null(measurement.error)) {
@@ -365,7 +366,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101) {
 	badval<-(0.5)*.Machine$double.xmax
 	bt <- 1
 	vh <- 0
@@ -398,6 +399,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#}
 	#NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
   NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus
+
 	if(min(V.modified)<0 || sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
     	NegLogML<-badval
 	}
@@ -413,32 +415,50 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#The ratio  of the largest to smallest singular value in the singular value decomposition of a matrix. The base- logarithm of  is an estimate of how many base- digits are lost in solving a linear system with that matrix. In other words, it
 	#estimates worst-case loss of precision. A system is said to be singular if the condition number is infinite, and ill-conditioned if it is too large, where "too large" means roughly  the precision of matrix entries.
 	#if(rcond(V.modified) < .Machine$double.eps^2){
-	if(log(matrix.condition) > precision) {
-		proportions <- seq(from=1, to=0, length.out=101)
+	if(log(matrix.condition) > precision & do.kappa.check) {
+    proportions <- seq(from=1, to=0, length.out=number.of.proportions)
 		lnl.vector <- rep(NA, length(proportions))
 		max.diff <- 0
+    kappa.vector <- rep(NA, length(proportions))
 		for(i in sequence(length(proportions))) {
 			V.modified.by.proportions<-(1-proportions[i]) * V.modified + proportions[i] * diag(dim(V.modified)[1]) * diag(V.modified)
       #local.lnl <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified.by.proportions)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified.by.proportions)))
       local.lnl <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified.by.proportions)%*%(data-means.modified) + (1/2)*determinant(V.modified.by.proportions, logarithm=TRUE)$modulus
-			if(i>6) {
-				very.local.lnl <- lnl.vector[(i-6):(i-1)]
-				max.diff <- max(abs(very.local.lnl[-1] - very.local.lnl[-length(very.local.lnl)])) #looking locally for jumps in the likelihood
-				current.diff <- abs(local.lnl - lnl.vector[i-1])
-				if(current.diff > 2 * max.diff) {
-					#print(paste("breaking after ", i))
-					break() #the modified matrix is still poorly conditioned, so stop here
-				}
-			}
-			lnl.vector[i] <- local.lnl
+      lnl.vector[i] <- local.lnl
+      kappa.vector[i] <- kappa(V.modified.by.proportions, exact=TRUE)
+			# if(i>6) {
+			# 	very.local.lnl <- lnl.vector[(i-6):(i-1)]
+			# 	max.diff <- max(abs(very.local.lnl[-1] - very.local.lnl[-length(very.local.lnl)])) #looking locally for jumps in the likelihood
+			# 	current.diff <- abs(local.lnl - lnl.vector[i-1])
+			# 	if(current.diff > 2 * max.diff) {
+			# 		#print(paste("breaking after ", i))
+			# 		#break() #the modified matrix is still poorly conditioned, so stop here
+      #     lnl.vector[i] <- NA
+      #     break()
+			# 	}
+			# }
 		}
+    # small.kappas <- which(kappa.vector < 2)
+    # if(length(small.kappas)<10) {
+    #   small.kappas<-order(kappa.vector, decreasing=FALSE)[1:10]
+    # }
+    #smoothing.estimate <- smooth.spline(x=proportions[small.kappas], y=lnl.vector[small.kappas], w=1/kappa.vector[small.kappas], df=4)$spar
 		proportions<-proportions[which(!is.na(lnl.vector))]
 		lnl.vector<-lnl.vector[which(!is.na(lnl.vector))]
-		NegLogML <- predict(smooth.spline(proportions, lnl.vector), data.frame(proportions =0.000))$y
+		NegLogML.4 <- predict(smooth.spline(x=proportions, y=lnl.vector, w=1/kappa.vector, df=4), data.frame(proportions =0.000))$y #df of 4: don't want overfitting
+    NegLogML.6 <- predict(smooth.spline(x=proportions, y=lnl.vector, w=1/kappa.vector, df=6), data.frame(proportions =0.000))$y #df of 4: don't want overfitting
+    if(abs(NegLogML.4 - NegLogML.6)>0.1) { #the result is very sensitive to the degrees of freedom.
+      NegLogML <- badval
+    } else {
+      NegLogML <- NegLogML.4
+    }
+
+    #plot(proportions, lnl.vector)
+    #lines(proportions, predict(smooth.spline(x=proportions, y=lnl.vector, w=1/kappa.vector, df=4), data.frame(proportions))$y[,1])
 		#plot(c(0, proportions), c(NegLogML, lnl.vector), type="n")
 		#points(proportions, lnl.vector, pch=20)
 		#points(0, NegLogML, col="red")
-		if(abs(NegLogML - lnl.vector[length(lnl.vector)]) >0.0000001) {	#means this point was extrapolated b/c the likelihood surface got strange
+		if(abs(NegLogML - lnl.vector[length(lnl.vector)]) > 0.001) {	#means this point was extrapolated b/c the likelihood surface got strange
 			if(allow.extrapolation) {
 				warning("VCV matrix was ill-conditioned, so used splines to estimate its likelihood (allow.extrapolation=TRUE). This could lead to very bad estimates of the likelihood")
 			} else {
@@ -449,6 +469,8 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 
 		#print(paste("Did interpolation, got ", NegLogML))
 	}
+
+
 	#print("datadiff")
 	#print(quantile(data-means.modified))
 	#print("middle")
@@ -458,13 +480,18 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#print(x)
 	#print(V.modified[1:10,1:10])
 	#print(means.modified)
-	if(NegLogML< (-1000)) {
-		bad<-V.modified
+  # if(NegLogML < -1000 | NegLogML > 100000) {
+  #   stop("bad")
+  # } else {
+  #   stop("good")
+  # }
+	if(NegLogML< (0)) {
+		NegLogML <- badval #since something seems off.
 	}
 	return(NegLogML[1])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, ...) {
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=TRUE, ...) {
 	starting<-fn(par, measurement.error=measurement.error, ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
@@ -481,7 +508,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		while(is.na(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
-		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, ...), sim.points)
+		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
 		if (i%%20==0) {
 			for (j in sequence(length(par))) {
 				returned.range <- range(results[which((results[,1]-min(results[,1], na.rm=TRUE))<desired.delta), j+1], na.rm=TRUE)
