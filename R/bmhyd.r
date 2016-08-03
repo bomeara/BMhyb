@@ -118,7 +118,11 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
     if(!is.null(measurement.error)) {
       free.parameters[which(names(free.parameters)=="SE")]<-FALSE
     }
-		best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+    best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+    # opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
+    # best.run <- nloptr(x0=starting.values[free.parameters], eval_f=CalculateLikelihood, opts=opts, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], proportion.mix.with.diag=0, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+    # best.run$value = best.run$objective
+    # best.run$par = best.run$solution
 		if(verbose) {
 			results.vector<-c(step.count, best.run$value, best.run$par)
 			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
