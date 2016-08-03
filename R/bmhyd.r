@@ -645,7 +645,7 @@ PlotNetwork <- function(phy, flow, col.non="black", col.hybrid="red", col.donor=
 		recipient.path.heights <- nodeHeight(phy4, recipient.path, from="root")
 		valid.recipients <- recipient.path[which(recipient.path.heights > flow$time.from.root.recipient[i])]
 		recipient <- valid.recipients[length(valid.recipients)] #do it from the earliest qualifying tipward node
-		if(length(recipient.path)>1 && length(which(recipient.path.heights==flow$time.from.root.recipient[i]))>0) { #the latter condition means we're moving to an existing node
+		if(length(valid.recipients)>1 && length(which(recipient.path.heights==flow$time.from.root.recipient[i]))>0) { #the latter condition means we're moving to an existing node
 				recipient <- valid.recipients[length(valid.recipients)-1]
 		}
 		y1 <- xxyy$yy[which(edges(phy4)[xxyy$eorder,2] == recipient)]
