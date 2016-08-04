@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, measurement.error=NULL, do.kappa.check=TRUE, number.of.proportions=101, number.of.proportions.adaptive=101) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, measurement.error=NULL, do.kappa.check=TRUE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE) {
 	if(min(flow$m)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -194,7 +194,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				print("Now doing simulation to estimate parameter uncertainty")
   			}
-  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive)
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision)
   			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
   			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
         if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
@@ -203,7 +203,6 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
           names(best.point) <- c("neglnL", names(free.parameters)[which(free.parameters)])
           preset.starting.parameters <- best.point[-1]
           do.run = TRUE
-          break()
         }
   			if(plot.se) {
   				pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
@@ -236,7 +235,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   				}
   			}
   		}
-  		local.df <- data.frame(matrix(c(model.index, results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
   		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
   		print(local.df)
   		results.summary <- rbind(results.summary, local.df)
@@ -513,7 +512,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 }
 
 AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=TRUE, ...) {
-	starting<-fn(par, measurement.error=measurement.error, ...)
+	starting<-fn(par, measurement.error=measurement.error, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
 	}
@@ -530,6 +529,10 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
 		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
+    if((best.run$value - min(results[,1]) > likelihood.precision ) & allow.restart) {
+      results <- results[sequence(i+1),] #stop here and restart
+      return(results)
+    }
 		if (i%%20==0) {
 			for (j in sequence(length(par))) {
 				returned.range <- range(results[which((results[,1]-min(results[,1], na.rm=TRUE))<desired.delta), j+1], na.rm=TRUE)

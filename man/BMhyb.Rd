@@ -7,11 +7,13 @@
 \description{
 	This function fits the Brownian motion model of continuous character to investigate hybrid species through the hybrid vigor \eqn{\beta}, and the variation at the burst of hybridization \eqn{v_H}. Measurement error SE is also considered as well as the  parameters including the over all mean \eqn{\mu} and the overall variance \eqn{\sigma^2} in the typical Brownian motion model.
 	}
-  
+
 \usage{
 	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, measurement.error = NULL, do.kappa.check=TRUE, number.of.proportions = 101, number.of.proportions.adaptive = 101)
+	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000,
+  measurement.error = NULL, do.kappa.check=TRUE, number.of.proportions = 101,
+  number.of.proportions.adaptive = 101)
 	}
 
 \arguments{
@@ -26,7 +28,7 @@
   \item{store.sims}{a TRUE/FALSE argument to record the the parameter estimates and relevant values.}
   \item{precision}{a numeric value to present the cutoff at which the user thinks the estimates become unreliable due to ill conditioned matrix.}
   \item{auto.adjust}{a TRUE/FALSE argument to adjust the the phylogeny }
-  \item{likelihood.precision}{a numerical value used for verifying the convergent of the estimation.}
+  \item{likelihood.precision}{a numerical value used for verifying the convergence of the estimation.}
   \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, the VCV matrix was ill-conditioned, so used splines to estimate its likelihood.}
   \item{n.points}{How many simulations to do to estimate confidence interval}
   \item{measurement.error}{Estimate or fixed (see details)}

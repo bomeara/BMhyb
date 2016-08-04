@@ -3,8 +3,27 @@ Version: 1.3.2
 Date: 2016-08-04
 Type: Package
 Title: PCM for Hybridization
-Author: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu> and Brian O'Meara <omeara.brian@gmail.com>
+Author: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu> and Brian O'Meara
+    <omeara.brian@gmail.com>
 Maintainer: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu>
-Imports: corpcor, numDeriv, geiger, ape, TreeSim, phytools, phylobase, mvtnorm, grDevices, graphics, methods, stats
-Description: The BMhyb package analyzes the phenotypic evolution of species of hybrid origin on a phylogenetic network. This package can detect the hybrid vigor effect, a burst of variation at formation, and the relative portion of heritability from its parents. Parameters are estimated by maximum likelihood. Users need to enter a comparative data set, a phylogeny, and information on gene flow leading to hybrids.
+Imports:
+    corpcor,
+    numDeriv,
+    geiger,
+    ape,
+    TreeSim,
+    phytools,
+    phylobase,
+    mvtnorm,
+    grDevices,
+    graphics,
+    methods,
+    stats
+Description: The BMhyb package analyzes the phenotypic evolution of species
+    of hybrid origin on a phylogenetic network. This package can detect the hybrid
+    vigor effect, a burst of variation at formation, and the relative portion of
+    heritability from its parents. Parameters are estimated by maximum likelihood.
+    Users need to enter a comparative data set, a phylogeny, and information on gene
+    flow leading to hybrids.
 License: GPL (>=2)
+RoxygenNote: 5.0.1

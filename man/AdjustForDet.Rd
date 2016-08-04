@@ -17,7 +17,7 @@
  		}
 
  	\item{max.attempts}{
- 		the maximum numer of attempts to adjust the phylogeny. The default is 100.
+ 		the maximum number of attempts to adjust the phylogeny. The default is 100.
  		}
 	}
 
