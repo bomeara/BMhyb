@@ -511,8 +511,8 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	return(NegLogML[1])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=TRUE, ...) {
-	starting<-fn(par, measurement.error=measurement.error, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=TRUE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...) {
+	starting<-fn(par, measurement.error=measurement.error,  ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
 	}
@@ -529,9 +529,11 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
 		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
-    if((best.run$value - min(results[,1]) > likelihood.precision ) & allow.restart) {
-      results <- results[sequence(i+1),] #stop here and restart
-      return(results)
+    if(i>5) {
+      if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
+        results <- results[sequence(i+1),] #stop here and restart
+        return(results)
+      }
     }
 		if (i%%20==0) {
 			for (j in sequence(length(par))) {

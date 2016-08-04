@@ -8,7 +8,8 @@ This function uses an adaptive cluster sampling technique to generate confidence
 }
 \usage{
 AdaptiveConfidenceIntervalSampling(par, fn, lower=-Inf, upper=Inf, desired.delta = 2,
-n.points=5000, verbose=TRUE,  measurement.error=NULL, do.kappa.check=TRUE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
+n.points=5000, verbose=TRUE,  measurement.error=NULL, do.kappa.check=TRUE,
+allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
 }
 
 \arguments{

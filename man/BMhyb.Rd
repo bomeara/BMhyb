@@ -13,7 +13,7 @@
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
 	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000,
   measurement.error = NULL, do.kappa.check=TRUE, number.of.proportions = 101,
-  number.of.proportions.adaptive = 101)
+  number.of.proportions.adaptive = 101, allow.restart=TRUE)
 	}
 
 \arguments{
@@ -35,6 +35,7 @@
   \item{do.kappa.check}{Check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
   \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices}
   \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
+  \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value}
 }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
