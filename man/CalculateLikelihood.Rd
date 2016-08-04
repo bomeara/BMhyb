@@ -29,7 +29,8 @@
 	\item{measurement.error}{estimate or fixed (see details)}
 	\item{do.kappa.check}{check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
   \item{number.of.proportions}{control how many points to use for extrapolation for ill-conditioned matrices}
-	}
+	\item{...}{place to absorb other arguments}
+}
 
 \details{
 	This function calculates the likelihood value. As described in the argument, the \eqn{x} contains the parameter of interests including over all mean \eqn{\mu}, the rate of evolution \eqn{\sigma^2}, the measurement error SE and the hybrid vigor \eqn{\beta} and the variation at the burst of hybridization \eqn{v_H}. Names of the taxa in data vector and the phylogeny must be match for further analysis, otherwise it would terminate immediately. The negative log likelihood function is calculated and a reasonable likelihood value is retruned by checking the variance covariance matrix where a precision number is used for verifying the log conditioned number of the variance covaraince of the network model. When the matrix is ill conditioned, we appraopriately adjust the matrix by the shrink the value of the off diagonal matrix using a proportion array. Then the likelihood is calculated using a spline approximation.
