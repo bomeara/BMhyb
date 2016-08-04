@@ -1,10 +1,10 @@
 \name{AdjustForDet}
 \alias{AdjustForDet}
 \title{
- Adjust the phylogeny 
+ Adjust the phylogeny
  }
 \description{
-	A function adjusts the phylogeny when the determinant of the variance covariance matrix of the the phylogeny is negative. 
+	Utility function to adjust the phylogeny to deal with numerical issues.
 	}
 
 \usage{
@@ -14,15 +14,15 @@
 \arguments{
   \item{phy}{
 	 	an object of class 'phylo'
- 		} 
- 		
+ 		}
+
  	\item{max.attempts}{
  		the maximum numer of attempts to adjust the phylogeny. The default is 100.
  		}
 	}
 
 \details{
-	This functon first calculates the determiant of the phylogeny using the function \code{DetPass}. When the determinant of the variance covariance matrix for the phylogeny is negative, this function will adjust the phylogeny by slightly lengthening the edge lengths of the tree. This procedure repeats until a good adjusted phylogeny is returned.}
+	This functon first calculates the determiant of the phylogeny using the function \code{DetPass}. When the determinant of the variance covariance matrix for the phylogeny is negative, this function will adjust the phylogeny by slightly lengthening the edge lengths of the tree. This procedure repeats until a well adjusted phylogeny is returned.}
 
 \value{
  an object of class 'phylo'
@@ -33,7 +33,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 	}
 
 \examples{

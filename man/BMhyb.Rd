@@ -35,16 +35,14 @@
   \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
 }
 
-\details{Function BMhyb fits likelihood models for continuous characters. It incorporates phylogenetic tree, structure of gene flow 	and comparative data. The full likelihood model includes several parameters: the ancenstral state \eqn{\mu}, the overall variation 	\eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE. The 	struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. 	The thrid column is the information about the heritibaility factor m which is a fraction of the recipient trait that comes from 	the source. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root 		when the gene flow happened from the donor. The fifth column, recipient time, records time from the root of the recipient that 		counting forward from the root when the gene flow happened from the donor. For detail modeling, see the manuscript in Jhwueng and
-	O'Meara (2015). The function allows some fixed values of parameters and treat others as free parameters: model 1 fixes \eqn{\beta}
-	at 1 but 	allow \eqn{v_H} to vary; model 2 allows \eqn{\beta} to vary but fixes \eqn{v_H} at 0; model 3 fixes \eqn{\beta} at 1
-	and \eqn{v_H} 	at 0; and model 4 allows both to vary.  BMhyb fits the model through maximum likelihood technique, it returns
-	MLEs. When setting 	the get.se to TRUE, the BMhyb will do simulations to estimate parameter uncertainty and the confidence
-	intervals by adaptive 		confidence interval sampling method(see manuscript in Jhwueng and O'Meara). It setting plot.se to be
-	TRUE, BMhyb will be saved the 	CI in PDF file once the simulations are finished.  Model averaged parameter estimates are
-	calculated by the Akaike weight. As an 	input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
-	flow and a comparative data. Currently the 	method is developed for univariate analysis where the comparative data includes a single
-	trait for analyses.
+\details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
+flow and a comparative data. Currently the 	method is developed for univariate analysis where the comparative data includes a single
+trait for analyses. The full likelihood model includes several parameters: the ancestral state \eqn{\mu}, the overall rate of evolution \eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE. The 	struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. 	The third column is the information about the heritibaility factor \eqn{m} which is a fraction of the recipient trait that comes from the source. For example, if one thought that 10% of a species' genome came from introgression from a particular species, \eqn{m} would be 0.1. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor. The fifth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor. For more details, please see our paper. Note that gene flow out of and into a species occurs at a single time in this model, but it doesn't have to be at the same time for donor and recipient: for example, the genes could flow into an unsampled species, then later get passed to a recipient.
+
+ The function allows some fixed values of parameters and treats others as free parameters: model 1 fixes \eqn{\beta}
+	at 1 but 	allows \eqn{v_H} to vary; model 2 allows \eqn{\beta} to vary but fixes \eqn{v_H} at 0; model 3 fixes \eqn{\beta} at 1
+	and \eqn{v_H} at 0; and model 4 allows both to vary.  BMhyb fits the model through maximum likelihood. When setting \eqn{get.se} to TRUE, the BMhyb will estimate parameter uncertainty through a sampling procedure (see help for \eqn{AdaptiveConfidenceIntervalSampling}. If \eqn{plot.se} is TRUE, a PDF will be generated showing these regions. Model averaged parameter estimates are
+	calculated by the Akaike weight.
 
   \eqn{\measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
   If you enter a single value (which could be zero if you measure your species really, really well), it uses this as fixed measurement error
@@ -74,8 +72,10 @@
   If you wanted to compare things on the same scale, take into account the units. For example, you could compare the
   amount of variance for a species generated by one hybridization event:
   \eqn{sigma-squared} * tree height = variance coming from Brownian motion on the tree
-  \eqn{vH} = variance coming from the hybridization event
+  \eqn{v_H} = variance coming from the hybridization event
   \eqn{SE^2} = variance coming from measurement error.
+
+  Though the model seems straightforward (Brownian motion on a basic network) there are numerical issues that can lead to difficulty calculating the likelihood (look up ill-condtioned matrices if you're curious). We have spent a lot of development time trying to address this issue and have various approximations in place to deal with this, including scaling the tree and trying transformations of the tree and then interpolation to get an estimate of the likelihood. There is a tradeoff. A cleaner approach would be to just return NA if the likelihood could not be calculated with high precision, and you can set the program to do this with some of the settings here (\eqn{allow.extrapolation}=FALSE, \eqn{auto.adjust}=FALSE, decreasing \eqn{precision} (a threshold for the condition number (kappa) of the matrix)). However, the real risk is that your hard-won dataset just generates an NA (or the equivalent, a very bad fixed negative log likelihood value, set to be something like 1e307 on many computers). Our defaults let you get an approximate answer; pay heed to the confidence intervals, as well. However, we recommend a "sniff test" for your results: the negative log likelihood values for your various models will vary, but should be something like 68.2 for one model, 74.3 for another, etc. If you get one model that is orders of magnitude different in log likelihood, something is likely deeply wrong.
 
  	}
 

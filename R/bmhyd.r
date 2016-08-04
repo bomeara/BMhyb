@@ -800,7 +800,7 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 }
 
 #The following short function comes from Ken Takagi at  https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/
-Plot_ConvexHull<-function(xcoord, ycoord, lcolor){
+PlotConvexHull<-function(xcoord, ycoord, lcolor){
 	hpts <- chull(x = xcoord, y = ycoord)
 	hpts <- c(hpts, hpts[1])
 	lines(xcoord[hpts], ycoord[hpts], col = lcolor)
@@ -831,8 +831,8 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 			relevant.point.id <- chull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2])
 			#polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=TRUE)
 			#polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=FALSE)
-			Plot_ConvexHull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], "black")
-			Plot_ConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "black")
+			PlotConvexHull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], "black")
+			PlotConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "black")
 
 			#points(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], col="green", pch="X")
 						#contour(interp(points.to.fit[,1], points.to.fit[,2], points.to.fit[,3]), xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], levels=c(1, 2, 5, 10))

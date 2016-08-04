@@ -3,13 +3,13 @@
 \title{
 	Convex hull
 	}
-	
+
 \description{
 	Plotting the convex hall for given 2D datasets.
 	}
 
 \usage{
-	Plot_ConvexHull(xcoord, ycoord, lcolor)
+	PlotConvexHull(xcoord, ycoord, lcolor)
 	}
 \arguments{
   		\item{xcoord}{coordinate for the horizontal axis.}
@@ -19,18 +19,18 @@
 
 \details{
 	This function uses the base function \emph{chull()}, which takes x,y coordinates of data and outputs a vector(hpts variable) of integers that indicate the points in dataset that comprise the convex hull around data. It then uses the base function lines to draw the convex hull using the x,y coordinates stored in hpts.
-	} 
+	}
 
 \value{
 	The convex hull plot for a set of 2D points.
  	}
 
 \author{
-	Ken Takagi 
+	Ken Takagi
 	}
 
 \references{
-	https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/ 
+	https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/
 	}
 
 \examples{
