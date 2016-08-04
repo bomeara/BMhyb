@@ -6,10 +6,9 @@ Confidence interval under adaptive cluster sampling technique
 \description{
 This function uses an adaptive cluster sampling technique to generate confidence interval for parameters of interest.
 }
-
 \usage{
 AdaptiveConfidenceIntervalSampling(par, fn, lower=-Inf, upper=Inf, desired.delta = 2,
-n.points=5000, verbose=TRUE, ...)
+n.points=5000, verbose=TRUE,  measurement.error=NULL, do.kappa.check=TRUE, ...)
 }
 
 \arguments{
@@ -20,6 +19,8 @@ n.points=5000, verbose=TRUE, ...)
   \item{desired.delta}{a numeric value with a default value of 2 for the criteria that the desired log-likelihood shall no more than 2 unit away from the maximum.}
   \item{n.points}{number of required points for calculating likeilihood value.}
   \item{verbose}{whether to print detailed information during the run.}
+  \item{measurement.error}{single value or vector of fixed measurement errors.}
+  \item{do.kappa.check}{if TRUE, check for matrix condition when calculating likelihood.}
   \item{...}{further arguments passed(see details).}
 }
 \details{

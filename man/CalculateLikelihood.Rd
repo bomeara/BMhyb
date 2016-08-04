@@ -8,9 +8,13 @@
 	This function calculates the likelihood value for the model
 	}
 
+
+
+
 \usage{
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
-	proportion.mix.with.diag=0, allow.extrapolation=FALSE, number.of.proportions=101)
+	proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error = NULL, do.kappa.check =
+	FALSE, number.of.proportions=101)
 	}
 
 \arguments{
@@ -22,7 +26,9 @@
   \item{precision}{a number to verify the condition of the variance covariation for the network model}
   \item{proportion.mix.with.diag}{the proportion value that applies to the diagonal of the vcv matrix}
 	\item{allow.extrapolation}{a TRUE/FALSE argument}
-	\item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices}
+	\item{measurement.error}{estimate or fixed (see details)}
+	\item{do.kappa.check}{check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
+  \item{number.of.proportions}{control how many points to use for extrapolation for ill-conditioned matrices}
 	}
 
 \details{

@@ -250,28 +250,28 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
-  model.sims <- results$sims[[model.index]]
-  best.likelihood <- min(model.sims$neglnL)
-  model.sims.in <- subset(model.sims, neglnL < best.likelihood+region)
-  model.sims.out <- subset(model.sims, neglnL >= best.likelihood+region)
-  best.run <- model.sims[which.min(model.sims$neglnL)[1],]
-  number.free.parameters <- dim(model.sims)[2] - 1
-  free.parameters <- colnames(model.sims)[-1]
-  if(make.pdf) {
-    pdf(file=paste("Model",model.index, "_uncertainty_plot.pdf", sep=""), height=5, width=5*number.free.parameters)
-  }
-  par(mfcol=c(1, number.free.parameters))
-  for(parameter in sequence(number.free.parameters)) {
-    plot(x=model.sims[,parameter+1], y=model.sims[,1], type="n", xlab=free.parameters[parameter], ylab="NegLnL", bty="n", ylim=c(min(model.sims[,1]), min(model.sims[,1])+10))
-    points(x=model.sims.in[,parameter+1], y=model.sims.in[,1], pch=16, col="black")
-    points(x=model.sims.out[,parameter+1], y=model.sims.out[,1], pch=16, col="gray")
-    points(x= best.run[parameter+1], y= best.run[1], pch=1, col="red", cex=1.5)
-  }
-  if(make.pdf) {
-    dev.off()
-  }
-}
+# PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
+#   model.sims <- results$sims[[model.index]]
+#   best.likelihood <- min(model.sims$neglnL)
+#   model.sims.in <- subset(model.sims, neglnL < best.likelihood+region)
+#   model.sims.out <- subset(model.sims, neglnL >= best.likelihood+region)
+#   best.run <- model.sims[which.min(model.sims$neglnL)[1],]
+#   number.free.parameters <- dim(model.sims)[2] - 1
+#   free.parameters <- colnames(model.sims)[-1]
+#   if(make.pdf) {
+#     pdf(file=paste("Model",model.index, "_uncertainty_plot.pdf", sep=""), height=5, width=5*number.free.parameters)
+#   }
+#   par(mfcol=c(1, number.free.parameters))
+#   for(parameter in sequence(number.free.parameters)) {
+#     plot(x=model.sims[,parameter+1], y=model.sims[,1], type="n", xlab=free.parameters[parameter], ylab="NegLnL", bty="n", ylim=c(min(model.sims[,1]), min(model.sims[,1])+10))
+#     points(x=model.sims.in[,parameter+1], y=model.sims.in[,1], pch=16, col="black")
+#     points(x=model.sims.out[,parameter+1], y=model.sims.out[,1], pch=16, col="gray")
+#     points(x= best.run[parameter+1], y= best.run[1], pch=1, col="red", cex=1.5)
+#   }
+#   if(make.pdf) {
+#     dev.off()
+#   }
+# }
 
 DetPass <- function(phy) {
 	det.pass <- TRUE

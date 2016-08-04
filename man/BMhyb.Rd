@@ -7,11 +7,11 @@
 \description{
 	This function fits the Brownian motion model of continuous character to investigate hybrid species through the hybrid vigor \eqn{\beta}, and the variation at the burst of hybridization \eqn{v_H}. Measurement error SE is also considered as well as the  parameters including the over all mean \eqn{\mu} and the overall variance \eqn{\sigma^2} in the typical Brownian motion model.
 	}
-
+  
 \usage{
 	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, do.kappa.check=TRUE)
+	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000, measurement.error = NULL, do.kappa.check=TRUE, number.of.proportions = 101, number.of.proportions.adaptive = 101)
 	}
 
 \arguments{

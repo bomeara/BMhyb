@@ -42,5 +42,5 @@
 	yrange<-range(y)
 	#plot it up!
 	plot(x,y,type="p",pch=1,col='black',xlim=c(xrange),ylim=c(yrange))
-	Plot_ConvexHull(xcoord=x,ycoord=y,lcolor='red')
+	PlotConvexHull(xcoord=x,ycoord=y,lcolor='red')
 	}
