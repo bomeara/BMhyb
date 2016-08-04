@@ -14,7 +14,7 @@
 \usage{
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
 	proportion.mix.with.diag=0, allow.extrapolation=FALSE,
-	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101)
+	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101, ...)
 	}
 
 \arguments{
