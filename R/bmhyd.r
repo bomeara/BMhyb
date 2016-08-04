@@ -98,132 +98,149 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 		print("Done getting starting values")
 	}
 	for (model.index in sequence(length(models))) {
-		step.count <- 0
-		if(verbose) {
-			print(paste("Starting model", model.index, "of", length(models)))
-		}
-		free.parameters<-rep(TRUE, 5)
-		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-		model <- models[model.index]
-		if(model==1) {
-			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-		}
-		if(model==2) {
-			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-		}
-		if(model==3) {
-			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-		}
-    if(!is.null(measurement.error)) {
-      free.parameters[which(names(free.parameters)=="SE")]<-FALSE
-    }
-    best.run <- optim(par=starting.values[free.parameters], fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-    # opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-    # best.run <- nloptr(x0=starting.values[free.parameters], eval_f=CalculateLikelihood, opts=opts, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], proportion.mix.with.diag=0, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-    # best.run$value = best.run$objective
-    # best.run$par = best.run$solution
-		if(verbose) {
-			results.vector<-c(step.count, best.run$value, best.run$par)
-			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
-			print(results.vector)
-		}
-		#this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
-		times.without.improvement <- 0
-		while(times.without.improvement<10) {
-			times.without.improvement <- times.without.improvement+1
-			new.run <- best.run
-			if(times.without.improvement%%4==0) {
-				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-			} else {
-				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-			}
-			#print("new.run best.run")
-			#print(c(new.run$value, best.run$value))
-			if(new.run$value<best.run$value) {
-				if(best.run$value - new.run$value > likelihood.precision) {
-					times.without.improvement <- 0
-					if(verbose) {
-						print("New improvement found, resetting step counter")
-					}
-				} else {
-					if(verbose) {
-						print("New improvement found, but slight; taking the best value, but not resetting the step counter")
-					}
-				}
-				best.run <- new.run
-			}
-			if(verbose) {
-				step.count <- step.count+1
-				results.vector<-c(step.count, times.without.improvement, best.run$value, best.run$par)
-				names(results.vector) <- c("step", "steps.without.improvement","negloglik", names(free.parameters[which(free.parameters)]))
-				print(results.vector)
-			}
-		}
-		results[[model.index]] <- best.run
-		#try(hessians[[model.index]] <- hessian(func=CalculateLikelihood, x=new.run$par, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
-		results.vector.full <- c(NA, NA, 1, 0, 0)
-		names(results.vector.full) <- names(free.parameters)
-		names(best.run$par) <- names(free.parameters[which(free.parameters)])
-		for (i in sequence(length(best.run$par))) {
-			results.vector.full[which(names(results.vector.full)==names(best.run$par)[i])] <- best.run$par[i]
-		}
-		#print(hessians[[model.index]])
-		#try(print(solve(hessians[[model.index]])))
-		ci.vector<-rep(NA,10)
-		for(parameter in sequence(5)) {
-			names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
-			names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
-		}
-    weird.result <- FALSE
-    if(best.run$value>1e100) {
-      weird.result = TRUE
-      warning(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
-      print(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
-    }
-		if(get.se & !weird.result) {
-			if(verbose) {
-				print("Now doing simulation to estimate parameter uncertainty")
-			}
-			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive)
-			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
-			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
-			if(plot.se) {
-				pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
-				par(mfcol=c(1, sum(free.parameters)))
-				for(parameter in sequence(sum(free.parameters))) {
-					plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
-					points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
-					points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
-					points(x= best.run$par[parameter], y= best.run$value, pch=1, col="red", cex=1.5)
-				}
-				dev.off()
-				if(verbose) {
-					print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
-				}
-			}
-			if(store.sims) {
-				colnames(interval.results) <- c("neglnL", names(free.parameters)[which(free.parameters)])
-				all.sims[[model.index]]<-interval.results
-			}
-			free.index=0
-			for(parameter in sequence(5)) {
+    do.run = TRUE
+    preset.starting.parameters = NULL
+    while(do.run) {
+      do.run = FALSE
+  		step.count <- 0
+  		if(verbose) {
+  			print(paste("Starting model", model.index, "of", length(models)))
+  		}
+  		free.parameters<-rep(TRUE, 5)
+  		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  		model <- models[model.index]
+  		if(model==1) {
+  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+  		}
+  		if(model==2) {
+  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+  		}
+  		if(model==3) {
+  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+  		}
+      if(!is.null(measurement.error)) {
+        free.parameters[which(names(free.parameters)=="SE")]<-FALSE
+      }
 
-				if(free.parameters[parameter]) { #is estimated
-					free.index <- free.index + 1
-					ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
-					ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
-				} else {
-					ci.vector[1+2*(parameter-1)] <- results.vector.full[parameter]
-					ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]
-				}
-			}
-		}
-		local.df <- data.frame(matrix(c(model.index, results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
-		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
-		print(local.df)
-		results.summary <- rbind(results.summary, local.df)
+      if(is.null(preset.starting.parameters)) {
+        preset.starting.parameters <- starting.values[free.parameters]
+      }
 
+      best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+      # opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
+      # best.run <- nloptr(x0=starting.values[free.parameters], eval_f=CalculateLikelihood, opts=opts, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], proportion.mix.with.diag=0, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+      # best.run$value = best.run$objective
+      # best.run$par = best.run$solution
+  		if(verbose) {
+  			results.vector<-c(step.count, best.run$value, best.run$par)
+  			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
+  			print(results.vector)
+  		}
+  		#this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
+  		times.without.improvement <- 0
+  		while(times.without.improvement<10) {
+  			times.without.improvement <- times.without.improvement+1
+  			new.run <- best.run
+  			if(times.without.improvement%%4==0) {
+  				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+  			} else {
+  				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+  			}
+  			#print("new.run best.run")
+  			#print(c(new.run$value, best.run$value))
+  			if(new.run$value<best.run$value) {
+  				if(best.run$value - new.run$value > likelihood.precision) {
+  					times.without.improvement <- 0
+  					if(verbose) {
+  						print("New improvement found, resetting step counter")
+  					}
+  				} else {
+  					if(verbose) {
+  						print("New improvement found, but slight; taking the best value, but not resetting the step counter")
+  					}
+  				}
+  				best.run <- new.run
+  			}
+  			if(verbose) {
+  				step.count <- step.count+1
+  				results.vector<-c(step.count, times.without.improvement, best.run$value, best.run$par)
+  				names(results.vector) <- c("step", "steps.without.improvement","negloglik", names(free.parameters[which(free.parameters)]))
+  				print(results.vector)
+  			}
+  		}
+  		results[[model.index]] <- best.run
+  		#try(hessians[[model.index]] <- hessian(func=CalculateLikelihood, x=new.run$par, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
+  		results.vector.full <- c(NA, NA, 1, 0, 0)
+  		names(results.vector.full) <- names(free.parameters)
+  		names(best.run$par) <- names(free.parameters[which(free.parameters)])
+  		for (i in sequence(length(best.run$par))) {
+  			results.vector.full[which(names(results.vector.full)==names(best.run$par)[i])] <- best.run$par[i]
+  		}
+  		#print(hessians[[model.index]])
+  		#try(print(solve(hessians[[model.index]])))
+  		ci.vector<-rep(NA,10)
+  		for(parameter in sequence(5)) {
+  			names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
+  			names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
+  		}
+      weird.result <- FALSE
+      if(best.run$value>1e100) {
+        weird.result = TRUE
+        warning(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
+        print(paste("It seems your likelihood for this run", best.run$value, "is invalid. This probably reflects a problem with numerical optimization for your tree. Your parameter estimates and AIC weights are likely meaningless. We will not calculate confidence: the confidence intervals for all parameters should be taken as c(-Inf, Inf) [unless the parameter is bounded by zero, in which case it is c(0, Inf)]. You could try a transformation of your branch lengths (and make sure to change the time of the flow matrix, too) -- note that parameter values (rate of evolution) will be based on this new timescale. Alternatively, you might allow SE for tip values to be estimated by setting measurement.error=NULL."))
+      }
+  		if(get.se & !weird.result) {
+  			if(verbose) {
+  				print("Now doing simulation to estimate parameter uncertainty")
+  			}
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive)
+  			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
+  			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
+        if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
+          print("The sampling to find confidence in parameters actually found a better part of the likelihood surface. Restarting the run for this model at that point")
+          best.point <- interval.results[which.min(interval.results[,1]),]
+          names(best.point) <- c("neglnL", names(free.parameters)[which(free.parameters)])
+          preset.starting.parameters <- best.point[-1]
+          do.run = TRUE
+          break()
+        }
+  			if(plot.se) {
+  				pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
+  				par(mfcol=c(1, sum(free.parameters)))
+  				for(parameter in sequence(sum(free.parameters))) {
+  					plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
+  					points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
+  					points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
+  					points(x= best.run$par[parameter], y= best.run$value, pch=1, col="red", cex=1.5)
+  				}
+  				dev.off()
+  				if(verbose) {
+  					print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
+  				}
+  			}
+  			if(store.sims) {
+  				colnames(interval.results) <- c("neglnL", names(free.parameters)[which(free.parameters)])
+  				all.sims[[model.index]]<-interval.results
+  			}
+  			free.index=0
+  			for(parameter in sequence(5)) {
+
+  				if(free.parameters[parameter]) { #is estimated
+  					free.index <- free.index + 1
+  					ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
+  					ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
+  				} else {
+  					ci.vector[1+2*(parameter-1)] <- results.vector.full[parameter]
+  					ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]
+  				}
+  			}
+  		}
+  		local.df <- data.frame(matrix(c(model.index, results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+  		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
+  		print(local.df)
+  		results.summary <- rbind(results.summary, local.df)
+    }
 	}
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
