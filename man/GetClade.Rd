@@ -18,11 +18,11 @@
 	}
 
 \details{
-	This function uses the 'phylo' class where the edges(ancestor-decedant relationship) of the tree are used to identify the interior node with desired number of descedent (clade.size) on the tips. It applies the function \code{findMRCA} in \emph{phytools} to search the ancestor.   
-	} 
+	This function uses the 'phylo' class where the edges(ancestor-decedant relationship) of the tree are used to identify the interior node with desired number of descedent (clade.size) on the tips. It applies the function \code{findMRCA} in \emph{phytools} to search the ancestor.
+	}
 
 \value{
-	the interior node that has descedants of size clade.size on the tip.   
+	the interior node that has descedants of size clade.size on the tip.
  	}
 
 \author{
@@ -30,16 +30,16 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2014. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2014. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 	}
 
 \examples{
 	library(ape)
 	library(phytools)
-	#simulate a tree 
+	#simulate a tree
  	phy<-rtree(3)
  	#plot the tree
- 	plot(phy) 
+ 	plot(phy)
  	#set up the clade size
  	clade.size<-2
  	#search the nodes that has desired clade size

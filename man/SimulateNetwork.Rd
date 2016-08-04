@@ -5,12 +5,12 @@
 	}
 
 \description{
-	Simulate network with desired number of taxa and number of hybrid.
+	Simulate network with desired number of taxa and number of hybrids.
 	}
 
 \usage{
-	SimulateNetwork(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, 
-	origin.type=c("clade", "individual"), birth = 1, death = 0.5, sample.f = 0.5, 
+	SimulateNetwork(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5,
+	origin.type=c("clade", "individual"), birth = 1, death = 0.5, sample.f = 0.5,
 	tree.height = 1, allow.ghost=FALSE)
 	}
 
@@ -18,44 +18,44 @@
   \item{ntax.nonhybrid}{
 	number of non hybrid taxa.
 	}
-	
+
   \item{ntax.hybrid}{
 	number of hybrid taxa.
 	}
-	
+
   \item{flow.proportion}{
   	the gene flow proportion from the parent.
   	}
-  
+
   \item{origin.type}{
-  	the type where the hybrids were formed. clade: hybrid formed and then speciate; individial: hybrid species formed and evolved 		without speciation.
+  	the type where the hybrids were formed. clade: hybrid formed and then speciate; individual: hybrid species formed and evolved without further speciation.
   	}
-  
+
   \item{birth}{
   	birth rate for the tree speciation.
   	}
-  
+
   \item{death}{
-  	death rate (extinction) of the tree. 
+  	death rate (extinction) of the tree.
   	}
-  	
+
   \item{sample.f}{
   	sampling frequency.
   	}
-  
+
   \item{tree.height}{
   	the height of the tree.
   	}
-  	
+
   \item{allow.ghost}{
-  	allows ghost lineage persists hybridization for a while and then goes extinct. Otherwise, hybridization event 	
-  	will be between coeval with extant descedants.
+  	allows ghost lineage that persists for a while, donates genes to a hybrid, and eventually goes extinct (or at least unsampled). Otherwise, hybridization event
+  	will be between coeval species with extant descedants.
   	}
 	}
 
-\details{	
-	This function generates tree with relevant hybridization information (the structure of gene flow information). The gene flow must happen on its stem edge, which starts at shortest from root and goes up to longest from root. 	Gene flow cannot go back in time. In general, gene flow can go forward in time via ghost lineages. If no ghost lineages, then there must be temporal overlap between the donor and recipient lineages. So the tipward end of the donor edge must be later than the rootward end of the recipient edge. When the non of hybris is 1 and clade sampling, this will do individual sampling instead. 
-	} 
+\details{
+	This function generates a tree with relevant hybridization information (the structure of gene flow information).	Gene flow cannot go back in time. In general, gene flow can go forward in time via ghost lineages. If no ghost lineages are allowed, then there must be temporal overlap between the donor and recipient lineages.
+	}
 
 
 \value{
@@ -69,9 +69,9 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
 	}
-	
+
 \examples{
 	library(TreeSim)
 	#set up the number for non hybrid species
@@ -83,8 +83,8 @@
 	#set pu the hybridization type to original
 	origins<- "individual"
 	#start to simulate the network
-	network<-SimulateNetwork(ntax.nonhybrid=non.hybrid, ntax.hybrid=hybrid, 
-	flow.proportion=flow, origin.type="individual", birth = 1, death = 0.5, 
+	network<-SimulateNetwork(ntax.nonhybrid=non.hybrid, ntax.hybrid=hybrid,
+	flow.proportion=flow, origin.type="individual", birth = 1, death = 0.5,
 	sample.f = 0.5, tree.height = 1, allow.ghost=FALSE)
 	#print out the result
 	(network)

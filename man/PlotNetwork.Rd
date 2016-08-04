@@ -3,19 +3,19 @@
 \title{
 	Phylogenetic Network Plot
 	}
-	
+
 \description{
-	This function plots the phylogenetic network with required number of taxa . The hybrids with gene flow direction.
+	Plots the phylogenetic network: main tree and arrows indicating gene flow.
 	}
 
 \usage{
-	PlotNetwork(phy, flow, col.non="black", col.hybrid="red", col.donor="blue", 
-	name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2, 
+	PlotNetwork(phy, flow, col.non="black", col.hybrid="red", col.donor="blue",
+	name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2,
 	col.tree="darkgray", col.arrow="red", arrow.width=1, ...)
  }
- 
+
 \arguments{
-  \item{phy}{a class of phylo tree}
+  \item{phy}{a class phylo tree object}
   \item{flow}{a flow structure of gene flow}
   \item{col.non}{color of non hybrid taxa}
   \item{col.hybrid}{color of hybrid taxa}
@@ -29,12 +29,12 @@
   \item{col.tree}{color of the tree.}
   \item{col.arrow}{color of gene flow arrow.}
   \item{arrow.width}{width of the arrow.}
-  \item{...}{other arugments}
+  \item{...}{other arguments}
   }
-  
+
 \details{
-	This function generates plots for network models. It first draws the phylogetic tree for the given species. Then uses the gene flow data to draw the arrow from the donor species to recipient species. The hybrid taxa are shown in read with the gene flow direction from the donor species (colored in blue). 
-} 
+	This function generates plots for network models. It first draws the phylogetic tree for the given species. Then uses the gene flow data to draw the arrow from the donor species to recipient species. The hybrid taxa are shown in \eqn{col.hybrid} with the gene flow direction from the donor species (colored in \eqn{col.donor}).
+}
 
 \value{
 	plot of the network that involves the phylogeny and the gene flow direction.
@@ -44,7 +44,7 @@
 	Brian O'Meara, Dwueng-Chwuan Jhwueng.	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
 	}
 
 \examples{
@@ -54,7 +54,7 @@
 	ntax.hybrid<-3
 	#simulate the network with desired species
 	network<-SimulateNetwork(ntax.nonhybrid=ntax.nonhybrid, ntax.hybrid=ntax.hybrid,
-	flow.proportion=0.5, origin.type='clade', birth = 1, death = 0.5, sample.f = 0.5, 
+	flow.proportion=0.5, origin.type='clade', birth = 1, death = 0.5, sample.f = 0.5,
 	tree.height = 1, allow.ghost=FALSE)
 	#plot the network
 	PlotNetwork(network$phy,network$flow)

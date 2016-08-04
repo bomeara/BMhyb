@@ -1,5 +1,5 @@
-\name{Plot_ConvexHull}
-\alias{Plot_ConvexHull}
+\name{PlotConvexHull}
+\alias{PlotConvexHull}
 \title{
 	Convex hull
 	}

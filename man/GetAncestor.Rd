@@ -1,11 +1,11 @@
 \name{GetAncestor}
 \alias{GetAncestor}
 \title{
-	Identify the ancestor 
+	Identify the ancestor
 	}
 
 \description{
-	Given the descedent node for the tree, the function will return its ancestor node. 
+	Given the descendant node for the tree, the function will return its ancestor node. 
 	}
 
 \usage{
@@ -18,7 +18,7 @@
 	}
 
 \value{
-	the ancestor node 
+	the ancestor node
  	}
 
 \author{
@@ -26,7 +26,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted. 
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 	}
 
 \examples{
@@ -34,9 +34,9 @@
 	#simulate a tree of 3 taxa
  	phy<-rtree(3)
  	#plot the tree
- 	plot(phy) 
+ 	plot(phy)
  	#descedant node
  	node<-1
  	#get the ancestor node, it will return 5.
- 	GetAncestor(phy,node) 
+ 	GetAncestor(phy,node)
  	}
