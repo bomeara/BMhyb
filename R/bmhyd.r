@@ -409,6 +409,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
     	return(badval)
 	}
+  if(min(eigen(V.modified)$values) < 0.00000001) {
+    return(0.5*badval) #b/c it might not be very bad, just hard to calculate
+  }
 	data <- data[match(names(means.modified), names(data))]
 	if(length(data)!=length(means.modified)) {
 		stop("Mismatch between names of taxa in data vector and on phy")
@@ -796,7 +799,7 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 		focal.tips <- tips[c(hybrid.name.root[i], paste(hybrid.name.root[i], suffix, sep=""))]
 		focal.m <- flow$m[which(flow$recipient==hybrid.name.root[i])]
 		focal.tips.bt <- focal.tips + log(params['bt'])
-		tip.mean <- focal.m*focal.tips.bt[1] + (1-focal.m) * focal.tips.bt[2]
+		tip.mean <- focal.m*focal.tips.bt[2] + (1-focal.m) * focal.tips.bt[1]
 		tip.final <- rnorm(1, mean=tip.mean, sd=sqrt(params['vh']))
 		tips[hybrid.name.root]<-tip.final
 	}
