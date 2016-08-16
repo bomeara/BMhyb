@@ -5,7 +5,7 @@
 	}
 
 \description{
-	Simulate data on a network given its flow parameters
+	Simulate comparative data under the given a network and relevant parameters.
 	}
 
 \usage{
@@ -14,28 +14,27 @@
 
 \arguments{
   \item{phy}{
-	phylo object
+ a	phylo object.
 	}
 
   \item{flow}{
-	data.frame of the flow parameters
+	data.frame of the flow parameters.
 	}
 
   \item{params}{
-  	named vector of BMhyb parameter values
+  	named vector of BMhyb parameter values.
   	}
 
   \item{suffix}{
-	taxa are duplicated on the network; this suffix distinguishes them
+	taxa are duplicated on the network; this suffix distinguishes them.
 	 }
 }
  \details{
 	This function simulates tip data on a network, under a BMhyb model.
 	}
 
-
 \value{
-	a named vector of tip values
+	a named vector of tip values.
  	}
 
 \author{
@@ -52,9 +51,9 @@
 	non.hybrid <- 3
 	#set up the number for hybrid species
 	hybrid <- 1
-	#set up the gene flow porportion
+	#set up the gene flow proportion
 	flow<- 0.5
-	#set pu the hybridization type to original
+	#set up the hybridization type to original
 	origins<- "individual"
 	#start to simulate the network
 	network<-SimulateNetwork(ntax.nonhybrid=non.hybrid, ntax.hybrid=hybrid,

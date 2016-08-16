@@ -1,7 +1,7 @@
 \name{AdaptiveConfidenceIntervalSampling}
 \alias{AdaptiveConfidenceIntervalSampling}
 \title{
-Confidence interval under adaptive cluster sampling technique
+Confidence interval under adaptive cluster sampling technique.
 }
 \description{
 This function uses an adaptive cluster sampling technique to generate confidence interval for parameters of interest.
@@ -18,14 +18,13 @@ allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
   \item{lower}{the lower bound for the values allowed for sampling.}
   \item{upper}{the upper bound for the values allowed for sampling.}
   \item{desired.delta}{a numeric value with a default value of 2 for the criteria that the desired log-likelihood shall no more than 2 unit away from the maximum.}
-  \item{n.points}{number of required points for calculating likeilihood value.}
+  \item{n.points}{number of required points for calculating likelihood value.}
   \item{verbose}{whether to print detailed information during the run.}
   \item{measurement.error}{single value or vector of fixed measurement errors.}
   \item{do.kappa.check}{if TRUE, check for matrix condition when calculating likelihood.}
   \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value}
-  \item{best.lnl}{the value of the best likelihood from the original run. Only relevant if allow.restart=TRUE}
+  \item{best.lnl}{the value of the best likelihood from the original run. Only relevant if allow.restart=TRUE.}
   \item{likelihood.precision}{a numerical value used for verifying the convergence of the estimation.}
-
   \item{...}{further arguments passed(see details).}
 }
 \details{
@@ -43,11 +42,10 @@ This function starts with a set of parameter values, generates new points using 
 \references{
   Edwards, A.W.F. 1993. Likelihood. Johns Hopkins University Press, Baltimore
 
-  Jhwueng D.C. and O'Meara B.C. 2014. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
+  Jhwueng D.C. and O'Meara B.C. 2016. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 
 	Seber G.A.F., Salehi M.M.  2013. Adaptive sampling designs: Inference for spatial and clustered population.  Springer.
-
-	}
+  }
 
 \examples{
 	library(corpcor)
@@ -76,7 +74,7 @@ This function starts with a set of parameter values, generates new points using 
 	phy=network$phy, flow=network$flow, actual.params =
 	free.parameters[which(free.parameters)], allow.extrapolation=TRUE)
 
-    #show the results
+  #show the results
 	interval.results.in <- interval.results[which(interval.results[,1] -
 	min(interval.results[,1])<=2),]
 	interval.results.out <- interval.results[which(interval.results[,1] -

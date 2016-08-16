@@ -49,14 +49,13 @@
 
   \item{allow.ghost}{
   	allows ghost lineage that persists for a while, donates genes to a hybrid, and eventually goes extinct (or at least unsampled). Otherwise, hybridization event
-  	will be between coeval species with extant descedants.
+  	will be between coeval species with extant descendants.
   	}
 	}
 
 \details{
 	This function generates a tree with relevant hybridization information (the structure of gene flow information).	Gene flow cannot go back in time. In general, gene flow can go forward in time via ghost lineages. If no ghost lineages are allowed, then there must be temporal overlap between the donor and recipient lineages.
 	}
-
 
 \value{
 	a list that contains
@@ -69,7 +68,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Trait evolution on phylogenetic networks}. Submitted.
 	}
 
 \examples{
@@ -78,9 +77,9 @@
 	non.hybrid <- 3
 	#set up the number for hybrid species
 	hybrid <- 1
-	#set up the gene flow porportion
+	#set up the gene flow proportion
 	flow<- 0.5
-	#set pu the hybridization type to original
+	#set up the hybridization type to original
 	origins<- "individual"
 	#start to simulate the network
 	network<-SimulateNetwork(ntax.nonhybrid=non.hybrid, ntax.hybrid=hybrid,

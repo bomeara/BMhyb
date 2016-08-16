@@ -4,19 +4,19 @@
 Lump into clades
 }
 \description{
-This function Lump the hybrid species into a clades
+This function Lump the hybrid species into a clades.
 }
 
 \usage{
 LumpIntoClades(phy,flow)
 }
 \arguments{
-  \item{phy}{a phylogeny of phylo class}
-  \item{flow}{structure of gene flow}
+  \item{phy}{a phylogeny of phylo class.}
+  \item{flow}{structure of gene flow.}
    }
 
 \details{
- The function summarizes the flow structure into the clade where the donor clades contribute more than one recipient clades. 
+ The function summarizes the flow structure into the clade where the donor clades contribute more than one recipient clades.
     }
 
 \value{

@@ -1,11 +1,11 @@
 \name{AkaikeWeight}
 \alias{AkaikeWeight}
 \title{
-	Akaike weight 
+	Akaike weight
 	}
 
 \description{
-	Calculate Akaike weight for the models 
+	Calculate Akaike weight for the models.
 	}
 
 \usage{
@@ -14,13 +14,13 @@
 
 \arguments{
   \item{Delta.AICc.Array}{
-	Delta.AICc.Array is defined as the difference between the AICc value and the minimum AICc value among candidate models. 
+	Delta.AICc.Array is defined as the difference between the AICc value and the minimum AICc value among candidate models.
  	}
 	}
 
-\details{	
-	For \eqn{n} models of interest, the Akaikei weight for the \eqn{i} th model is defined as \eqn{w = exp(-0.5* \Delta AICc_i)/ sum_i dAICc_i} where \eqn{\Delta AICc_i} is the difference of the AICc value between the the \eqn{i} th model and the best model. The weights can be used in model averaging in advanced.
-	} 
+\details{
+	For \eqn{n} models of interest, the Akaikei weight for the \eqn{i} th model is defined as \eqn{w = exp(-0.5* \Delta AICc_i)/ sum_i dAICc_i} where \eqn{\Delta AICc_i} is the difference of the AICc value between the the \eqn{i}th model and the best model. The weights can be used in model averaging in advanced.
+	}
 
 \value{
  	Akaike weights.
@@ -30,7 +30,7 @@
 	Dwueng-Chwuan Jhwueng
 	}
 
-\references{ 
+\references{
 	Burham, K.P., Anderson, D.R. (2002) Model selection and multimodel inference: a practical information-theoretic approach. Second edition. Springer. New York.
 	}
 \examples{

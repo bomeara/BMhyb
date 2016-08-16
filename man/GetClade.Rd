@@ -18,11 +18,11 @@
 	}
 
 \details{
-	This function uses the 'phylo' class where the edges(ancestor-decedant relationship) of the tree are used to identify the interior node with desired number of descedent (clade.size) on the tips. It applies the function \code{findMRCA} in \emph{phytools} to search the ancestor.
+	This function uses the 'phylo' class where the edges(ancestor-descendant relationship) of the tree are used to identify the interior node with desired number of descendent (clade.size) on the tips. It applies the function \code{findMRCA} in \emph{phytools} to search the ancestor.
 	}
 
 \value{
-	the interior node that has descedants of size clade.size on the tip.
+	the interior node that has descendants of size clade.size on the tip.
  	}
 
 \author{

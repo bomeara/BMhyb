@@ -6,7 +6,7 @@
 
 \description{
 	This function returns the species mean for the network model. For the non hybrid species, it returns as a parameter \eqn{\mu} and for hybrid species it returns
-  \eqn{\mu+ \log \beta}.
+  \eqn{\mu + \log \beta}.
 	}
 
 \usage{
@@ -24,12 +24,12 @@
  	a flow struture of gene flow.
  	}
  \item{actual.params}{
- 	The parameters that are related to the hybridzation including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}.
+ 	The parameters that are related to the hybridization including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}.
  	}
 	}
 
 \value{
-	the species mean
+	the species mean.
  	}
 
 \author{
@@ -37,13 +37,13 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Study trait evolution on phylogenetic networks}. Submitted.
 	}
 
 \examples{
-	#number of nonhybrd species
+	#number of nonhybrid species
 	ntax.nonhybrid<-5
-	#number of hybridspecies
+	#number of hybrid species
 	ntax.hybrid<-2
 	#simulate network
 	network<-SimulateNetwork(ntax.nonhybrid=ntax.nonhybrid, ntax.hybrid=ntax.hybrid,

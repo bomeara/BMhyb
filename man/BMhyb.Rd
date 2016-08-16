@@ -1,7 +1,7 @@
 \name{BMhyb}
 \alias{BMhyb}
 \title{
- 	Comparative method for studying hyridization using Brownian motion for trait evolution
+ 	Comparative method for studying hybridization using Brownian motion for trait evolution
 	}
 
 \description{
@@ -17,35 +17,39 @@
 	}
 
 \arguments{
-  \item{data}{continuous trait data containing species information in vector format}
-  \item{phy}{a tree in phylo class}
-  \item{flow}{a struture of gene flow}
-  \item{opt.method}{the method for used for optimization. The default is Nelder-Mead}
-  \item{models}{the model used for analysis (see details)}
-  \item{verbose}{a TRUE/FALSE argument to start optimization}
-  \item{get.se}{a TRUE/FALSE argument estimation for doing simulation to estimate parameter uncertainty (see details)}
-  \item{plot.se}{a TRUE/FALSE argument for output the uncertainty plot for the model (see details)}
+  \item{data}{continuous trait data containing species information in vector format.}
+  \item{phy}{a tree in phylo class.}
+  \item{flow}{a structure of gene flow.}
+  \item{opt.method}{the method for used for optimization. The default is Nelder-Mead.}
+  \item{models}{the model used for analysis (see details).}
+  \item{verbose}{a TRUE/FALSE argument to start optimization.}
+  \item{get.se}{a TRUE/FALSE argument estimation for doing simulation to estimate parameter uncertainty (see details).}
+  \item{plot.se}{a TRUE/FALSE argument for output the uncertainty plot for the model (see details).}
   \item{store.sims}{a TRUE/FALSE argument to record the the parameter estimates and relevant values.}
   \item{precision}{a numeric value to present the cutoff at which the user thinks the estimates become unreliable due to ill conditioned matrix.}
-  \item{auto.adjust}{a TRUE/FALSE argument to adjust the the phylogeny }
+  \item{auto.adjust}{a TRUE/FALSE argument to adjust the the phylogeny.}
   \item{likelihood.precision}{a numerical value used for verifying the convergence of the estimation.}
   \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, the VCV matrix was ill-conditioned, so used splines to estimate its likelihood.}
-  \item{n.points}{How many simulations to do to estimate confidence interval}
-  \item{measurement.error}{Estimate or fixed (see details)}
+  \item{n.points}{How many simulations to do to estimate confidence interval.}
+  \item{measurement.error}{Estimate or fixed (see details).}
   \item{do.kappa.check}{Check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
-  \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices}
+  \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices.}
   \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
-  \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value}
-}
+  \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value.}
+  }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
 flow and a comparative data. Currently the 	method is developed for univariate analysis where the comparative data includes a single
-trait for analyses. The full likelihood model includes several parameters: the ancestral state \eqn{\mu}, the overall rate of evolution \eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE. The 	struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. 	The third column is the information about the heritibaility factor \eqn{m} which is a fraction of the recipient trait that comes from the source. For example, if one thought that 10% of a species' genome came from introgression from a particular species, \eqn{m} would be 0.1. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor. The fifth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor. For more details, please see our paper. Note that gene flow out of and into a species occurs at a single time in this model, but it doesn't have to be at the same time for donor and recipient: for example, the genes could flow into an unsampled species, then later get passed to a recipient.
+trait for analyses. The full likelihood model includes several parameters: the ancestral state \eqn{\mu}, the overall rate of evolution \eqn{\sigma^2}, the hybrid vigor \eqn{\beta}, the hybrid burst variation at formation \eqn{v_H} and the measurement error SE.
+The struture of gene flow is a five column table where the first and the second column contain the donor and recipient information. The third column is the information about the heritability factor \eqn{m} which is a fraction of the recipient trait that comes from the source.
+For example, if one thought that 10% of a species' genome came from introgression from a particular species, \eqn{m} would be 0.1. The fourth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor.
+The fifth column, recipient time, records time from the root of the recipient that counting forward from the root when the gene flow happened from the donor. For more details, please see our paper. Note that gene flow out of and into a species occurs at a single time in this model, but it doesn't have to be at the same time for donor and recipient: for example, the genes could flow into an unsampled species, then later get passed to a recipient.
 
  The function allows some fixed values of parameters and treats others as free parameters: model 1 fixes \eqn{\beta}
 	at 1 but 	allows \eqn{v_H} to vary; model 2 allows \eqn{\beta} to vary but fixes \eqn{v_H} at 0; model 3 fixes \eqn{\beta} at 1
-	and \eqn{v_H} at 0; and model 4 allows both to vary.  BMhyb fits the model through maximum likelihood. When setting \eqn{get.se} to TRUE, the BMhyb will estimate parameter uncertainty through a sampling procedure (see help for \eqn{AdaptiveConfidenceIntervalSampling}. If \eqn{plot.se} is TRUE, a PDF will be generated showing these regions. Model averaged parameter estimates are
-	calculated by the Akaike weight.
+	and \eqn{v_H} at 0; and model 4 allows both to vary.  BMhyb fits the model through maximum likelihood. When setting \eqn{get.se} to TRUE, the BMhyb will estimate
+  parameter uncertainty through a sampling procedure (see help for \eqn{AdaptiveConfidenceIntervalSampling}. If \eqn{plot.se} is TRUE, a PDF will be generated
+  showing these regions. Model averaged parameter estimates are calculated by the Akaike weight.
 
   \eqn{\measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
   If you enter a single value (which could be zero if you measure your species really, really well), it uses this as fixed measurement error
@@ -55,8 +59,7 @@ trait for analyses. The full likelihood model includes several parameters: the a
   Parameter units matter; by convention, they are not reported in comparative methods, but that's unfortunate. If your analysis is of species
   body length, let's say you measure it in meters. You should probably log transform the measurements to fit the assumptions of Brownian
   motion (equal chance of a change by 1% per MY, regardless of scale, rather than equal chance of gaining a meter in length, regardless of
-  whether the initial size is 10 m or 0.001 m; values can go arbitrarily bigger or smaller, rather than being bounded by zero). If this is
-  the case:
+  whether the initial size is 10 m or 0.001 m; values can go arbitrarily bigger or smaller, rather than being bounded by zero).
 
   \eqn{data}: you should give this to the function in log(meters). I.e., if you measure sharks of length 1 m, 1.2 m, and 3 m, you
   should pass in 0.00, 0.18, and 1.10 as the traits.
@@ -78,12 +81,14 @@ trait for analyses. The full likelihood model includes several parameters: the a
   \eqn{v_H} = variance coming from the hybridization event
   \eqn{SE^2} = variance coming from measurement error.
 
-  Though the model seems straightforward (Brownian motion on a basic network) there are numerical issues that can lead to difficulty calculating the likelihood (look up ill-condtioned matrices if you're curious). We have spent a lot of development time trying to address this issue and have various approximations in place to deal with this, including scaling the tree and trying transformations of the tree and then interpolation to get an estimate of the likelihood. There is a tradeoff. A cleaner approach would be to just return NA if the likelihood could not be calculated with high precision, and you can set the program to do this with some of the settings here (\eqn{allow.extrapolation}=FALSE, \eqn{auto.adjust}=FALSE, decreasing \eqn{precision} (a threshold for the condition number (kappa) of the matrix)). However, the real risk is that your hard-won dataset just generates an NA (or the equivalent, a very bad fixed negative log likelihood value, set to be something like 1e307 on many computers). Our defaults let you get an approximate answer; pay heed to the confidence intervals, as well. However, we recommend a "sniff test" for your results: the negative log likelihood values for your various models will vary, but should be something like 68.2 for one model, 74.3 for another, etc. If you get one model that is orders of magnitude different in log likelihood, something is likely deeply wrong.
-
+  Though the model seems straightforward (Brownian motion on a basic network) there are numerical issues that can lead to difficulty calculating the likelihood (look up ill-conditioned matrices if you're curious).
+  We have spent a lot of development time trying to address this issue and have various approximations in place to deal with this, including scaling the tree and trying transformations of the tree and then interpolation to get an estimate of the likelihood.
+  There is a tradeoff. A cleaner approach would be to just return NA if the likelihood could not be calculated with high precision, and you can set the program to do this with some of the settings here (\eqn{allow.extrapolation}=FALSE, \eqn{auto.adjust}=FALSE, decreasing \eqn{precision} (a threshold for the condition number (kappa) of the matrix)).
+  However, the real risk is that your hard-won dataset just generates an NA (or the equivalent, a very bad fixed negative log likelihood value, set to be something like 1e307 on many computers). Our defaults let you get an approximate answer; pay heed to the confidence intervals, as well. However, we recommend a "sniff test" for your results: the negative log likelihood values for your various models will vary, but should be something like 68.2 for one model, 74.3 for another, etc. If you get one model that is orders of magnitude different in log likelihood, something is likely deeply wrong.
  	}
 
 \value{
-	A summaried table including the type of model, the corresponding number of parameter, the parameter estimates, the likelihood values, the upper bound and lower bound of 	the parameters, and the Akaike weights for model averaging.
+	A summarized table including the type of model, the corresponding number of parameter, the parameter estimates, the likelihood values, the upper bound and lower bound of 	the parameters, and the Akaike weights for model averaging.
  	}
 
 \author{
@@ -91,7 +96,7 @@ trait for analyses. The full likelihood model includes several parameters: the a
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 
 	Burnham, K.P., and D.R. Anderson. 2004. \emph{Model selection and inference: a practical information-theoretic approach}. Sec. Ed. 	Springer, New York.
 	}

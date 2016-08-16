@@ -5,7 +5,7 @@
 	}
 
 \description{
-	This function generates the countour maps for a pair of parameters of interest.
+	This function generates the contour maps for a pair of parameters of interest.
 	}
 
 \usage{
@@ -13,12 +13,12 @@
     }
 
 \arguments{
-  \item{sims}{a data frame with the simulation results}
-  \item{params.of.interest}{name of parameter that is of interest to be plotted}
+  \item{sims}{a data frame with the simulation results.}
+  \item{params.of.interest}{name of parameter that is of interest to be plotted.}
    }
 
 \details{
-	This function generates the countour plots for the parameter of interest. It uses the simulated data from generating the confidence interval under adapative sampling technique where the likelihood value and parameters values are stored. Then it uses the function \code{PlotConvexHull} to generate the contour maps.
+	This function generates the contour plots for the parameter of interest. It uses the simulated data from generating the confidence interval under adaptive sampling method where the likelihood value and parameters values are stored. Then it uses the function \code{PlotConvexHull} to generate the contour maps.
 	}
 
 \value{
@@ -30,7 +30,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Studying trait evolution on phylogenetic networks}. Submitted.
 	}
 
 \examples{

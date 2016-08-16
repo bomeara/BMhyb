@@ -14,18 +14,17 @@
 	}
 
 \arguments{
-  \item{par}{parameters of interest}
-  \item{lower}{the actual lower bound for the parameters}
-  \item{upper}{the actual upper bound for the parameters}
-  \item{max.tries}{maximum number of attempts tp generate the parameter value. The default is set to 100.}
+  \item{par}{parameters of interest.}
+  \item{lower}{the actual lower bound for the parameters.}
+  \item{upper}{the actual upper bound for the parameters.}
+  \item{max.tries}{maximum number of attempts to generate the parameter value. The default is set to 100.}
   \item{expand.prob}{a probability value to expand.}
   \item{examined.max}{the allowed maximum for the parameters values.}
   \item{examined.min}{the allowed minimum for the parameters values}
   }
 
 \details{
-	This function generates new parameter values using the uniform distribution with the interval
-	\eqn{ (L, U )}  where for each of the parameter of interest, the lower bound of the interval is set to  \eqn{ L=\max (lower, 0.9*examined.min )} and the upper bound of the interval is set to \eqn{ U =\min (upper, 1.1*examined.max )}.
+	This function generates new parameter values using the uniform distribution with the interval\eqn{ (L, U)}  where for each parameter of interest, the lower bound of the interval is set to  \eqn{ L=\max (lower, 0.9*examined.min )} and the upper bound of the interval is set to \eqn{ U =\min (upper, 1.1*examined.max )}.
 	}
 
 \value{
@@ -37,7 +36,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2014. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 
 	Seber G.A.F., Salehi M.M.  2013. Adaptive sampling designs: Inference for spatial and clustered population.  Springer.
 	}
@@ -51,7 +50,7 @@
 	lower=c(-2,0,-10,0,0)
 	#the upper bound
 	upper<-c(2,1,10,100,100)
-	#the exmined minimum value
+	#the examined minimum value
 	examined.min<-c(-1.8,0.001,-9.8,0,0)
 	#the examined maximum value
 	examined.max<-c(1.90,1.1,10.2,100,100)

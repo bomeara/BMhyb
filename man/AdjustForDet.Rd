@@ -1,7 +1,7 @@
 \name{AdjustForDet}
 \alias{AdjustForDet}
 \title{
- Adjust the phylogeny
+ Adjust the phylogeny.
  }
 \description{
 	Utility function to adjust the phylogeny to deal with numerical issues.
@@ -13,7 +13,7 @@
 
 \arguments{
   \item{phy}{
-	 	an object of class 'phylo'
+	 	an object of class 'phylo'.
  		}
 
  	\item{max.attempts}{
@@ -22,10 +22,10 @@
 	}
 
 \details{
-	This functon first calculates the determiant of the phylogeny using the function \code{DetPass}. When the determinant of the variance covariance matrix for the phylogeny is negative, this function will adjust the phylogeny by slightly lengthening the edge lengths of the tree. This procedure repeats until a well adjusted phylogeny is returned.}
+	This function first calculates the determinant of the phylogeny using the function \code{DetPass}. When the determinant of the variance covariance matrix for the phylogeny is negative, this function will adjust the phylogeny by slightly lengthening the edge lengths of the tree. This procedure repeats until a well adjusted phylogeny is returned.}
 
 \value{
- an object of class 'phylo'
+ an object of class 'phylo'.
  }
 
 \author{
@@ -33,7 +33,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Studying trait evolution in hybrid species on phylogenetic networks}. Submitted.
 	}
 
 \examples{

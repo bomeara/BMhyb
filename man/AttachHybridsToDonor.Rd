@@ -5,7 +5,7 @@
 	}
 
 \description{
-	This function attachs the hybrid to the donor species.
+	This function attaches the hybrid to the donor species.
 	}
 
 \usage{
@@ -19,7 +19,7 @@
   }
 
 \details{
-	This function attachs hybrid to the donor and return the new phylogeny. It first identifies the flow clades using the function \code{LumpIntoClades}. Then for each clade containing the flow, it searches the donor taxa and then attaches the hybrid into the clade ancestor. For empirical analysis, users shall have the correct format for the flow strcutre to ensure the hybrid information. 
+	This function attaches hybrid to the donor and return the new phylogeny. It first identifies the flow clades using the function \code{LumpIntoClades}. Then for each clade containing the flow, it searches the donor taxa and then attaches the hybrid into the clade ancestor. For empirical analysis, users shall have the correct format for the flow structure to ensure the hybrid information.
 	}
 
 \value{
@@ -31,7 +31,7 @@
 	}
 
 \references{
-	Jhwueng D.C. and O'Meara B.C. 2015. \emph{Trait evolution on phylogenetic networks}. Submitted.
+	Jhwueng D.C. and O'Meara B.C. 2016. \emph{Study trait evolution on phylogenetic networks}. Submitted.
 	}
 
 \examples{
