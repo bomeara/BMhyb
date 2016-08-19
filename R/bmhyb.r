@@ -508,9 +508,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
   # } else {
   #   stop("good")
   # }
-	if(NegLogML< (0)) {
-		NegLogML <- badval #since something seems off.
-	}
+	#if(NegLogML< (0)) {
+	#	NegLogML <- badval #since something seems off.
+	#}
 	return(NegLogML[1])
 }
 
