@@ -11,8 +11,8 @@
 \usage{
 	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	likelihood.precision=0.001, allow.extrapolation=TRUE, n.points=5000,
-  measurement.error = NULL, do.kappa.check=TRUE, number.of.proportions = 101,
+	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
+  measurement.error = NULL, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE)
 	}
 
@@ -29,10 +29,10 @@
   \item{precision}{a numeric value to present the cutoff at which the user thinks the estimates become unreliable due to ill conditioned matrix.}
   \item{auto.adjust}{a TRUE/FALSE argument to adjust the the phylogeny.}
   \item{likelihood.precision}{a numerical value used for verifying the convergence of the estimation.}
-  \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, the VCV matrix was ill-conditioned, so used splines to estimate its likelihood.}
+  \item{allow.extrapolation}{a TRUE/FALSE argument. If TRUE, and the VCV matrix was ill-conditioned, would use splines to estimate its likelihood.}
   \item{n.points}{How many simulations to do to estimate confidence interval.}
   \item{measurement.error}{Estimate or fixed (see details).}
-  \item{do.kappa.check}{Check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
+  \item{do.kappa.check}{Check for VCV matrix condition, approximate if poor. Leave FALSE unless you're cleverer than us.}
   \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices.}
   \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
   \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value.}
