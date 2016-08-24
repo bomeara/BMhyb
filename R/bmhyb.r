@@ -145,8 +145,12 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(times.without.improvement%%4==0) {
   				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
   			} else {
-  				new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-  			}
+          new.run<-NULL
+          new.run$convergence <- 1
+          while(new.run$convergence!=0){#want to get a convergence code 0
+          new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+          }
+        }
   			#print("new.run best.run")
   			#print(c(new.run$value, best.run$value))
   			if(new.run$value<best.run$value) {
