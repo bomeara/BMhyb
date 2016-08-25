@@ -104,7 +104,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
       do.run = FALSE
   		step.count <- 0
   		if(verbose) {
-  			print(paste("Starting model", model.index, "of", length(models)))
+  			print(paste("Starting model", models[model.index], "of", length(models), "models"))
   		}
   		free.parameters<-rep(TRUE, 5)
   		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
@@ -143,22 +143,21 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			print(results.vector)
   		}
   		#this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
-  		times.without.improvement <- 0
+
+      times.without.improvement <- 0
   		while(times.without.improvement<10) {
   			times.without.improvement <- times.without.improvement+1
-  			new.run <- best.run
-  			if(times.without.improvement%%4==0) {
-  				new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-  			} else {
-          new.run<-NULL
-          new.run$convergence <- 1
-          while(new.run$convergence!=0){#want to get a convergence code 0
-          new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-          }
+        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+
+        while(new.run$convergence!=0){#want to get a convergence code 0
+        new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+        #print(c(new.run$convergence,new.run$value))
         }
+
   			#print("new.run best.run")
   			#print(c(new.run$value, best.run$value))
-  			if(new.run$value<best.run$value) {
+
+        if(new.run$value<best.run$value) {
   				if(best.run$value - new.run$value > likelihood.precision) {
   					times.without.improvement <- 0
   					if(verbose) {
@@ -177,7 +176,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   				names(results.vector) <- c("step", "steps.without.improvement","negloglik", names(free.parameters[which(free.parameters)]))
   				print(results.vector)
   			}
-  		}
+  		}#end of times.without.improvement<10
   		results[[model.index]] <- best.run
   		#try(hessians[[model.index]] <- hessian(func=CalculateLikelihood, x=new.run$par, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
   		results.vector.full <- c(NA, NA, 1, 0, 0)
