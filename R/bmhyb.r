@@ -730,7 +730,7 @@ PlotNetwork <- function(phy, flow, col.non="black", col.hybrid="red", col.donor=
 }
 
 LumpIntoClades <- function(phy, flow) {
-	flow.string <- paste(flow$time.from.root.donor, flow$time.from.root.recipient, flow$m)
+	flow.string <- paste(flow$time.from.root.donor, flow$time.from.root.recipient, flow$gamma)
 	flow.together <- cbind(flow.string=flow.string, flow)
 	unique.flow.strings <- unique(flow.string)
 	donor.clades <- c()
