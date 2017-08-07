@@ -735,19 +735,19 @@ LumpIntoClades <- function(phy, flow) {
 	unique.flow.strings <- unique(flow.string)
 	donor.clades <- c()
 	recipient.clades <- c()
-	m.clades <-c()
+	gamma.clades <-c()
 	time.from.root.donor.clades <- c()
 	time.from.root.recipient.clades <- c()
 	for (i in sequence(length(unique.flow.strings))) {
 		flow.local <- flow.together[which(flow.together$flow.string == unique.flow.strings[i]), ]
 		donor.clades <- append(donor.clades, paste(unique(flow.local$donor), collapse=","))
 		recipient.clades <- append(recipient.clades, paste(unique(flow.local$recipient), collapse=","))
-		m.clades <-append(m.clades, flow.local$m[1])
+		gamma.clades <-append(gamma.clades, flow.local$gamma[1])
 		time.from.root.donor.clades <- append(time.from.root.donor.clades, flow.local$time.from.root.donor[1])
 		time.from.root.recipient.clades <- append(time.from.root.recipient.clades, flow.local$time.from.root.recipient[1])
 
 	}
-	return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, m=m.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
+	return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
 }
 
 AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
