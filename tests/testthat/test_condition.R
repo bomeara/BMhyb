@@ -10,7 +10,7 @@ test_that("ConditionBadCichlid", {
 #  matrix.condition <- kappa(V.modified, exact=TRUE) high
 })
 
-test_that("ConditionBadCichlid", {
+test_that("ConditionBadNicotiana", {
   utils::data("nicotiana")
   free.parameters<-rep(TRUE, 5)
   names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
@@ -26,5 +26,7 @@ test_that("BasicRun",{
   utils::data("cichlid")
   result <- BMhyb(cichlid$data, cichlid$phy, cichlid$flow, n.points=100)
   expect_equal(class(result), "data.frame")
-  expect_equal(nrow(result), 21)
+  expect_equal(nrow(result), 4)
+  expect_equal(ncol(result), 21)
+
 })

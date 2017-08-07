@@ -807,7 +807,7 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 		focal.tips <- tips[c(hybrid.name.root[i], paste(hybrid.name.root[i], suffix, sep=""))]
 		focal.gamma <- flow$gamma[which(flow$recipient==hybrid.name.root[i])]
 		focal.tips.bt <- focal.tips + log(params['bt'])
-		tip.mean <- focal.m*focal.tips.bt[2] + (1-focal.gamma) * focal.tips.bt[1]
+		tip.mean <- focal.gamma*focal.tips.bt[2] + (1-focal.gamma) * focal.tips.bt[1]
 		tip.final <- rnorm(1, mean=tip.mean, sd=sqrt(params['vh']))
 		tips[hybrid.name.root]<-tip.final
 	}

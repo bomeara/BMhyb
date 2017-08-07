@@ -51,7 +51,7 @@ The fifth column, recipient time, records time from the root of the recipient th
   parameter uncertainty through a sampling procedure (see help for \eqn{AdaptiveConfidenceIntervalSampling}. If \eqn{plot.se} is TRUE, a PDF will be generated
   showing these regions. Model averaged parameter estimates are calculated by the Akaike weight.
 
-  \eqn{\measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
+  \eqn{measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
   If you enter a single value (which could be zero if you measure your species really, really well), it uses this as fixed measurement error
   for all species. You can also enter a vector of measurement errors to allow species to have different ones; order should match that of taxa
   in vcv.phylo(phy).
