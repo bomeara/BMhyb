@@ -37,14 +37,14 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #flow is a data.frame with four columns
 #donor = the taxon that is the gene flow source
 #recipient = the taxon that is the gene flow recipient
-#m = the fraction of the recipient trait that comes from the source. In the case of an equal hybridization between the recipient's sister on the tree and the donor, this is 0.5. In other cases where only, say, 10% of the recipient's quantitative trait
+#gamma = the fraction of the recipient trait that comes from the source. In the case of an equal hybridization between the recipient's sister on the tree and the donor, this is 0.5. In other cases where only, say, 10% of the recipient's quantitative trait
 #	loci come from the donor, it would be 0.1
 #time.from.root.donor = the time, counting forward FROM THE ROOT, when the gene flow happened from the donor. It may not be the same as time.from.root.recipient, as it may have spent time in a now extinct ghost lineage first (though time.from.root.donor <= time.from.root.recipient). It's treated as a one time event, which makes sense in the case of a single allopolyploid speciation event, probably less so in the case
 #	of ongoing gene flow. Too bad.
 #time.from.root.recipient = the time, counting forward FROM THE ROOT, when the gene flow happened from the donor
 #If the gene flow happened to or from a lineage with multiple descendant species, use one row for each pair. For example, if lineage (A,B) had 20% of their genes coming in from lineage (C,D,E) at 14.5 MY since the root (not back in time), you would have
 #	a flow data.frame of
-#donor	recipient	m	time.from.root.donor	time.from.root.recipient
+#donor	recipient	gamma	time.from.root.donor	time.from.root.recipient
 #C		A			0.2	14.5					14.5
 #D		A			0.2	14.5					14.5
 #E		A			0.2	14.5					14.5
@@ -55,10 +55,10 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
 BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE) {
-	if(min(flow$m)<0) {
+	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
-	if(max(flow$m)>1) {
+	if(max(flow$gamma)>1) {
 		stop("Max value of flow is too high; should be between zero and one")
 	}
 	results<-list()
@@ -330,7 +330,7 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	V.modified <- V.original
 	for (flow.index in sequence(dim(flow)[1])) {
 		recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
-    m <- flow$m[flow.index]
+    gamma <- flow$gamma[flow.index]
 		if(length(recipient.index)!=1) {
 			stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
 		}
@@ -338,10 +338,10 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 		if(length(donor.index)!=1) {
 			stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
 		}
-		V.modified[recipient.index, donor.index] <- (1-m) * V.original[recipient.index, donor.index] + (m) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
+		V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
 		#covariance managed, now to manage the variance
-		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (m^2 + (1- m)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*m*(1-m)*V.original[recipient.index, donor.index]  + vh
+		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
 	}
   if(is.null(measurement.error)) {
@@ -675,7 +675,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 		}
 		pairs <- expand.grid(donors, recipients)
 		for (pairs.index in sequence(dim(pairs)[1])) {
-			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], m=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))
+			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], gamma=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))
 		}
 		if(length(used.recipients)==ntax.hybrid) {
 			done=TRUE
@@ -683,7 +683,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 	}
 	flow$donor <- as.character(flow$donor)
 	flow$recipient <- as.character(flow$recipient)
-	flow$m <- as.numeric(as.character(flow$m))
+	flow$gamma <- as.numeric(as.character(flow$gamma))
 	flow$time.from.root.donor <-as.numeric(as.character(flow$time.from.root.donor))
 	flow$time.from.root.recipient <-as.numeric(as.character(flow$time.from.root.recipient))
 	return(list(phy=phy, flow=flow))
@@ -805,9 +805,9 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 	hybrid.name.root <- gsub(suffix, "", phy.merged$tip.label[grepl(suffix,  phy.merged$tip.label)])
 	for (i in sequence(length(hybrid.name.root))) {
 		focal.tips <- tips[c(hybrid.name.root[i], paste(hybrid.name.root[i], suffix, sep=""))]
-		focal.m <- flow$m[which(flow$recipient==hybrid.name.root[i])]
+		focal.gamma <- flow$gamma[which(flow$recipient==hybrid.name.root[i])]
 		focal.tips.bt <- focal.tips + log(params['bt'])
-		tip.mean <- focal.m*focal.tips.bt[2] + (1-focal.m) * focal.tips.bt[1]
+		tip.mean <- focal.m*focal.tips.bt[2] + (1-focal.gamma) * focal.tips.bt[1]
 		tip.final <- rnorm(1, mean=tip.mean, sd=sqrt(params['vh']))
 		tips[hybrid.name.root]<-tip.final
 	}
