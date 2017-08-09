@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100)) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -127,9 +127,25 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         preset.starting.parameters <- starting.values[free.parameters]
       }
 
-  		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+  		best.run <- optim(par=log1p(preset.starting.parameters), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+      best.run$par <- expm1(best.run$par)
+      attempts <- 1
   		while(best.run$convergence!=0){#want to get a convergence code 0
-  		best.run<-optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
+        if(verbose) {
+          print(paste0("Initial search had a convergence code of ", best.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", best.run$value))
+          print("Parameter estimates were")
+          current.params <- best.run$par
+          names(current.params) <- names(free.parameters)[which(free.parameters)]
+          print(current.params)
+        }
+        attempts <- attempts+1
+        if(attempts%%3!=1) {
+    		    best.run<-optim(par=log1p(GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par)), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+        } else {
+          best.run<-optim(par=log1p(GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)])), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+        }
+          best.run$par <- expm1(best.run$par)
+
   		}
 
 
@@ -147,12 +163,26 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
       times.without.improvement <- 0
   		while(times.without.improvement<10) {
   			times.without.improvement <- times.without.improvement+1
-        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-
+        new.run <- optim(par=log1p(best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+        new.run$par <- expm1(new.run$par)
+        attempts <- 1
         while(new.run$convergence!=0){#want to get a convergence code 0
-        new.run <- optim(par=GenerateValues(best.run$par, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], upper=rep(Inf, sum(free.parameters)), examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-        #print(c(new.run$convergence,new.run$value))
-        }
+          if(verbose) {
+            print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", new.run$value))
+            print("Parameter estimates were")
+            current.params <- new.run$par
+            names(current.params) <- names(free.parameters)[which(free.parameters)]
+            print(current.params)
+          }
+          attempts <- attempts+1
+          if(attempts%%3!=1) {
+              new.run<-optim(par=log1p(GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par)), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+          } else {
+            new.run<-optim(par=log1p(GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)])),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+          }
+            new.run$par <- expm1(new.run$par)
+
+          }
 
   			#print("new.run best.run")
   			#print(c(new.run$value, best.run$value))
@@ -202,7 +232,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				print("Now doing simulation to estimate parameter uncertainty")
   			}
-  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision)
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
   			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
   			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
         if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
@@ -392,10 +422,10 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 
-
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, ...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), ...) {
 	badval<-(0.5)*.Machine$double.xmax
+  x <- expm1(x)
 	bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]
@@ -412,6 +442,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	if(length(vh.location)==1) {
 		vh<-x[vh.location]
 	}
+  if(any(x<lower.b) | any(x>upper.b)) {
+    return(badval)
+  }
 	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
@@ -429,10 +462,23 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#	return(badval)
 	#}
 	#NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
-  NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus
 
+  NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus
+  # NegLogML.dmvnorm <- -dmvnorm(x=data, mean=means.modified, sigma=V.modified, log=TRUE)
+  # if(!is.finite(NegLogML.dmvnorm)) {
+  #
+  #   print("sigma.sq, vh, bt, SE, mu")
+  #   print(c(sigma.sq, vh, bt, SE, mu))
+  #   print("us vs dmvnorm")
+  #   print(c(NegLogML, NegLogML.dmvnorm))
+  # }
 	if(min(V.modified)<0 || sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
     	NegLogML<-badval
+      print("badval")
+      print(paste0("min(V.modified) ",min(V.modified)))
+      print(paste0("sigma.sq ", sigma.sq))
+      print(paste0("vh ", vh))
+      print(paste0("bt ", bt))
 	}
 	matrix.condition <- kappa(V.modified, exact=TRUE)
 	#print("condition")
@@ -522,8 +568,8 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	return(NegLogML[1])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=TRUE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...) {
-	starting<-fn(par, measurement.error=measurement.error,  ...)
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...) {
+	starting<-fn(log1p(par), measurement.error=measurement.error,  ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
 	}
@@ -539,7 +585,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		while(is.na(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
-		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
+		results[i+1,] <- c(fn(log1p(sim.points), measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
     if(i>5) {
       if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
         results <- results[sequence(i+1),] #stop here and restart
@@ -568,6 +614,14 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		}
 	}
 	return(results)
+}
+
+GenerateRandomValues <- function(data, free.parameters, lower, upper) {
+  new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))[which(free.parameters)]
+  while(any(new.vals < lower) | any(new.vals>upper)) {
+    new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))[which(free.parameters)]
+  }
+  return(new.vals)
 }
 
 GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, examined.max, examined.min) {

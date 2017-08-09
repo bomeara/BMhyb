@@ -10,7 +10,8 @@
 \usage{
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
 	proportion.mix.with.diag=0, allow.extrapolation=FALSE,
-	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101, ...)
+	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101,
+	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),...)
 	}
 
 \arguments{
@@ -25,6 +26,8 @@
 	\item{measurement.error}{estimate or fixed (see details).}
 	\item{do.kappa.check}{check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
   \item{number.of.proportions}{control how many points to use for extrapolation for ill-conditioned matrices.}
+	\item{lower.b}{minimum values of all possible parameters (non-free ones will be deleted).}
+	\item{upper.b}{maximum values of all possible parameters (non-free ones will be deleted).}
 	\item{...}{place to absorb other arguments.}
 }
 

@@ -12,8 +12,9 @@
 	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
 	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
-  measurement.error = NULL, do.kappa.check=FALSE, number.of.proportions = 101,
-  number.of.proportions.adaptive = 101, allow.restart=TRUE)
+  measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
+  number.of.proportions.adaptive = 101, allow.restart=TRUE,
+  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100))
 	}
 
 \arguments{
@@ -36,6 +37,8 @@
   \item{number.of.proportions}{Control how many points to use for extrapolation for ill-conditioned matrices.}
   \item{number.of.proportions.adaptive}{Control how many points to use for extrapolation for ill-conditioned matrices when calculating confidence (you may want to do fewer to speed things up).}
   \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value.}
+  \item{lower.bounds}{minimum values of all possible parameters (non-free ones will be deleted).}
+	\item{upper.bounds}{maximum values of all possible parameters (non-free ones will be deleted).}
   }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
@@ -51,10 +54,10 @@ The fifth column, recipient time, records time from the root of the recipient th
   parameter uncertainty through a sampling procedure (see help for \eqn{AdaptiveConfidenceIntervalSampling}. If \eqn{plot.se} is TRUE, a PDF will be generated
   showing these regions. Model averaged parameter estimates are calculated by the Akaike weight.
 
-  \eqn{measurement.error} tells the program how to deal with measurement error. By default, NULL, it estimates a fixed one shared by all species.
+  \eqn{measurement.error} tells the program how to deal with measurement error. If set to NULL, it estimates a fixed one shared by all species.
   If you enter a single value (which could be zero if you measure your species really, really well), it uses this as fixed measurement error
   for all species. You can also enter a vector of measurement errors to allow species to have different ones; order should match that of taxa
-  in vcv.phylo(phy).
+  in vcv.phylo(phy). By default, it assumes zero measurement error.
 
   Parameter units matter; by convention, they are not reported in comparative methods, but that's unfortunate. If your analysis is of species
   body length, let's say you measure it in meters. You should probably log transform the measurements to fit the assumptions of Brownian
