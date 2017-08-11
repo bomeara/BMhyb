@@ -27,6 +27,7 @@
       \item{m.vector}{
         how many taxa to try deleting.
 	}
+  }
 
 \details{
 m.vector=c(1,2) means it will try deleting a single taxon at random; if it works, stop there, if not, replace that one and delete another, until all single taxon deletions have been tried. Then it'll repeat for all possible pairs of taxa. You can add on to this (all groups of three taxa, etc.) though the space of things to try gets very large.
