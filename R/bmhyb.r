@@ -100,7 +100,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   if(check.positive.definite) {
     if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
       if(attempt.deletion.fix) {
-        phy <- AttemptDeletionFix(phy, flow, preset.starting.parameters, free.parameters)
+        phy <- AttemptDeletionFix(phy, flow, preset.starting.parameters)
         tips <- tips[names(tips) %in% phy$tip.label]
       }
       stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
