@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -97,7 +97,16 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	if(verbose) {
 		print("Done getting starting values")
 	}
-	for (model.index in sequence(length(models))) {
+  if(check.positive.definite) {
+    if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
+      if(attempt.deletion.fix) {
+        phy <- AttemptDeletionFix(phy, flow, preset.starting.parameters, free.parameters)
+        tips <- tips[names(tips) %in% phy$tip.label]
+      }
+      stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+    }
+  }
+  for (model.index in sequence(length(models))) {
     do.run = TRUE
     preset.starting.parameters = NULL
     while(do.run) {
@@ -678,6 +687,37 @@ GetAncestor <- function(phy, node) {
 	return(phy$edge[which(phy$edge[,2]==node),1])
 }
 
+
+AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(1,2)) {
+  if(is.null(names(params))) {
+    names(params) <- c("bt", "vh", "sigma.sq", "mu", "SE")
+  }
+  taxa.to.try.deleting <- phy$tip.label
+  taxa.to.try.deleting <- taxa.to.try.deleting[-(taxa.to.try.deleting %in% flow$recipient)]
+  taxa.to.try.deleting <- taxa.to.try.deleting[-(taxa.to.try.deleting %in% flow$donor)]
+  taxa.to.try.deleting <- taxa.to.try.deleting[sample.int(length(taxa.to.try.deleting), length(taxa.to.try.deleting), replace=FALSE)]
+  if(length(taxa.to.try.deleting)==0) {
+    stop("There are no taxa to delete that aren't involved in hybridization.")
+  }
+  phy.pruned <- phy
+  current.m <- m.vector[1]
+  current.index <- 1
+  combos.to.delete <- utils::combn(taxa.to.try.deleting,current.m)
+  while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params= rep(TRUE,length(params))))) {
+    phy.pruned <- ape::drop.tip(phy, combos.to.delete[,current.index])
+    current.index <- current.index + 1
+    if(current.index > ncols(combos.to.delete)) {
+      if(current.m < length(m.vector)) {
+        current.m <- current.m+1
+        combos.to.delete <- utils::combn(taxa.to.try.deleting,current.m)
+        current.index <- 1
+      } else {
+        stop(paste0("Correction by removing random taxa up to ", max(m.vector), " taxa at a time failed."))
+      }
+    }
+  }
+  return(phy.pruned)
+}
 
 #allow.ghost allows ghost lineage: something that persists for awhile, hybridizes, goes extinct. Otherwise, hybridization events must between coeval edges with extant descendants
 SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
