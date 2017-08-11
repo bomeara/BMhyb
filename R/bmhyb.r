@@ -693,8 +693,8 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
     names(params) <- c("bt", "vh", "sigma.sq", "mu", "SE")
   }
   taxa.to.try.deleting <- phy$tip.label
-  taxa.to.try.deleting <- taxa.to.try.deleting[-(taxa.to.try.deleting %in% flow$recipient)]
-  taxa.to.try.deleting <- taxa.to.try.deleting[-(taxa.to.try.deleting %in% flow$donor)]
+  taxa.to.try.deleting <- taxa.to.try.deleting[!(taxa.to.try.deleting %in% flow$recipient)]
+  taxa.to.try.deleting <- taxa.to.try.deleting[!(taxa.to.try.deleting %in% flow$donor)]
   taxa.to.try.deleting <- taxa.to.try.deleting[sample.int(length(taxa.to.try.deleting), length(taxa.to.try.deleting), replace=FALSE)]
   if(length(taxa.to.try.deleting)==0) {
     stop("There are no taxa to delete that aren't involved in hybridization.")
@@ -704,10 +704,12 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
   current.index <- 1
   combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
   while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params= rep(TRUE,length(params))))) {
+    #print(current.index)
+    #print(paste0("Dropping ", paste(combos.to.delete[,current.index], collapse=" ")))
     phy.pruned <- ape::drop.tip(phy, combos.to.delete[,current.index])
     current.index <- current.index + 1
-    if(current.index > ncols(combos.to.delete)) {
-      if(current.m < length(m.vector)) {
+    if(current.index > ncol(combos.to.delete)) {
+      if(current.m.index < length(m.vector)) {
         current.m.index <- current.m.index + 1
         combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
         current.index <- 1
