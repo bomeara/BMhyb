@@ -680,7 +680,7 @@ GetAncestor <- function(phy, node) {
 
 
 #allow.ghost allows ghost lineage: something that persists for awhile, hybridizes, goes extinct. Otherwise, hybridization events must between coeval edges with extant descendants
-SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 0.5, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
+SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
 	done = FALSE
 	used.recipients <- c()
 	available.recipient.ids <- sequence(ntax.nonhybrid + ntax.hybrid)

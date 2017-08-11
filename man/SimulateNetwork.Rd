@@ -10,7 +10,7 @@
 
 \usage{
 	SimulateNetwork(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5,
-	origin.type=c("clade", "individual"), birth = 1, death = 0.5, sample.f = 0.5,
+	origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5,
 	tree.height = 1, allow.ghost=FALSE)
 	}
 
