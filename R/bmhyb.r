@@ -700,16 +700,16 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
     stop("There are no taxa to delete that aren't involved in hybridization.")
   }
   phy.pruned <- phy
-  current.m <- m.vector[1]
+  current.m.index <- 1
   current.index <- 1
-  combos.to.delete <- utils::combn(taxa.to.try.deleting,current.m)
+  combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
   while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params= rep(TRUE,length(params))))) {
     phy.pruned <- ape::drop.tip(phy, combos.to.delete[,current.index])
     current.index <- current.index + 1
     if(current.index > ncols(combos.to.delete)) {
       if(current.m < length(m.vector)) {
-        current.m <- current.m+1
-        combos.to.delete <- utils::combn(taxa.to.try.deleting,current.m)
+        current.m.index <- current.m.index + 1
+        combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
         current.index <- 1
       } else {
         stop(paste0("Correction by removing random taxa up to ", max(m.vector), " taxa at a time failed."))
