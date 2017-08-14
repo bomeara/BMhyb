@@ -765,11 +765,11 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 }
 
 ConvertLog1P <- function(x) {
-  x[which(names(x)$="mu")] <- log1p(x[which(names(x)$="mu")])
+  x[which(names(x)=="mu")] <- log1p(x[which(names(x)$="mu")])
 }
 
 ConvertExpm1 <- function(x) {
-  x[which(names(x)$="mu")] <- expm1(x[which(names(x)$="mu")])
+  x[which(names(x)=="mu")] <- expm1(x[which(names(x)$="mu")])
 }
 
 AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...) {
