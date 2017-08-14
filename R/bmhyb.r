@@ -334,11 +334,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 
     }
     starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
 
   } else {
 	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
   }
 	if(verbose) {
 		print("Done getting starting values")
@@ -378,8 +378,8 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         free.parameters[which(names(free.parameters)=="SE")]<-FALSE
       }
 
-      starting.mins <- c(0, min(data), 0, 0, 0)
-      starting.maxes <- c(10*starting.values[1], max(data), 10*starting.values[3], 10*starting.values[4], 10*starting.values[5])
+      starting.mins <- c(0, min(data)-(max(data)-min(data)), 0, 0, 0)
+      starting.maxes <- c(10*starting.values[1], max(data)+(max(data)-min(data)), 10*starting.values[3], 10*starting.values[4], 10*starting.values[5])
       names(starting.mins) <- names(free.parameters)
       names(starting.maxes) <- names(free.parameters)
 
@@ -456,7 +456,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 	return(results.summary)
 }
 
-PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
+PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, colors=c("blue", "red"), ...) {
   pairs.of.params <- utils::combn(colnames(sims)[1:5],2)
   sims.to.plot <- sims
   if(show.finite.only) {
@@ -465,11 +465,11 @@ PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
   best.one <- which.min(sims.to.plot$AICc)
   par(mfcol=c(2, ceiling(ncol(pairs.of.params)/2)))
   for(pair.index in sequence(ncol(pairs.of.params))) {
-    plot(sims.to.plot[,pairs.of.params[1,pair.index]], sims.to.plot[,pairs.of.params[2,pair.index]], pch=".", col=rgb(0,0,0,.2), xlim=range(sims[,pairs.of.params[1,pair.index]]), ylim=range(sims[,pairs.of.params[2,pair.index]]), xlab=paste0(pairs.of.params[1,pair.index],ifelse(0==max(sims[,pairs.of.params[1,pair.index]])-min(sims[,pairs.of.params[1,pair.index]]), " FIXED", "")), ylab=paste0(pairs.of.params[2,pair.index],ifelse(0==max(sims[,pairs.of.params[2,pair.index]])-min(sims[,pairs.of.params[2,pair.index]]), " FIXED", "")), ...)
+    plot(sims.to.plot[,pairs.of.params[1,pair.index]], sims.to.plot[,pairs.of.params[2,pair.index]], pch=".", col=colorRamp(colors)(sims.to.plot$AkaikeWeight/max(sims.to.plot$AkaikeWeight)), xlim=range(sims[,pairs.of.params[1,pair.index]]), ylim=range(sims[,pairs.of.params[2,pair.index]]), xlab=paste0(pairs.of.params[1,pair.index],ifelse(0==max(sims[,pairs.of.params[1,pair.index]])-min(sims[,pairs.of.params[1,pair.index]]), " FIXED", "")), ylab=paste0(pairs.of.params[2,pair.index],ifelse(0==max(sims[,pairs.of.params[2,pair.index]])-min(sims[,pairs.of.params[2,pair.index]]), " FIXED", "")), ...)
     if(!is.null(true.params)) {
-      points(x=true.params[pairs.of.params[1,pair.index]], y=true.params[pairs.of.params[2,pair.index]], pch=8, col="blue")
+      points(x=true.params[pairs.of.params[1,pair.index]], y=true.params[pairs.of.params[2,pair.index]], pch=8, col="black")
     }
-    points(x=sims.to.plot[best.one,pairs.of.params[1,pair.index]], y=sims.to.plot[best.one,pairs.of.params[2,pair.index]], pch=5, col="red")
+    points(x=sims.to.plot[best.one,pairs.of.params[1,pair.index]], y=sims.to.plot[best.one,pairs.of.params[2,pair.index]], pch=5, col="black")
   }
 }
 
