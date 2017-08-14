@@ -14,7 +14,7 @@
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
-  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE)
+  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=FALSE, attempt.deletion.fix=FALSE, starting.values=NULL)
 	}
 
 \arguments{
@@ -41,6 +41,7 @@
 	\item{upper.bounds}{maximum values of all possible parameters (non-free ones will be deleted).}
   \item{check.positive.definite}{check to see if the network is numerically well-behaved).}
   \item{attempt.deletion.fix}{if the network is not well-behaved, try deleting taxa until it is.}
+  \item{starting.values}{user given starting values (perhaps from BMhybGrid)}
   }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene

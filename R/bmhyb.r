@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE, starting.values=NULL) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -64,39 +64,43 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	results<-list()
 	#hessians <- list()
 	results.summary <-data.frame()
-	phy.geiger.friendly <- phy #geiger can't handle branch lengths near zero. Let's lengthen them if needed
-	if(min(phy.geiger.friendly$edge.length)<0.00001) {
-		phy.geiger.friendly$edge.length <- phy.geiger.friendly$edge.length + 0.00001
-	}
 	if(auto.adjust) {
 		phy <- AdjustForDet(phy)
 	}
 	all.sims<-list()
-	if(verbose) {
-		print("Getting starting values from Geiger")
-	}
+
   starting.from.geiger<-NA
-  starting.values <- NA
-  geiger.SE <- data*NA
-  if(!is.null(measurement.error)) {
-    if(length(measurement.error)==1) {
-      geiger.SE <- rep(measurement.error, length(geiger.SE))
-      names(geiger.SE) <- phy$tip.label
-    } else {
-      geiger.SE <- measurement.error
-      names(geiger.SE) <- phy$tip.label
-
+  #starting.values <- NA
+  if(is.null(starting.values)) {
+    starting.values <- NA
+    if(verbose) {
+      print("Getting starting values from Geiger")
     }
-    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+    phy.geiger.friendly <- phy #geiger can't handle branch lengths near zero. Let's lengthen them if needed
+    if(min(phy.geiger.friendly$edge.length)<0.00001) {
+      phy.geiger.friendly$edge.length <- phy.geiger.friendly$edge.length + 0.00001
+    }
+    geiger.SE <- data*NA
+    if(!is.null(measurement.error)) {
+      if(length(measurement.error)==1) {
+        geiger.SE <- rep(measurement.error, length(geiger.SE))
+        names(geiger.SE) <- phy$tip.label
+      } else {
+        geiger.SE <- measurement.error
+        names(geiger.SE) <- phy$tip.label
 
-  } else {
-	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+      }
+      starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+      starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+
+    } else {
+  	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+  	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+    }
+  	if(verbose) {
+  		print("Done getting starting values")
+  	}
   }
-	if(verbose) {
-		print("Done getting starting values")
-	}
   if(check.positive.definite) {
     if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
       if(attempt.deletion.fix) {
