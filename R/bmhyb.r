@@ -300,7 +300,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=FALSE, attempt.deletion.fix=FALSE) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -318,7 +318,6 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 		phy <- AdjustForDet(phy)
 	}
 	all.sims<-list()
-  all.points.list <- list()
 	if(verbose) {
 		print("Getting starting values from Geiger")
 	}
@@ -380,7 +379,9 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
 
       starting.mins <- c(0, min(data), 0, 0, 0)
-      starting.maxes <- c(3*starting.values[1], max(data), 3*starting.values[3], 3*starting.values[4], 3*starting.values[5])
+      starting.maxes <- c(10*starting.values[1], max(data), 10*starting.values[3], 10*starting.values[4], 10*starting.values[5])
+      names(starting.mins) <- names(free.parameters)
+      names(starting.maxes) <- names(free.parameters)
 
 
       if(check.positive.definite) {
@@ -388,17 +389,37 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
           stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
         }
       }
-      starting.mins <- starting.mins[free.parameters]
-      starting.maxes <- starting.mins[free.parameters]
-      grid.of.points <- lhs::randomLHS(n=5000, k=length(which(free.parameters)))
+
+      if(model==1) {
+        starting.mins["bt"] <- 1
+        starting.maxes["bt"] <- 1
+      }
+      if(model==2) {
+        starting.mins["vh"] <- 0
+        starting.maxes["vh"] <- 0
+      }
+      if(model==3) {
+        starting.mins["bt"] <- 1
+        starting.maxes["bt"] <- 1
+        starting.mins["vh"] <- 0
+        starting.maxes["vh"] <- 0
+  		}
+      if(!is.null(measurement.error)) {
+        starting.mins["SE"] <- 0
+        starting.maxes["SE"] <- 0
+      }
+
+      #starting.mins <- starting.mins[free.parameters]
+    #  starting.maxes <- starting.mins[free.parameters]
+      grid.of.points <- lhs::randomLHS(n=n.points, k=length(starting.mins))
       for(parameter.index in sequence(ncol(grid.of.points))) {
         grid.of.points[,parameter.index] <- starting.mins[parameter.index] + grid.of.points[,parameter.index] * (starting.maxes[parameter.index] - starting.mins[parameter.index])
       }
-      names(grid.of.points) <- names(free.parameters[which(free.parameters)])
+      colnames(grid.of.points) <- names(free.parameters)
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        likelihoods[rep.index] <- try(CalculateLikelihood(log1p(as.numeric(grid.of.points[rep.index,])), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
+        likelihoods[rep.index] <- try(CalculateLikelihood(log1p(as.numeric(grid.of.points[rep.index,])), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error))
       }
 
       best.one <- which.min(likelihoods)[1]
@@ -408,29 +429,49 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       results.vector.full <- c(NA, NA, 1, 0, 0)
       names(results.vector.full) <- names(free.parameters)
     #  names(best.run$par) <- names(free.parameters[which(free.parameters)])
-      for (i in sequence(length(best.run$par))) {
+      for (i in sequence(length(best.params))) {
         results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
       }
 
   		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
   		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
   		print(local.df)
-      all.points <- grid.of.points
-      all.points$likelihood <- likelihoods
-      all.points$model <- models[model.index]
-      all.points.list[[model.index]] <- all.points
+      all.points <- data.frame(grid.of.points)
+      all.points$NegLogL <- likelihoods
+      all.points$Model <- models[model.index]
+      all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
+      all.points$K <- length(free.parameters[which(free.parameters)])
   		results.summary <- rbind(results.summary, local.df)
+      all.sims <- rbind(all.sims, all.points)
     }
 	}
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
+  #save(list=ls(), file="~/Desktop/everything.rda")
 	if(store.sims) {
-		return(list(results=results.summary, sims=all.points.list))
+    all.sims$deltaAICc <- all.sims$AICc - min(all.sims$AICc)
+    all.sims$AkaikeWeight <- AkaikeWeight(all.sims$deltaAICc)
+		return(list(results=results.summary, sims=all.sims))
 	}
 	return(results.summary)
 }
 
-
+PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
+  pairs.of.params <- utils::combn(colnames(sims)[1:5],2)
+  sims.to.plot <- sims
+  if(show.finite.only) {
+    sims.to.plot <- sims.to.plot[which(sims.to.plot$NegLogL<1e300),]
+  }
+  best.one <- which.min(sims.to.plot$AICc)
+  par(mfcol=c(2, ceiling(ncol(pairs.of.params)/2)))
+  for(pair.index in sequence(ncol(pairs.of.params))) {
+    plot(sims.to.plot[,pairs.of.params[1,pair.index]], sims.to.plot[,pairs.of.params[2,pair.index]], pch=".", col=rgb(0,0,0,.2), xlim=range(sims[,pairs.of.params[1,pair.index]]), ylim=range(sims[,pairs.of.params[2,pair.index]]), xlab=paste0(pairs.of.params[1,pair.index],ifelse(0==max(sims[,pairs.of.params[1,pair.index]])-min(sims[,pairs.of.params[1,pair.index]]), " FIXED", "")), ylab=paste0(pairs.of.params[2,pair.index],ifelse(0==max(sims[,pairs.of.params[2,pair.index]])-min(sims[,pairs.of.params[2,pair.index]]), " FIXED", "")), ...)
+    if(!is.null(true.params)) {
+      points(x=true.params[pairs.of.params[1,pair.index]], y=true.params[pairs.of.params[2,pair.index]], pch=8, col="blue")
+    }
+    points(x=sims.to.plot[best.one,pairs.of.params[1,pair.index]], y=sims.to.plot[best.one,pairs.of.params[2,pair.index]], pch=5, col="red")
+  }
+}
 
 # PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
 #   model.sims <- results$sims[[model.index]]

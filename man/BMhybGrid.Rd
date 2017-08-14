@@ -10,7 +10,7 @@
 
 \usage{
 	BMhybGrid(data, phy, flow, models=c(1,2,3,4), verbose=TRUE,
-	get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
+	get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE,
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
