@@ -9,14 +9,13 @@
 	}
 
 \usage{
-PlotAICRegion(sims, show.finite.only=TRUE, true.params=NULL, colors=c("blue", "red"),  ...)
+PlotAICRegion(sims, show.finite.only=TRUE, true.params=NULL,  ...)
  }
 
 \arguments{
   \item{sims}{sims object from BMhybGrid.}
   \item{show.finite.only}{If true, only show where there were finite likelihoods; if false, show colors for these too}
   \item{true.params}{if known the true values used in a simulation}
-	\item{colors}{colors to use for gradient}
   \item{...}{other arguments}
   }
 
