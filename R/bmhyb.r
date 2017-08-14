@@ -398,7 +398,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        likelihoods[rep.index] <- try(CalculateLikelihood(log1p(as.numeric(grid.of.points[rep.index,])), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)])
+        likelihoods[rep.index] <- try(CalculateLikelihood(log1p(as.numeric(grid.of.points[rep.index,])), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
       }
 
       best.one <- which.min(likelihoods)[1]
