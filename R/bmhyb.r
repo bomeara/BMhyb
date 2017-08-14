@@ -98,9 +98,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 		print("Done getting starting values")
 	}
   if(check.positive.definite) {
-    if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
       if(attempt.deletion.fix) {
-        phy <- AttemptDeletionFix(phy, flow, preset.starting.parameters)
+        phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
       }
       stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
@@ -299,6 +299,138 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	}
 	return(results.summary)
 }
+
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE) {
+	if(min(flow$gamma)<0) {
+		stop("Min value of flow is too low; should be between zero and one")
+	}
+	if(max(flow$gamma)>1) {
+		stop("Max value of flow is too high; should be between zero and one")
+	}
+	results<-list()
+	#hessians <- list()
+	results.summary <-data.frame()
+	phy.geiger.friendly <- phy #geiger can't handle branch lengths near zero. Let's lengthen them if needed
+	if(min(phy.geiger.friendly$edge.length)<0.00001) {
+		phy.geiger.friendly$edge.length <- phy.geiger.friendly$edge.length + 0.00001
+	}
+	if(auto.adjust) {
+		phy <- AdjustForDet(phy)
+	}
+	all.sims<-list()
+  all.points.list <- list()
+	if(verbose) {
+		print("Getting starting values from Geiger")
+	}
+  starting.from.geiger<-NA
+  starting.values <- NA
+  geiger.SE <- data*NA
+  if(!is.null(measurement.error)) {
+    if(length(measurement.error)==1) {
+      geiger.SE <- rep(measurement.error, length(geiger.SE))
+      names(geiger.SE) <- phy$tip.label
+    } else {
+      geiger.SE <- measurement.error
+      names(geiger.SE) <- phy$tip.label
+
+    }
+    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+
+  } else {
+	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+  }
+	if(verbose) {
+		print("Done getting starting values")
+	}
+  if(check.positive.definite) {
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
+      if(attempt.deletion.fix) {
+        phy <- AttemptDeletionFix(phy, flow, starting.values)
+        tips <- tips[names(tips) %in% phy$tip.label]
+      }
+      stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+    }
+  }
+  for (model.index in sequence(length(models))) {
+    do.run = TRUE
+    preset.starting.parameters = NULL
+    while(do.run) {
+      do.run = FALSE
+  		step.count <- 0
+  		if(verbose) {
+  			print(paste("Starting model", models[model.index], "of", length(models), "models"))
+  		}
+  		free.parameters<-rep(TRUE, 5)
+  		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  		model <- models[model.index]
+  		if(model==1) {
+  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+  		}
+  		if(model==2) {
+  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+  		}
+  		if(model==3) {
+  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+  		}
+      if(!is.null(measurement.error)) {
+        free.parameters[which(names(free.parameters)=="SE")]<-FALSE
+      }
+
+      starting.mins <- c(0, min(data), 0, 0, 0)
+      starting.maxes <- c(3*starting.values[1], max(data), 3*starting.values[3], 3*starting.values[4], 3*starting.values[5])
+
+
+      if(check.positive.definite) {
+        if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
+          stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+        }
+      }
+      starting.mins <- starting.mins[free.parameters]
+      starting.maxes <- starting.mins[free.parameters]
+      grid.of.points <- lhs::randomLHS(n=5000, k=length(which(free.parameters)))
+      for(parameter.index in sequence(ncol(grid.of.points))) {
+        grid.of.points[,parameter.index] <- starting.mins[parameter.index] + grid.of.points[,parameter.index] * (starting.maxes[parameter.index] - starting.mins[parameter.index])
+      }
+      names(grid.of.points) <- names(free.parameters[which(free.parameters)])
+      likelihoods <- rep(NA, n.points)
+
+      for (rep.index in sequence(n.points)) {
+        likelihoods[rep.index] <- try(CalculateLikelihood(log1p(as.numeric(grid.of.points[rep.index,])), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)])
+      }
+
+      best.one <- which.min(likelihoods)[1]
+      best.params <- grid.of.points[best.one,]
+
+
+      results.vector.full <- c(NA, NA, 1, 0, 0)
+      names(results.vector.full) <- names(free.parameters)
+    #  names(best.run$par) <- names(free.parameters[which(free.parameters)])
+      for (i in sequence(length(best.run$par))) {
+        results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
+      }
+
+  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
+  		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
+  		print(local.df)
+      all.points <- grid.of.points
+      all.points$likelihood <- likelihoods
+      all.points$model <- models[model.index]
+      all.points.list[[model.index]] <- all.points
+  		results.summary <- rbind(results.summary, local.df)
+    }
+	}
+	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
+	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
+	if(store.sims) {
+		return(list(results=results.summary, sims=all.points.list))
+	}
+	return(results.summary)
+}
+
+
 
 # PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
 #   model.sims <- results$sims[[model.index]]
