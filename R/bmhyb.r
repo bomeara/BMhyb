@@ -57,7 +57,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE, starting.values=NULL, n.random.start.points=5000) {
   if(n.random.start.points>0 & is.null(starting.values)) {
     grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error)
-    starting.values=grid.results$sims[which.min(result.grid$sims$AICc)[1],1:5]
+    starting.values=grid.results$sims[which.min(grid.results$sims$AICc)[1],1:5]
   }
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
