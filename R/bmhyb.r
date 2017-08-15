@@ -190,7 +190,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], check.positive.definite=check.positive.definite)
         #new.run$par <- ConvertExpm1(new.run$par)
         attempts <- 1
-        while(new.run$convergence!=0){#want to get a convergence code 0
+        while(new.run$convergence!=0 & attempts < 200){#want to get a convergence code 0
           if(verbose) {
             print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", new.run$value))
             print("Parameter estimates were")
@@ -206,7 +206,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
           }
           #  new.run$par <- ConvertExpm1(new.run$par)
 
-          }
+        }
 
   			#print("new.run best.run")
   			#print(c(new.run$value, best.run$value))
