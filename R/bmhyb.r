@@ -499,7 +499,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
     # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
     # print(local.df)
-    # all.points <- data.frame(grid.of.points)
+    all.points <- data.frame(grid.of.points)
     all.points$NegLogL <- likelihoods
     all.points$Model <- models[model.index]
     all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
