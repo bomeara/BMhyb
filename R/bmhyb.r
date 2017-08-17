@@ -56,7 +56,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #Note that we do not assume an ultrametric tree
 BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=FALSE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000) {
   if(n.random.start.points>0 & is.null(starting.values)) {
-    grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error)
+    grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=TRUE)
     starting.values=grid.results$sims[which.min(grid.results$sims$AICc)[1],1:5]
     starting.names <- colnames(starting.values)
     starting.values <- as.numeric(starting.values)
@@ -455,6 +455,23 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
   		results.summary <- rbind(results.summary, local.df)
       all.sims <- rbind(all.sims, all.points)
     }
+
+    if(plot.se) {
+      pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
+      par(mfcol=c(1, sum(free.parameters)))
+      for(parameter in sequence(length(free.parameters))) {
+        if(free.parameters[parameter]) {
+
+          plot(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], type="n", xlab=names(free.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.points[,"NegLogL"]), min(all.points[,"NegLogL"])+10))
+          points(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], pch=16, col=ifelse(all.points[,"NegLogL"] < (min(all.points[,"NegLogL"])+2), "black", "gray"))
+          points(x= all.points[which.min(all.points[,"NegLogL"])[1],names(free.parameters)[parameter]], y= all.points$NegLogL[which.min(all.points[,"NegLogL"])[1]], pch=1, col="red", cex=1.5)
+        }
+      }
+      dev.off()
+      if(verbose) {
+        print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
+      }
+    }
 	}
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
@@ -473,7 +490,7 @@ PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
   if(show.finite.only) {
     sims.to.plot <- sims.to.plot[which(sims.to.plot$NegLogL<1e300),]
   }
-  best.one <- which.min(sims.to.plot$AICc)
+  best.one <- which.min(sims.to.plot$AICc)[1]
   par(mfcol=c(2, ceiling(ncol(pairs.of.params)/2)))
   for(pair.index in sequence(ncol(pairs.of.params))) {
     plot(sims.to.plot[,pairs.of.params[1,pair.index]], sims.to.plot[,pairs.of.params[2,pair.index]], pch=".", col=rgb(0,0,0,.5), xlim=range(sims[,pairs.of.params[1,pair.index]]), ylim=range(sims[,pairs.of.params[2,pair.index]]), xlab=paste0(pairs.of.params[1,pair.index],ifelse(0==max(sims[,pairs.of.params[1,pair.index]])-min(sims[,pairs.of.params[1,pair.index]]), " FIXED", "")), ylab=paste0(pairs.of.params[2,pair.index],ifelse(0==max(sims[,pairs.of.params[2,pair.index]])-min(sims[,pairs.of.params[2,pair.index]]), " FIXED", "")), ...)
@@ -840,6 +857,12 @@ GenerateRandomValues <- function(data, free.parameters, lower, upper) {
 }
 
 GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, examined.max, examined.min) {
+  if(is.null(lower)) {
+    lower <- 0.1*par
+  }
+  if(is.null(upper)) {
+    upper <- 10*par
+  }
 	pass=FALSE
 	tries=0
 	while(!pass && tries<=max.tries) {
