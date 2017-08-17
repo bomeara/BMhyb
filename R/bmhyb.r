@@ -470,7 +470,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       #   do.run = TRUE
       # }
       for(parameter in sequence(5)) {
-
+        free.index=0
         if(free.parameters[parameter]) { #is estimated
           free.index <- free.index + 1
           ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
