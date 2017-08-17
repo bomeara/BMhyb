@@ -368,11 +368,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     preset.starting.parameters = NULL
     while(do.run) {
       do.run = FALSE
-      ci.vector<-rep(NA,10)
-      for(parameter in sequence(5)) {
-        names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
-        names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
-      }
+
 
   		step.count <- 0
   		if(verbose) {
@@ -399,7 +395,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       starting.maxes <- c(10*starting.values[1], max(data)+(max(data)-min(data)), 10*starting.values[3], 10*starting.values[4], 10*starting.values[5])
       names(starting.mins) <- names(free.parameters)
       names(starting.maxes) <- names(free.parameters)
-
+      ci.vector<-rep(NA,10)
+      for(parameter in sequence(5)) {
+        names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
+        names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
+      }
 
       if(check.positive.definite) {
         if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
