@@ -437,6 +437,9 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 
       for (rep.index in sequence(n.points)) {
         likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error))
+        if(verbose & rep.index%%50==0) {
+          print(paste0("Now done ", rep.index, " of ", n.points, " to analyze (", round(100*rep.index/n.points, 4), "% done)"))
+        }
       }
 
       best.one <- which.min(likelihoods)[1]
@@ -922,6 +925,7 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
 		for(i in sequence(length(par))) {
 			examined.max[i]<-max(0.001, examined.max[i])
 			new.vals[i]<-runif(1, max(lower[i], 0.9*examined.min[i]), min(upper[i], 1.1*examined.max[i]))
+
 			if(new.vals[i]<lower[i]) {
 				pass=FALSE
 			}
