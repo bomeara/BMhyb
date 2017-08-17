@@ -368,6 +368,12 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     preset.starting.parameters = NULL
     while(do.run) {
       do.run = FALSE
+      ci.vector<-rep(NA,10)
+      for(parameter in sequence(5)) {
+        names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
+        names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
+      }
+
   		step.count <- 0
   		if(verbose) {
   			print(paste("Starting model", models[model.index], "of", length(models), "models"))
@@ -444,34 +450,78 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
       }
 
-  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
-  		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
-  		print(local.df)
-      all.points <- data.frame(grid.of.points)
-      all.points$NegLogL <- likelihoods
-      all.points$Model <- models[model.index]
-      all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
-      all.points$K <- length(free.parameters[which(free.parameters)])
-  		results.summary <- rbind(results.summary, local.df)
-      all.sims <- rbind(all.sims, all.points)
     }
 
-    if(plot.se) {
-      pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
-      par(mfcol=c(1, sum(free.parameters)))
-      for(parameter in sequence(length(free.parameters))) {
-        if(free.parameters[parameter]) {
+    if(get.se) {
+      if(verbose) {
+        print("Now doing simulation to estimate parameter uncertainty")
+      }
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+      interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
+      interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
+      # if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
+      #   print("The sampling to find confidence in parameters actually found a better part of the likelihood surface. Restarting the run for this model at that point")
+      #   best.point <- interval.results[which.min(interval.results[,1]),]
+      #   names(best.point) <- c("neglnL", names(free.parameters)[which(free.parameters)])
+      #   preset.starting.parameters <- best.point[-1]
+      #   do.run = TRUE
+      # }
+      for(parameter in sequence(5)) {
 
-          plot(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], type="n", xlab=names(free.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.points[,"NegLogL"]), min(all.points[,"NegLogL"])+10))
-          points(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], pch=16, col=ifelse(all.points[,"NegLogL"] < (min(all.points[,"NegLogL"])+2), "black", "gray"))
-          points(x= all.points[which.min(all.points[,"NegLogL"])[1],names(free.parameters)[parameter]], y= all.points$NegLogL[which.min(all.points[,"NegLogL"])[1]], pch=1, col="red", cex=1.5)
+        if(free.parameters[parameter]) { #is estimated
+          free.index <- free.index + 1
+          ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
+          ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
+        } else {
+          ci.vector[1+2*(parameter-1)] <- results.vector.full[parameter]
+          ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]
         }
       }
-      dev.off()
-      if(verbose) {
-        print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
+      if(plot.se) {
+        pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
+        par(mfcol=c(1, sum(free.parameters)))
+        for(parameter in sequence(sum(free.parameters))) {
+          plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
+          points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
+          points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
+          points(x= best.run$par[parameter], y= best.run$value, pch=1, col="red", cex=1.5)
+        }
+        dev.off()
+        if(verbose) {
+          print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
+        }
       }
+
     }
+    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+    colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
+
+    # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
+    # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
+    # print(local.df)
+    # all.points <- data.frame(grid.of.points)
+    all.points$NegLogL <- likelihoods
+    all.points$Model <- models[model.index]
+    all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
+    all.points$K <- length(free.parameters[which(free.parameters)])
+    results.summary <- rbind(results.summary, local.df)
+    all.sims <- rbind(all.sims, all.points)
+    # if(plot.se) {
+    #   pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
+    #   par(mfcol=c(1, sum(free.parameters)))
+    #   for(parameter in sequence(length(free.parameters))) {
+    #     if(free.parameters[parameter]) {
+    #
+    #       plot(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], type="n", xlab=names(free.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.points[,"NegLogL"]), min(all.points[,"NegLogL"])+10))
+    #       points(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], pch=16, col=ifelse(all.points[,"NegLogL"] < (min(all.points[,"NegLogL"])+2), "black", "gray"))
+    #       points(x= all.points[which.min(all.points[,"NegLogL"])[1],names(free.parameters)[parameter]], y= all.points$NegLogL[which.min(all.points[,"NegLogL"])[1]], pch=1, col="red", cex=1.5)
+    #     }
+    #   }
+    #   dev.off()
+    #   if(verbose) {
+    #     print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
+    #   }
+    # }
 	}
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
