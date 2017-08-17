@@ -459,7 +459,12 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       if(verbose) {
         print("Now doing simulation to estimate parameter uncertainty")
       }
-      interval.results <- AdaptiveConfidenceIntervalSampling(best.params, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+      previous.results <- cbind(likelihoods, grid.of.points)
+      names(previous.results)[1] <- "NegLogL"
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params, fn=CalculateLikelihood, lower=lower.bounds, upper=upper.bounds, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds, upper.b=upper.bounds)
+      colnames(interval.results) <- colnames(previous.results)
+      interval.results <- rbind(previous.results, interval.results)
+      interval.results <- interval.results[is.finite(interval.results[,1]),]
       interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
       interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
       # if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
@@ -487,7 +492,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
           plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
           points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
           points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
-          points(x= best.run$par[parameter], y= best.run$value, pch=1, col="red", cex=1.5)
+          points(x= best.params[parameter], y= min(likelihoods), pch=1, col="red", cex=1.5)
         }
         dev.off()
         if(verbose) {
@@ -924,7 +929,8 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
 		new.vals <- rep(NA, length(par))
 		for(i in sequence(length(par))) {
 			examined.max[i]<-max(0.001, examined.max[i])
-			new.vals[i]<-runif(1, max(lower[i], 0.9*examined.min[i]), min(upper[i], 1.1*examined.max[i]))
+      new.vals.bounds <- sort(c(max(lower[i], 0.9*examined.min[i]), min(upper[i], 1.1*examined.max[i])), decreasing=FALSE)
+			new.vals[i]<-runif(1, min=ifelse(is.finite(new.vals.bounds[1]),new.vals.bounds[1], 0.000001) , max=ifelse(is.finite(new.vals.bounds[2]), new.vals.bounds[2], 10000))
 
 			if(new.vals[i]<lower[i]) {
 				pass=FALSE
