@@ -190,7 +190,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], check.positive.definite=check.positive.definite)
         #new.run$par <- ConvertExpm1(new.run$par)
         attempts <- 1
-        while(new.run$convergence!=0 & attempts < 200){#want to get a convergence code 0
+        while(new.run$convergence!=0 & attempts < 20){#want to get a convergence code 0
           if(verbose) {
             print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", new.run$value))
             print("Parameter estimates were")
@@ -311,7 +311,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=FALSE, attempt.deletion.fix=FALSE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=FALSE, attempt.deletion.fix=FALSE, starting.values=NULL) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -329,31 +329,33 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 		phy <- AdjustForDet(phy)
 	}
 	all.sims<-list()
-	if(verbose) {
-		print("Getting starting values from Geiger")
-	}
-  starting.from.geiger<-NA
-  starting.values <- NA
-  geiger.SE <- data*NA
-  if(!is.null(measurement.error)) {
-    if(length(measurement.error)==1) {
-      geiger.SE <- rep(measurement.error, length(geiger.SE))
-      names(geiger.SE) <- phy$tip.label
+  if(is.null(starting.values)) {
+    if(verbose) {
+  		print("Getting starting values from Geiger")
+  	}
+    starting.from.geiger<-NA
+    starting.values <- NA
+    geiger.SE <- data*NA
+    if(!is.null(measurement.error)) {
+      if(length(measurement.error)==1) {
+        geiger.SE <- rep(measurement.error, length(geiger.SE))
+        names(geiger.SE) <- phy$tip.label
+      } else {
+        geiger.SE <- measurement.error
+        names(geiger.SE) <- phy$tip.label
+
+      }
+      starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+      starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
+
     } else {
-      geiger.SE <- measurement.error
-      names(geiger.SE) <- phy$tip.label
-
+  	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
+  	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     }
-    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
-
-  } else {
-	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
-	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+  	if(verbose) {
+  		print("Done getting starting values")
+  	}
   }
-	if(verbose) {
-		print("Done getting starting values")
-	}
   if(check.positive.definite) {
     if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
       if(attempt.deletion.fix) {
