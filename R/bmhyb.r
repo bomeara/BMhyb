@@ -444,6 +444,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 
       best.one <- which.min(likelihoods)[1]
       best.params <- grid.of.points[best.one,]
+      best.likelihood <- min(likelihoods, na.rm=TRUE)
 
 
       results.vector.full <- c(NA, NA, 1, 0, 0)
@@ -474,16 +475,19 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       #   preset.starting.parameters <- best.point[-1]
       #   do.run = TRUE
       # }
-      for(parameter in sequence(5)) {
-        free.index=0
-        if(free.parameters[parameter]) { #is estimated
-          free.index <- free.index + 1
-          ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
-          ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
-        } else {
-          ci.vector[1+2*(parameter-1)] <- results.vector.full[parameter]
-          ci.vector[2+2*(parameter-1)] <- results.vector.full[parameter]
-        }
+      for(parameter in sequence(ncol(interval.results)-1)) {
+        parameter.name <- names(interval.results)[parameter+1]
+        ci.vector[paste0(parameter.name, ".upper")] <- max(interval.results.in[,parameter+1], na.rm=TRUE)
+        ci.vector[paste0(parameter.name, ".lower")] <- min(interval.results.in[,parameter+1], na.rm=TRUE)
+      }
+      if(min(interval.results$likelihoods, na.rm=TRUE) <  min(likelihoods)) {
+          best.params <- interval.results[which.min(interval.results$likelihoods), -1]
+            results.vector.full <- c(NA, NA, 1, 0, 0)
+            names(results.vector.full) <- names(free.parameters)
+            for (i in sequence(length(best.params))) {
+              results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
+            }
+            best.likelihood <- min(interval.results$likelihoods, na.rm=TRUE)
       }
       if(plot.se) {
         pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
@@ -501,7 +505,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
 
     }
-    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
     colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
 
     # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
@@ -1229,15 +1233,16 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 				# }
 			# }
 			plot(x=x.range, y=y.range, xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], type="n", bty="n")
+
 			relevant.point.id <- chull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2])
 			#polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=TRUE)
 			#polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=FALSE)
-			PlotConvexHull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], "black")
-			PlotConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "black")
+			PlotConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "darkgray")
+      PlotConvexHull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], "black")
 
 			#points(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], col="green", pch="X")
 						#contour(interp(points.to.fit[,1], points.to.fit[,2], points.to.fit[,3]), xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], levels=c(1, 2, 5, 10))
-			points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20)
+			points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20, cex=2)
 		}
 	}
 }
