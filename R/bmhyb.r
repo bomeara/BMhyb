@@ -1217,8 +1217,8 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 		for	(param.2 in c((param.1+1) : length(params.of.interest))) {
 			sims.sub <- sims[,c(params.of.interest[param.1], params.of.interest[param.2], 'neglnL')]
 			# points.to.fit <- data.frame()
-			x.range <- range(sims.sub[,1])
-			y.range <- range(sims.sub[,2])
+			x.range <- range(sims.sub[which(sims.sub[,3]<10),1])
+			y.range <- range(sims.sub[which(sims.sub[,3]<10),2])
 			x.grid <- quantile(sims.sub[,1], seq(from=0, to=1, length.out = floor(length(sims.sub[,1])/50)))
 			y.grid <- quantile(sims.sub[,2], seq(from=0, to=1, length.out = floor(length(sims.sub[,2])/50)))
 			colnames(sims.sub)[1:2] <- c("x", "y")
