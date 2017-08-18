@@ -516,7 +516,8 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
     }
     local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
-    colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
+    local.df <- apply(local.df, 2, unlist)
+    names(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
 
     # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
     # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
@@ -526,7 +527,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     all.points$Model <- models[model.index]
     all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
     all.points$K <- length(free.parameters[which(free.parameters)])
-    results.summary <- rbind(results.summary, local.df)
+    results.summary <- rbind(results.summary, data.frame(t(local.df)))
     all.sims <- rbind(all.sims, all.points)
     # if(plot.se) {
     #   pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
