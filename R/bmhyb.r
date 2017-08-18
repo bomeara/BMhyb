@@ -889,7 +889,6 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		while(is.na(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
-    print(paste0("point ", i, " of ", n.points))
 		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
     if(i>5 & restart.mode) {
       if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
