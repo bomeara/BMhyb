@@ -9,7 +9,7 @@ This function uses an adaptive cluster sampling technique to generate confidence
 \usage{
 AdaptiveConfidenceIntervalSampling(par, fn, lower=-Inf, upper=Inf, desired.delta = 2,
 n.points=5000, verbose=TRUE,  measurement.error=NULL, do.kappa.check=TRUE,
-allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
+allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=FALSE, ...)
 }
 
 \arguments{
@@ -25,6 +25,7 @@ allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...)
   \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value}
   \item{best.lnl}{the value of the best likelihood from the original run. Only relevant if allow.restart=TRUE.}
   \item{likelihood.precision}{a numerical value used for verifying the convergence of the estimation.}
+  \item{restart.mode}{restart if better values found}
   \item{...}{further arguments passed(see details).}
 }
 \details{

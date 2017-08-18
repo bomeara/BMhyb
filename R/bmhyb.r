@@ -256,7 +256,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				print("Now doing simulation to estimate parameter uncertainty")
   			}
-  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)])
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE)
   			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
   			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
         if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
@@ -461,9 +461,20 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         print("Now doing simulation to estimate parameter uncertainty")
       }
       previous.results <- cbind(likelihoods, grid.of.points)
-      names(previous.results)[1] <- "NegLogL"
-      interval.results <- AdaptiveConfidenceIntervalSampling(best.params, fn=CalculateLikelihood, lower=lower.bounds, upper=upper.bounds, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds, upper.b=upper.bounds)
-      colnames(interval.results) <- colnames(previous.results)
+      colnames(previous.results)[1] <- "NegLogL"
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds, upper=upper.bounds, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters])
+      colnames(interval.results) <- c("NegLogL", names(free.parameters[free.parameters]))
+      if(!any(grepl("bt", names(interval.results)))) {
+        interval.results$bt <- 1
+      }
+      if(!any(grepl("vh", names(interval.results)))) {
+        interval.results$vh <- 0
+      }
+      if(!any(grepl("SE", names(interval.results)))) {
+        interval.results$SE <- 0
+      }
+      interval.results <- interval.results[, colnames(previous.results)]
+      interval.results.local <- interval.results
       interval.results <- rbind(previous.results, interval.results)
       interval.results <- interval.results[is.finite(interval.results[,1]),]
       interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
@@ -480,14 +491,14 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         ci.vector[paste0(parameter.name, ".upper")] <- max(interval.results.in[,parameter+1], na.rm=TRUE)
         ci.vector[paste0(parameter.name, ".lower")] <- min(interval.results.in[,parameter+1], na.rm=TRUE)
       }
-      if(min(interval.results$likelihoods, na.rm=TRUE) <  min(likelihoods)) {
-          best.params <- interval.results[which.min(interval.results$likelihoods), -1]
+      if(min(interval.results$NegLogL, na.rm=TRUE) <  min(likelihoods)) {
+          best.params <- interval.results[which.min(interval.results$NegLogL), -1]
             results.vector.full <- c(NA, NA, 1, 0, 0)
             names(results.vector.full) <- names(free.parameters)
             for (i in sequence(length(best.params))) {
               results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
             }
-            best.likelihood <- min(interval.results$likelihoods, na.rm=TRUE)
+            best.likelihood <- min(interval.results$NegLogL, na.rm=TRUE)
       }
       if(plot.se) {
         pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
@@ -503,7 +514,6 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
           print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
         }
       }
-
     }
     local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
     colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
@@ -862,7 +872,7 @@ ConvertExpm1 <- function(x) {
   x[which(names(x)=="mu")] <- expm1(x[which(names(x)=="mu")])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, ...) {
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=FALSE, ...) {
 	starting<-fn(par, measurement.error=measurement.error,  ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
@@ -879,8 +889,9 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 		while(is.na(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
+    print(paste0("point ", i, " of ", n.points))
 		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
-    if(i>5) {
+    if(i>5 & restart.mode) {
       if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
         results <- results[sequence(i+1),] #stop here and restart
         return(results)
