@@ -444,7 +444,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error))
+        likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, check.positive.definite=check.positive.definite))
         if(verbose & rep.index%%50==0) {
           print(paste0("Now done ", rep.index, " of ", n.points, " to analyze (", round(100*rep.index/n.points, 4), "% done)"))
         }
@@ -723,7 +723,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), check.positive.definite=TRUE, ...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), check.positive.definite=FALSE, ...) {
 	badval<-(0.5)*.Machine$double.xmax
 #  x <- ConvertExpm1(x)
 	bt <- 1
