@@ -1091,8 +1091,11 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 	return(list(phy=phy, flow=flow))
 }
 
-PlotNetwork <- function(phy, flow, col.non="black", col.hybrid="red", col.donor="blue", name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2, col.tree="darkgray", col.arrow="red", arrow.width=1, ...) {
+PlotNetwork <- function(phy, flow, col.non="black", col.hybrid="red", col.donor="blue", name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2, col.tree="darkgray", col.arrow="red", arrow.width=1, try.rotations=FALSE, ...) {
 	phy<-reorder(phy, "pruningwise")
+  if(try.rotations) {
+    phy <- phytools::rotateNodes(phy, nodes="all")
+  }
 	phy4 <- as(phy, "phylo4")
 	xxyy <- phyloXXYY(phy4)
 	#plot(phy4)

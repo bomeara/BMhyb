@@ -11,7 +11,7 @@
 \usage{
 	PlotNetwork(phy, flow, col.non="black", col.hybrid="red", col.donor="blue",
 	name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2,
-	col.tree="darkgray", col.arrow="red", arrow.width=1, ...)
+	col.tree="darkgray", col.arrow="red", arrow.width=1, try.rotations=FALSE, ...)
  }
 
 \arguments{
@@ -29,6 +29,7 @@
   \item{col.tree}{color of the tree.}
   \item{col.arrow}{color of gene flow arrow.}
   \item{arrow.width}{width of the arrow.}
+	\item{try.rotations}{Each time try randomly rotating nodes of the tree.}
   \item{...}{other arguments}
   }
 
