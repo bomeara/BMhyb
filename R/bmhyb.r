@@ -394,7 +394,13 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
 
       starting.mins <- c(0, min(data)-(max(data)-min(data)), 0, 0, 0)
+      for(i in sequence(length(starting.mins))) {
+        starting.mins[i] <- max(starting.mins[i], lower.bounds[i])
+      }
       starting.maxes <- c(10*starting.values[1], max(data)+(max(data)-min(data)), 10*starting.values[3], 10*starting.values[4], 10*starting.values[5])
+      for (i in sequence(length(starting.maxes))) {
+        starting.maxes[i] <- min(starting.maxes[i], upper.bounds[i])
+      }
       names(starting.mins) <- names(free.parameters)
       names(starting.maxes) <- names(free.parameters)
       ci.vector<-rep(NA,10)
