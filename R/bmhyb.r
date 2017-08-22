@@ -464,7 +464,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
       previous.results <- cbind(likelihoods, grid.of.points)
       colnames(previous.results)[1] <- "NegLogL"
-      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds, upper=upper.bounds, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters])
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds[free.parameters], upper=upper.bounds[free.parameters], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters])
       colnames(interval.results) <- c("NegLogL", names(free.parameters[free.parameters]))
       if(!any(grepl("bt", names(interval.results)))) {
         interval.results$bt <- 1
