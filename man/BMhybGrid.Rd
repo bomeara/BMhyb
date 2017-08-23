@@ -14,8 +14,8 @@
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
-  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), check.positive.definite=TRUE, attempt.deletion.fix=TRUE,
-  starting.values=NULL)
+  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=TRUE,
+  starting.values=NULL, do.Brissette.correction=TRUE)
 	}
 
 \arguments{
@@ -39,9 +39,10 @@
   \item{allow.restart}{if TRUE, stop and go back to calling function if this finds a better value.}
   \item{lower.bounds}{minimum values of all possible parameters (non-free ones will be deleted).}
 	\item{upper.bounds}{maximum values of all possible parameters (non-free ones will be deleted).}
-  \item{check.positive.definite}{check to see if the network is numerically well-behaved).}
+  \item{badval.if.not.positive.definite}{check to see if the network is numerically well-behaved).}
   \item{attempt.deletion.fix}{if the network is not well-behaved, try deleting taxa until it is.}
   \item{starting.values}{user given starting values (perhaps from BMhybGrid)}
+  \item{do.Brissette.correction}{If VCV is not positive definite, do Brissette et al. (2007) correction.}
   }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene

@@ -11,7 +11,7 @@
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
 	proportion.mix.with.diag=0, allow.extrapolation=FALSE,
 	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101,
-	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),check.positive.definite=FALSE, ...)
+	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),badval.if.not.positive.definite=FALSE, do.Brissette.correction=TRUE, ...)
 	}
 
 \arguments{
@@ -28,7 +28,8 @@
   \item{number.of.proportions}{control how many points to use for extrapolation for ill-conditioned matrices.}
 	\item{lower.b}{minimum values of all possible parameters (non-free ones will be deleted).}
 	\item{upper.b}{maximum values of all possible parameters (non-free ones will be deleted).}
-	\item{check.positive.definite}{If the VCV is not positive definite, return a large bad value for likelihood.}
+	\item{badval.if.not.positive.definite}{If the VCV is not positive definite, return a large bad value for likelihood.}
+	\item{do.Brissette.correction}{If VCV is not positive definite, do Brissette et al. (2007) correction.}
 	\item{...}{place to absorb other arguments.}
 }
 
