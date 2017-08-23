@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=FALSE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=TRUE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE) {
   if(n.random.start.points>0 & is.null(starting.values)) {
     grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=FALSE, do.Brissette.correction=do.Brissette.correction)
     starting.values=grid.results$sims[which.min(grid.results$sims$AICc)[1],1:5]
@@ -311,7 +311,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=FALSE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=TRUE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -638,20 +638,28 @@ IsPositiveDefinite <- function(V.modified) {
   return(min.eigen>0)
 }
 
-BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6) {
+BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempts=10) {
   V.corrected <- V.modified
 #  if(!IsPositiveDefinite(V.modified)) {
 #    correction.factor <- sqrt(diag(V.modified) %*% t(diag(V.modified)))
 #    V.corrected <- V.modified / correction.factor
 #  }
-  if(!IsPositiveDefinite(V.corrected)) {
-
+  attempt.count <- 0
+  while(!IsPositiveDefinite(V.corrected) & attempt.count<max.attempts) {
+    attempt.count <- attempt.count + 1
     V.eigen <- eigen(V.modified)
     V.eigen$values[which(V.eigen$values<=0)] <- min.eigenvalue
     V.corrected <- V.eigen$vectors %*% diag(V.eigen$values) %*% t(V.eigen$vectors)
+    if(min(V.corrected)<0) {
+      V.corrected <- V.modified # so that we start the loop again, but with a different min.eigenvalue
+      min.eigenvalue <- min.eigenvalue * 1.5
+    }
 #    correction.factor <- sqrt(diag(V.corrected) %*% t(diag(V.corrected)))
 #    V.corrected <- V.corrected / correction.factor
     warning(paste0("Needed to use Brissette et al. (2007) correction; maximum change was ", max(abs(V.corrected - V.modified)), " and maximum value in V.modified to start was ", max(V.modified)))
+  }
+  if(min(V.corrected) < 0) {
+    V.corrected <- NULL
   }
   return(V.corrected)
 }
@@ -739,9 +747,8 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 	return(means.modified)
 }
 
-
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=FALSE, do.Brissette.correction=TRUE,...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE,...) {
 	badval<-(0.5)*.Machine$double.xmax
 #  x <- ConvertExpm1(x)
 	bt <- 1
@@ -771,6 +778,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
   }
   if(do.Brissette.correction) {
     V.modified <- BrissetteEtAlCorrection(V.modified)
+    if(is.null(V.modified)) {
+      return(badval)
+    }
   }
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {

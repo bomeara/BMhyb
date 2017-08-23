@@ -14,8 +14,8 @@
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
-  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=TRUE,
-  starting.values=NULL, do.Brissette.correction=TRUE)
+  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE,
+  starting.values=NULL, do.Brissette.correction=FALSE)
 	}
 
 \arguments{
