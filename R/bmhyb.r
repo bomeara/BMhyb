@@ -54,9 +54,9 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE) {
   if(n.random.start.points>0 & is.null(starting.values)) {
-    grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=FALSE, do.Brissette.correction=do.Brissette.correction)
+    grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=FALSE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
     starting.values=grid.results$sims[which.min(grid.results$sims$AICc)[1],1:5]
     starting.names <- colnames(starting.values)
     starting.values <- as.numeric(starting.values)
@@ -151,7 +151,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
           stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
         }
       }
-  		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+  		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
       best.run$par <- best.run$par
       attempts <- 1
   		while(best.run$convergence!=0){#want to get a convergence code 0
@@ -164,9 +164,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         }
         attempts <- attempts+1
         if(attempts%%3!=1) {
-    		    best.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+    		    best.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
         } else {
-          best.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+          best.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
         }
           #best.run$par <- ConvertExpm1(best.run$par)
 
@@ -187,7 +187,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
       times.without.improvement <- 0
   		while(times.without.improvement<10) {
   			times.without.improvement <- times.without.improvement+1
-        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
         #new.run$par <- ConvertExpm1(new.run$par)
         attempts <- 1
         while(new.run$convergence!=0 & attempts < 20){#want to get a convergence code 0
@@ -200,9 +200,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
           }
           attempts <- attempts+1
           if(attempts%%3!=1) {
-              new.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+              new.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
           } else {
-            new.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction)
+            new.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
           }
           #  new.run$par <- ConvertExpm1(new.run$par)
 
@@ -256,7 +256,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				print("Now doing simulation to estimate parameter uncertainty")
   			}
-  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction)
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
   			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
   			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
         if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
@@ -311,7 +311,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -444,7 +444,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction))
+        likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction))
         if(verbose & rep.index%%50==0) {
           print(paste0("Now done ", rep.index, " of ", n.points, " to analyze (", round(100*rep.index/n.points, 4), "% done)"))
         }
@@ -470,7 +470,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
       previous.results <- cbind(likelihoods, grid.of.points)
       colnames(previous.results)[1] <- "NegLogL"
-      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds[free.parameters], upper=upper.bounds[free.parameters], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters], do.Brissette.correction=do.Brissette.correction)
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds[free.parameters], upper=upper.bounds[free.parameters], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters], do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
       colnames(interval.results) <- c("NegLogL", names(free.parameters[free.parameters]))
       if(!any(grepl("bt", names(interval.results)))) {
         interval.results$bt <- 1
@@ -748,7 +748,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE,...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE,...) {
 	badval<-(0.5)*.Machine$double.xmax
 #  x <- ConvertExpm1(x)
 	bt <- 1
@@ -771,14 +771,26 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     return(badval)
   }
 	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
-  if(badval.if.not.positive.definite) {
-    if(!IsPositiveDefinite(V.modified)) {
-      return(badval)
-    }
-  }
+
   if(do.Brissette.correction) {
     V.modified <- BrissetteEtAlCorrection(V.modified)
     if(is.null(V.modified)) {
+      return(badval)
+    }
+  }
+  if(do.Higham.correction) {
+    new.mat <- Matrix::nearPD(V.modified, corr=FALSE)$mat
+    if(new.mat != V.modified) {
+      warning("Had to do Higham (2002) correction for not positive definite matrix")
+    }
+    V.modified <- new.mat
+    if(min(V.modified)<0) {
+      warning("Had to remove negative values in VCV after Higham (2002) correction")
+      V.modified[which(V.modified)<0] <- 0
+    }
+  }
+  if(badval.if.not.positive.definite) {
+    if(!IsPositiveDefinite(V.modified)) {
       return(badval)
     }
   }

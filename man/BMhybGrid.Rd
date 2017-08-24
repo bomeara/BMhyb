@@ -15,7 +15,7 @@
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
   lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE,
-  starting.values=NULL, do.Brissette.correction=FALSE)
+  starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE)
 	}
 
 \arguments{
@@ -43,6 +43,7 @@
   \item{attempt.deletion.fix}{if the network is not well-behaved, try deleting taxa until it is.}
   \item{starting.values}{user given starting values (perhaps from BMhybGrid)}
   \item{do.Brissette.correction}{If VCV is not positive definite, do Brissette et al. (2007) correction.}
+  \item{do.Higham.correction}{If VCV is not positive definite, do Higham (2002).}
   }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
