@@ -114,7 +114,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
       }
-      warning("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. If corrections are allowed, this may still run but with approximate solutions")
+    #  stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
     }
   }
   for (model.index in sequence(length(models))) {
@@ -146,11 +146,11 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
       if(is.null(preset.starting.parameters)) {
         preset.starting.parameters <- starting.values[free.parameters]
       }
-      if(badval.if.not.positive.definite) {
-        if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= free.parameters))) {
-          stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
-        }
-      }
+      # if(badval.if.not.positive.definite) {
+      #   if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= free.parameters))) {
+      #     stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+      #   }
+      # }
   		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction)
       best.run$par <- best.run$par
       attempts <- 1
@@ -356,15 +356,15 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
   		print("Done getting starting values")
   	}
   }
-  if(badval.if.not.positive.definite) {
+#  if(badval.if.not.positive.definite) {
     if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
       if(attempt.deletion.fix) {
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
       }
-      stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+  #    stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
     }
-  }
+#  }
   for (model.index in sequence(length(models))) {
     do.run = TRUE
     preset.starting.parameters = NULL
@@ -409,11 +409,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
       }
 
-      if(badval.if.not.positive.definite) {
-        if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
-          stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
-        }
-      }
+      # if(badval.if.not.positive.definite) {
+      #   if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
+      #     stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+      #   }
+      # }
 
       if(model==1) {
         starting.mins["bt"] <- 1
@@ -515,7 +515,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
           plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
           points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
           points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
-          points(x= best.params[parameter], y= min(likelihoods), pch=1, col="red", cex=1.5)
+          points(x= best.params[parameter], y= best.likelihood, pch=1, col="red", cex=1.5)
         }
         dev.off()
         if(verbose) {
@@ -771,7 +771,11 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     return(badval)
   }
 	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
-
+  if(badval.if.not.positive.definite) {
+    if(!IsPositiveDefinite(V.modified)) {
+      return(badval)
+    }
+  }
   if(do.Brissette.correction) {
     V.modified <- BrissetteEtAlCorrection(V.modified)
     if(is.null(V.modified)) {
@@ -779,19 +783,14 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     }
   }
   if(do.Higham.correction) {
-    new.mat <- Matrix::nearPD(V.modified, corr=FALSE)$mat
-    if(new.mat != V.modified) {
+    new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
+    if(any(new.mat!=V.modified)) {
       warning("Had to do Higham (2002) correction for not positive definite matrix")
     }
     V.modified <- new.mat
     if(min(V.modified)<0) {
       warning("Had to remove negative values in VCV after Higham (2002) correction")
-      V.modified[which(V.modified)<0] <- 0
-    }
-  }
-  if(badval.if.not.positive.definite) {
-    if(!IsPositiveDefinite(V.modified)) {
-      return(badval)
+      V.modified[(V.modified<0)] <- 0
     }
   }
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
