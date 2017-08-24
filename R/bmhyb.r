@@ -114,7 +114,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
       }
-      stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
+      warning("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. If corrections are allowed, this may still run but with approximate solutions")
     }
   }
   for (model.index in sequence(length(models))) {
