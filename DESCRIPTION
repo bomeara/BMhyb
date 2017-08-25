@@ -31,4 +31,3 @@ Description: The BMhyb package analyzes the phenotypic evolution of species
     Users need to enter a comparative data set, a phylogeny, and information on gene
     flow leading to hybrids.
 License: GPL (>=2)
-RoxygenNote: 5.0.1
