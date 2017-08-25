@@ -11,7 +11,7 @@
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
 	proportion.mix.with.diag=0, allow.extrapolation=FALSE,
 	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101,
-	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, ...)
+	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=TRUE, ...)
 	}
 
 \arguments{
@@ -31,6 +31,7 @@
 	\item{badval.if.not.positive.definite}{If the VCV is not positive definite, return a large bad value for likelihood.}
 	\item{do.Brissette.correction}{If VCV is not positive definite, do Brissette et al. (2007) correction.}
 	\item{do.Higham.correction}{If VCV is not positive definite, do Higham (2002).}
+	\item{do.DE.correction}{If VCV is not positive definite, find a nearby matrix that is.}
 	\item{...}{place to absorb other arguments.}
 }
 

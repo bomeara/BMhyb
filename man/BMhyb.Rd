@@ -14,7 +14,7 @@
 	likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
-  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000,  do.Brissette.correction=FALSE,do.Higham.correction=TRUE)
+  lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000,  do.Brissette.correction=FALSE,do.Higham.correction=FALSE, do.DE.correction=TRUE)
 	}
 
 \arguments{
@@ -45,6 +45,7 @@
   \item{n.random.start.points}{number of points to use for a starting grid search}
   \item{do.Brissette.correction}{If VCV is not positive definite, do Brissette et al. (2007) correction.}
   \item{do.Higham.correction}{If VCV is not positive definite, do Higham (2002).}
+  \item{do.DE.correction}{If VCV is not positive definite, find a nearby matrix that is.}
   }
 
 \details{Function BMhyb fits likelihood models for continuous characters. As an input, \pkg{BMhyb} requires a phylogenetic tree of the phylo class, a structure of gene
