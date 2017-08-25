@@ -1343,6 +1343,14 @@ PositiveDefiniteOptimizationFn <- function(x, original, bad.val=1e6) {
 #Mishra, Sudhanshu K. "The nearest correlation matrix problem: Solution by differential evolution method of global optimization." (2007)
 # https://mpra.ub.uni-muenchen.de/44809/9/MPRA_paper_44809.pdf
 AlterMatrixUsingDE <- function(V.modified) {
-  result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE), original=V.modified)
+  starting.val.center <- V.modified[upper.tri(V.modified, diag=TRUE)]
+  starting.val.matrix <- matrix(NA, nrow=10*length(starting.val.center), ncol=length(starting.val.center))
+  starting.val.matrix[1,] <- starting.val.center
+  starting.rates <- 1/starting.val.center
+  starting.rates[!is.finite(starting.rates)] <- max(starting.rates[is.finite(starting.rates)])
+  for (i in 2:nrow(starting.val.matrix)) {
+    starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
+  }
+  result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=25, initialpop = starting.val.matrix), original=V.modified)
   return(ConvertVectorToMatrix(result$optim$bestmem))
 }
