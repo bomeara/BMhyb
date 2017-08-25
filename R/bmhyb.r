@@ -634,8 +634,12 @@ AdjustForDet <- function(phy, max.attempts=100) {
 }
 
 IsPositiveDefinite <- function(V.modified) {
-  min.eigen <- min(eigen(V.modified)$values)
-  return(min.eigen>0)
+  eigenvalues <- eigen(V.modified)$values
+  if(is.complex(eigenvalues)) {
+    return(FALSE)
+  } else {
+    return(min(eigenvalues)>0)
+  }
 }
 
 BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempts=10) {
@@ -771,11 +775,6 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     return(badval)
   }
 	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
-  if(badval.if.not.positive.definite) {
-    if(!IsPositiveDefinite(V.modified)) {
-      return(badval)
-    }
-  }
   if(do.Brissette.correction) {
     V.modified <- BrissetteEtAlCorrection(V.modified)
     if(is.null(V.modified)) {
@@ -791,6 +790,11 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     if(min(V.modified)<0) {
       warning("Had to remove negative values in VCV after Higham (2002) correction")
       V.modified[(V.modified<0)] <- 0
+    }
+  }
+  if(badval.if.not.positive.definite) {
+    if(!IsPositiveDefinite(V.modified)) {
+      return(badval)
     }
   }
 	means.modified <- GetMeansModified(x, phy, flow, actual.params)
@@ -1309,4 +1313,29 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 			points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20, cex=2)
 		}
 	}
+}
+
+ConvertVectorToMatrix <- function(x) {
+  matrix.size <- (-1 + sqrt(1+8*length(x)))/2
+  new.mat <- matrix(NA, ncol=matrix.size, nrow=matrix.size)
+  new.mat[upper.tri(new.mat, diag=TRUE)] <- x
+  new.mat[lower.tri(new.mat, diag=FALSE)] <- new.mat[upper.tri(new.mat, diag=FALSE)]
+  return(new.mat)
+}
+
+PositiveDefiniteOptimizationFn <- function(x, original, bad.val=1e6) {
+  new.mat <- ConvertVectorToMatrix(x)
+  distance <- as.numeric(dist(rbind(as.vector(new.mat), as.vector(original))))
+  if(min(new.mat)<0) {
+    distance <- distance * bad.val
+  }
+  if(!IsPositiveDefinite(new.mat)) {
+    distance <- distance * bad.val
+  }
+  return(distance)
+}
+
+AlterMatrixUsingDE <- function(V.modified) {
+  result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), original=V.modified)
+  return(ConvertVectorToMatrix(result$optim$bestmem))
 }
