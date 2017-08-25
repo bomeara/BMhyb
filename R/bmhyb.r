@@ -793,7 +793,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     }
   }
   if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
-    warning("Had to modify variance covariance matrix to make it positive definite, so results are approximate")
+    warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
     V.modified <-  AlterMatrixUsingDE(V.modified)
   }
   if(badval.if.not.positive.definite) {
@@ -1344,13 +1344,25 @@ PositiveDefiniteOptimizationFn <- function(x, original, bad.val=1e6) {
 # https://mpra.ub.uni-muenchen.de/44809/9/MPRA_paper_44809.pdf
 AlterMatrixUsingDE <- function(V.modified) {
   starting.val.center <- V.modified[upper.tri(V.modified, diag=TRUE)]
-  starting.val.matrix <- matrix(NA, nrow=10*length(starting.val.center), ncol=length(starting.val.center))
+  starting.val.matrix <- matrix(NA, nrow=max(20,round(5*sqrt(length(starting.val.center)))), ncol=length(starting.val.center))
   starting.val.matrix[1,] <- starting.val.center
-  starting.rates <- 1/starting.val.center
-  starting.rates[!is.finite(starting.rates)] <- max(starting.rates[is.finite(starting.rates)])
-  for (i in 2:nrow(starting.val.matrix)) {
-    starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
+  starting.means <- log(starting.val.center)
+  starting.means[!is.finite(starting.means)] <- min(starting.means[is.finite(starting.means)])
+  sd.vector <- seq(from=0.001, to=1, length.out=nrow(starting.val.matrix)) #to give some points close to original, some further away
+  starting.val.matrix[2,] <- rep(max(V.modified), ncol(starting.val.matrix)) #something that will start positive definite
+  pos.def.candidate <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
+  pos.def.values <- pos.def.candidate[upper.tri(pos.def.candidate, diag=TRUE)]
+  pos.def.values.abs <- abs(pos.def.values)
+  pos.def.values.zeroed <- pos.def.values
+  pos.def.values.zeroed <- pos.def.values.zeroed[which(pos.def.values<0)] <- 0
+  starting.val.matrix[3,] <- pos.def.values #start with a positive definite matrix (but might not meet the nonnegative constraint)
+  starting.val.matrix[4,] <- pos.def.values.abs #start with a potentially positive definite matrix (but might not be, since we've converted neg to positive values)
+  starting.val.matrix[5,] <- pos.def.values.zeroed #start with a potentially positive definite matrix (but might not be, since we've converted neg to zero)
+  for (i in 6:nrow(starting.val.matrix)) {
+    #starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
+    starting.val.matrix[i,] <- rlnorm(length(starting.val.center), meanlog=starting.means, sdlog=sd.vector[i])
   }
-  result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=25, initialpop = starting.val.matrix), original=V.modified)
+  result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1), original=V.modified)
+  print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter))
   return(ConvertVectorToMatrix(result$optim$bestmem))
 }
