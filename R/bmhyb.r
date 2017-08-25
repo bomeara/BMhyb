@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=TRUE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
   if(n.random.start.points>0 & is.null(starting.values)) {
     grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=FALSE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
     starting.values=grid.results$sims[which.min(grid.results$sims$AICc)[1],1:5]
@@ -311,7 +311,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=TRUE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -752,7 +752,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=TRUE,...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE,...) {
 	badval<-(0.5)*.Machine$double.xmax
 #  x <- ConvertExpm1(x)
 	bt <- 1
@@ -760,6 +760,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	sigma.sq <- x[1]
 	mu <- x[2]
   SE <- 0
+  likelihood.penalty <- 0
   if(is.null(measurement.error)) {
 	   SE <- x[length(x)]
    }
@@ -781,16 +782,17 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
       return(badval)
     }
   }
-  if(do.Higham.correction) {
+  if(do.Higham.correction & !IsPositiveDefinite(V.modified)) {
     new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
     if(any(new.mat!=V.modified)) {
       warning("Had to do Higham (2002) correction for not positive definite matrix")
+      likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
     }
     V.modified <- new.mat
-    if(min(V.modified)<0) {
-      warning("Had to remove negative values in VCV after Higham (2002) correction")
-      V.modified[(V.modified<0)] <- 0
-    }
+  #  if(min(V.modified)<0) {
+  #    warning("Had to remove negative values in VCV after Higham (2002) correction")
+  #    V.modified[(V.modified<0)] <- 0
+  #  }
   }
   if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
     warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
@@ -818,7 +820,8 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#}
 	#NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
 
-  NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus
+  NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty
+  #print(paste0("NegLogML = ", NegLogML-likelihood.penalty, ", penalty=", likelihood.penalty))
   # NegLogML.dmvnorm <- -dmvnorm(x=data, mean=means.modified, sigma=V.modified, log=TRUE)
   # if(!is.finite(NegLogML.dmvnorm)) {
   #
@@ -827,8 +830,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
   #   print("us vs dmvnorm")
   #   print(c(NegLogML, NegLogML.dmvnorm))
   # }
-	if(min(V.modified)<0 || sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
-    	NegLogML<-badval
+	#if(min(V.modified)<0 || sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
+  if( sigma.sq <0 || vh<0 || bt <= 0.0000001 || !is.finite(NegLogML) || SE<0) {
+  	NegLogML<-badval
       print("badval")
       print(paste0("min(V.modified) ",min(V.modified)))
       print(paste0("sigma.sq ", sigma.sq))
@@ -1327,42 +1331,99 @@ ConvertVectorToMatrix <- function(x) {
   return(new.mat)
 }
 
-PositiveDefiniteOptimizationFn <- function(x, original, bad.val=1e6) {
+PositiveDefiniteOptimizationFn <- function(x, original) {
   new.mat <- ConvertVectorToMatrix(x)
   distance <- as.numeric(dist(rbind(as.vector(new.mat), as.vector(original))))
+  # new.mat.no.diag <- new.mat
+  # diag(new.mat.no.diag) <- 0
+  # original.no.diag <- original
+  # diag(original.no.diag) <- 0
+  # distance <- distance + 10 * as.numeric(dist(rbind(as.vector(new.mat.no.diag), as.vector(original.no.diag ))))
   if(min(new.mat)<0) {
-    distance <- distance * bad.val
+    neg.values <- new.mat[which(new.mat<0)]
+    distance <- distance * (1+abs(sum(neg.values)))
   }
   if(!IsPositiveDefinite(new.mat)) {
-    distance <- distance * bad.val
+    distance <- distance * max(c(sum(new.mat), 10))
   }
   return(distance)
 }
+
+#From Ravi Varadhan, http://r.789695.n4.nabble.com/how-to-randomly-generate-a-n-by-n-positive-definite-matrix-in-R-td846858.html
+GenerateRandomPositiveDefiniteMatrix <- function(n, ev = runif(n, 0, 10)) {
+  Z <- matrix(ncol=n, rnorm(n^2))
+  decomp <- qr(Z)
+  Q <- qr.Q(decomp)
+  R <- qr.R(decomp)
+  d <- diag(R)
+  ph <- d / abs(d)
+  O <- Q %*% diag(ph)
+  Z <- t(O) %*% diag(ev) %*% O
+  return(Z)
+}
+
 
 # This is inspired by the work of
 #Mishra, Sudhanshu K. "The nearest correlation matrix problem: Solution by differential evolution method of global optimization." (2007)
 # https://mpra.ub.uni-muenchen.de/44809/9/MPRA_paper_44809.pdf
 AlterMatrixUsingDE <- function(V.modified) {
   starting.val.center <- V.modified[upper.tri(V.modified, diag=TRUE)]
-  starting.val.matrix <- matrix(NA, nrow=max(20,round(5*sqrt(length(starting.val.center)))), ncol=length(starting.val.center))
+  #starting.val.matrix <- matrix(NA, nrow=max(40,round(5*sqrt(length(starting.val.center)))), ncol=length(starting.val.center))
+  starting.val.matrix <- matrix(NA, nrow=40, ncol=length(starting.val.center))
   starting.val.matrix[1,] <- starting.val.center
   starting.means <- log(starting.val.center)
   starting.means[!is.finite(starting.means)] <- min(starting.means[is.finite(starting.means)])
   sd.vector <- seq(from=0.001, to=1, length.out=nrow(starting.val.matrix)) #to give some points close to original, some further away
-  starting.val.matrix[2,] <- rep(max(V.modified), ncol(starting.val.matrix)) #something that will start positive definite
+  diag.matrix <- matrix(0, ncol(V.modified), nrow(V.modified))
+  diag(diag.matrix) <- max(V.modified)
+  starting.val.matrix[2,] <- diag.matrix[upper.tri(diag.matrix, diag=TRUE)] #something that will start positive definite
+  diag.matrix.2 <- matrix(0, nrow=nrow(V.modified), ncol=ncol(V.modified))
+  diag(diag.matrix.2) <- diag(V.modified)
+  starting.val.matrix[3,] <- diag.matrix.2[upper.tri(diag.matrix.2, diag=TRUE)] #something that will start positive definite
+  diag.matrix.3 <- V.modified
+  diag(diag.matrix.3) <- mean(diag(V.modified))
+  starting.val.matrix[4,] <- diag.matrix.3[upper.tri(diag.matrix.3, diag=TRUE)] #something that will start positive definite
   pos.def.candidate <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
+  pos.def.eigen <- eigen(pos.def.candidate)$values
+  has.neg <- function(x) {
+    return(any(x<0))
+  }
+  negative.taxa <- unique(c(which(apply(pos.def.candidate, 1,has.neg)), which(apply(pos.def.candidate, 2, has.neg))))
   pos.def.values <- pos.def.candidate[upper.tri(pos.def.candidate, diag=TRUE)]
   pos.def.values.abs <- abs(pos.def.values)
   pos.def.values.zeroed <- pos.def.values
   pos.def.values.zeroed <- pos.def.values.zeroed[which(pos.def.values<0)] <- 0
-  starting.val.matrix[3,] <- pos.def.values #start with a positive definite matrix (but might not meet the nonnegative constraint)
-  starting.val.matrix[4,] <- pos.def.values.abs #start with a potentially positive definite matrix (but might not be, since we've converted neg to positive values)
-  starting.val.matrix[5,] <- pos.def.values.zeroed #start with a potentially positive definite matrix (but might not be, since we've converted neg to zero)
-  for (i in 6:nrow(starting.val.matrix)) {
+  starting.val.matrix[5,] <- pos.def.values #start with a positive definite matrix (but might not meet the nonnegative constraint)
+  starting.val.matrix[6,] <- pos.def.values.abs #start with a potentially positive definite matrix (but might not be, since we've converted neg to positive values)
+  starting.val.matrix[7,] <- pos.def.values.zeroed #start with a potentially positive definite matrix (but might not be, since we've converted neg to zero)
+  number.filled <- sum(!is.na(starting.val.matrix[,1]))
+  for (i in (number.filled+1):(number.filled+10)) {
+    local.mat <- GenerateRandomPositiveDefiniteMatrix(ncol(V.modified), ev=pos.def.eigen)
+    starting.val.matrix[i,] <- local.mat[upper.tri(local.mat, diag=TRUE)]
+  }
+  number.filled <- sum(!is.na(starting.val.matrix[,1]))
+  proportions <- seq(from=1, to=0, length.out=10)
+  for(i in sequence(length(proportions))) {
+    V.modified.by.proportions<-(1-proportions[i]) * V.modified + proportions[i] * diag(dim(V.modified)[1]) * diag(V.modified)
+    starting.val.matrix[i,] <- V.modified.by.proportions[upper.tri(V.modified.by.proportions, diag=TRUE)]
+  }
+  number.filled <- sum(!is.na(starting.val.matrix[,1]))
+  for (i in (number.filled+1):nrow(starting.val.matrix)) {
     #starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
     starting.val.matrix[i,] <- rlnorm(length(starting.val.center), meanlog=starting.means, sdlog=sd.vector[i])
   }
   result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1), original=V.modified)
-  print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter))
-  return(ConvertVectorToMatrix(result$optim$bestmem))
+  #result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1, strategy=6, p=0.3), original=V.modified)
+
+  #result <- optim(par=starting.val.center, fn=PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), method="L-BFGS-B", original=V.modified)
+
+  #print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter, " smallest value is ", min(ConvertVectorToMatrix(result$optim$bestmem)), " status of being positive definite is ", IsPositiveDefinite(ConvertVectorToMatrix(result$optim$bestmem))))
+  #print(V.modified[1:6,1:6])
+
+  #print(ConvertVectorToMatrix(result$par))
+  #print(ConvertVectorToMatrix(result$optim$bestmem)[1:6,1:6])
+  final.mat <- ConvertVectorToMatrix(result$optim$bestmem)
+  rownames(final.mat) <- rownames(V.modified)
+  colnames(final.mat) <- colnames(V.modified)
+  return()
 }

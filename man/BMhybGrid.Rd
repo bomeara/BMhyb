@@ -15,7 +15,7 @@
   measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
   number.of.proportions.adaptive = 101, allow.restart=TRUE,
   lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE,
-  starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=TRUE)
+  starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE)
 	}
 
 \arguments{
