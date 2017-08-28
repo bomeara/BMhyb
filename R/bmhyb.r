@@ -299,6 +299,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   		}
   		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1), stringsAsFactors=FALSE)
   		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
+      if(do.Higham.correction) {
+        local.df$penalty=CalculateLikelihood(best.run$par,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, actual.params=free.parameters[which(free.parameters)], number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
+      }
   		print(local.df)
   		results.summary <- rbind(results.summary, local.df)
     }
@@ -534,6 +537,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
     # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
     # print(local.df)
+    if(do.Higham.correction) {
+      param.estimates <- unlist(results.vector.full)
+      names(param.estimates) <- names(free.parameters)
+      local.df$penalty=CalculateLikelihood(param.estimates,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, actual.params=free.parameters[which(free.parameters)], number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
+    }
     all.points <- data.frame(grid.of.points, stringsAsFactors=FALSE)
     all.points$NegLogL <- likelihoods
     all.points$Model <- models[model.index]
@@ -558,7 +566,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     #   }
     # }
 	}
-	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(as.numeric(results.summary$AICc)))
+	results.summary <- cbind(results.summary, deltaAICc=as.numeric(results.summary$AICc)-min(as.numeric(results.summary$AICc)))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
   #save(list=ls(), file="~/Desktop/everything.rda")
 	if(store.sims) {
@@ -756,7 +764,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE,...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
 	badval<-(0.5)*.Machine$double.xmax
 #  x <- ConvertExpm1(x)
 	bt <- 1
@@ -798,6 +806,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
   #    V.modified[(V.modified<0)] <- 0
   #  }
   }
+  if(return.penalty) {
+    return(likelihood.penalty)
+  }
   if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
     warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
     V.modified <-  AlterMatrixUsingDE(V.modified)
@@ -824,7 +835,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#}
 	#NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
   NegLogML <- NULL
-  try(NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)
+  try(NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty, silent=TRUE)
   if(is.null(NegLogML)) {
     NegLogML <- badval
   }
@@ -931,7 +942,9 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#if(NegLogML< (0)) {
 	#	NegLogML <- badval #since something seems off.
 	#}
+
 	return(NegLogML[1])
+
 }
 
 ConvertLog1P <- function(x) {
