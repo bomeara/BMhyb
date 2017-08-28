@@ -783,7 +783,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
     }
   }
   if(do.Higham.correction & !IsPositiveDefinite(V.modified)) {
-    new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
+    new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE, posd.tol = 1e-16, eig.tol = 1e-16, conv.tol = 1e-16)$mat)
     if(any(new.mat!=V.modified)) {
       warning("Had to do Higham (2002) correction for not positive definite matrix")
       likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
