@@ -297,7 +297,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   				}
   			}
   		}
-  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1), stringsAsFactors=FALSE)
   		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
   		print(local.df)
   		results.summary <- rbind(results.summary, local.df)
@@ -444,7 +444,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        likelihoods[rep.index] <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction))
+        local.likelihood <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction))
+        if(!is.numeric(local.likelihood)) {
+          local.likelihood <- (0.5)*.Machine$double.xmax
+        }
+        likelihoods[rep.index] <- local.likelihood
         if(verbose & rep.index%%50==0) {
           print(paste0("Now done ", rep.index, " of ", n.points, " to analyze (", round(100*rep.index/n.points, 4), "% done)"))
         }
@@ -485,8 +489,8 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       interval.results.local <- interval.results
       interval.results <- rbind(previous.results, interval.results)
       interval.results <- interval.results[is.finite(interval.results[,1]),]
-      interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
-      interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
+      interval.results.in <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))<=2),]
+      interval.results.out <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))>2),]
       # if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
       #   print("The sampling to find confidence in parameters actually found a better part of the likelihood surface. Restarting the run for this model at that point")
       #   best.point <- interval.results[which.min(interval.results[,1]),]
@@ -523,19 +527,19 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         }
       }
     }
-    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1))
+    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1), stringsAsFactors=FALSE)
     local.df <- apply(local.df, 2, unlist)
     names(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
 
     # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
     # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
     # print(local.df)
-    all.points <- data.frame(grid.of.points)
+    all.points <- data.frame(grid.of.points, stringsAsFactors=FALSE)
     all.points$NegLogL <- likelihoods
     all.points$Model <- models[model.index]
     all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
     all.points$K <- length(free.parameters[which(free.parameters)])
-    results.summary <- rbind(results.summary, data.frame(t(local.df)))
+    results.summary <- rbind(results.summary, data.frame(t(local.df), stringsAsFactors=FALSE))
     all.sims <- rbind(all.sims, all.points)
     # if(plot.se) {
     #   pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
@@ -554,11 +558,11 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
     #   }
     # }
 	}
-	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
+	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(as.numeric(results.summary$AICc)))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
   #save(list=ls(), file="~/Desktop/everything.rda")
 	if(store.sims) {
-    all.sims$deltaAICc <- all.sims$AICc - min(all.sims$AICc)
+    all.sims$deltaAICc <- all.sims$AICc - min(as.numeric(all.sims$AICc))
     all.sims$AkaikeWeight <- AkaikeWeight(all.sims$deltaAICc)
 		return(list(results=results.summary, sims=all.sims))
 	}
@@ -819,8 +823,11 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
 	#	return(badval)
 	#}
 	#NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*log(abs(det(V.modified)))
-
-  NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty
+  NegLogML <- NULL
+  try(NegLogML <- (Ntip(phy)/2)*log(2*pi)+(1/2)*t(data-means.modified)%*%pseudoinverse(V.modified)%*%(data-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)
+  if(is.null(NegLogML)) {
+    NegLogML <- badval
+  }
   #print(paste0("NegLogML = ", NegLogML-likelihood.penalty, ", penalty=", likelihood.penalty))
   # NegLogML.dmvnorm <- -dmvnorm(x=data, mean=means.modified, sigma=V.modified, log=TRUE)
   # if(!is.finite(NegLogML.dmvnorm)) {
@@ -949,7 +956,7 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 	results[1,]<-unname(c(starting, par))
 	for (i in sequence(n.points)) {
 		sim.points<-NA
-		while(is.na(sim.points[1])) {
+		while(is.na(sim.points[1]) | !is.numeric(sim.points[1])) {
 			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
 		}
 		results[i+1,] <- c(fn(sim.points, measurement.error=measurement.error, do.kappa.check=do.kappa.check, ...), sim.points)
