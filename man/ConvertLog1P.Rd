@@ -1,6 +1,6 @@
 \name{ConvertLog1P}
 \alias{ConvertLog1P}
-\title
+\title{
 	Logarithms
 	}
 
