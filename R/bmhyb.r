@@ -741,6 +741,19 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	return(V.modified)
 }
 
+MergeTreesIntoNetwork <- function(multiphy) {
+  phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+  if(length(multiphy)>1) {
+    for (i in 2:length(multiphy)) {
+      phy.graph2 <- as.igraph(multiphy[[i]], directed=TRUE)
+      phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
+      phy.graph <- phy.graph  %u% phy.graph2
+    }
+  }
+  return(phy.graph)
+}
+
 GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	bt <- 1
 	vh <- 0
@@ -759,7 +772,11 @@ GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.
 		vh<-x[vh.location]
 	}
 
-  phy.all.nodes <- sort(unique(c(phy$edge)))
+  phy.network <- igraph::as.igraph(phy)
+
+
+
+  #phy.all.nodes <- sort(unique(c(phy$edge)))
 
   ## TODO: add nodes for the hybridizations. Maybe extend phylo object to have multiple edges? Or use igraph? as.igraph then add edges, then traverse path on each node
 
