@@ -744,13 +744,20 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 MergeTreesIntoNetwork <- function(multiphy) {
   phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
   phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
   if(length(multiphy)>1) {
     for (i in 2:length(multiphy)) {
       phy.graph2 <- as.igraph(multiphy[[i]], directed=TRUE)
       phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
+      phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
+
       phy.graph <- phy.graph  %u% phy.graph2
     }
   }
+  edge.properties <- data.frame(edge_attr(phy.graph))
+  all.weights <- edge.properties[,grepl("weight", colnames(edge.properties))]
+  sum.weights <- rowSums(all.weights, na.rm=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "overall_weight", value=sum.weights)
   return(phy.graph)
 }
 
