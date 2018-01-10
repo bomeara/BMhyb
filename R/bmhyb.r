@@ -761,6 +761,99 @@ MergeTreesIntoNetwork <- function(multiphy) {
   return(phy.graph)
 }
 
+GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL) {
+  bt <- 1
+	vh <- 0
+	sigma.sq <- x[1]
+	mu <- x[2]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+  }
+	bt.location <- which(names(actual.params)=="bt")
+	if(length(bt.location)==1) {
+		bt<-x[bt.location]
+	}
+	vh.location <- which(names(actual.params)=="vh")
+	if(length(vh.location)==1) {
+		vh<-x[vh.location]
+	}
+
+  V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
+  mean.vector <- rep(0, length(igraph::V(phy.graph)))
+  postorder.traversal <- igraph::dfs(phy.graph, "Node1")$order
+  rownames(V.matrix) <- names(postorder.traversal)
+  colnames(V.matrix) <- names(postorder.traversal)
+  names(mean.vector) <- names(postorder.traversal)
+  parents <- igraph::adjacent_vertices(phy.graph, names(postorder.traversal), mode="in")
+  all.attribute.names <- names(igraph::get.edge.attribute(phy.graph))
+  matching.attribute.names <- all.attribute.names[grepl("length_",all.attribute.names )]
+  all.lengths <- matrix(nrow=length(matching.attribute.names), ncol=length(igraph::E(phy.graph)))
+
+  matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
+
+  all.weights <- matrix(nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
+  for (length.index in sequence(length(matching.attribute.names))) {
+    all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
+  }
+
+  for (weight.index in sequence(length(matching.weight.names))) {
+    all.weights[weight.index,] <- get.edge.attribute(phy.graph, name=matching.weight.names[weight.index])
+  }
+
+  all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
+
+  # Algorithm from Bastide et al., Syst Biol. 2018 in press
+  for (focal.index in sequence(length(names(postorder.traversal)))) {
+    if(focal.index==1) {
+      mean.vector[1] <- mu
+    } else {
+      if(length(parents[[focal.index]])==1) { #tree node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.node <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+        focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
+
+        V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
+        mean.vector[focal.node] <- mean.vector[parent.node]
+      } else { #hybrid node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.nodes <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- 0
+          for (parent.index in sequence(length(parent.nodes))) {
+            focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node]
+          }
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+
+        #now for Vii
+        V.matrix[focal.node, focal.node] <- 0
+        focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
+
+        for (parent.index in sequence(length(parent.nodes))) {
+          focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]] + sigma.sq * all.lengths[parent.index,focal.edge]
+        }
+
+        if(length(parent.nodes)>2) {
+          stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
+        }
+        V.matrix[focal.node, focal.node] <- vh + V.matrix[focal.node, focal.node] + 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]]
+        mean.vector[focal.node] <- log(bt) + mean.vector[parent.nodes[1]]*all.weights[1, focal.edge] + mean.vector[parent.nodes[2]]*all.weights[2, focal.edge]
+      }
+    }
+
+  }
+  return(list(V.modified=V.matrix, means.modified=mean.vector))
+}
+
 GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	bt <- 1
 	vh <- 0
