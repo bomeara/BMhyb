@@ -851,6 +851,9 @@ GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL)
     }
 
   }
+  if(!is.null(measurement.error)) {
+    stop("Write how to handle measurement error")
+  }
   return(list(V.modified=V.matrix, means.modified=mean.vector))
 }
 
