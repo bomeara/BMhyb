@@ -761,7 +761,7 @@ MergeTreesIntoNetwork <- function(multiphy) {
   return(phy.graph)
 }
 
-GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL) {
+GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
   bt <- 1
 	vh <- 0
 	sigma.sq <- x[1]
@@ -851,9 +851,16 @@ GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL)
     }
 
   }
+  if(drop.internal) {
+    elements.to.keep <- !grepl("Node\\d", names(mean.vector))
+    mean.vector <- mean.vector[elements.to.keep]
+    elements.to.keep <- !grepl("Node\\d", rownames(V.matrix))
+    V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
+  }
   if(!is.null(measurement.error)) {
     stop("Write how to handle measurement error")
   }
+
   return(list(V.modified=V.matrix, means.modified=mean.vector))
 }
 
