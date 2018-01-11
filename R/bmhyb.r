@@ -845,8 +845,8 @@ GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL)
         if(length(parent.nodes)>2) {
           stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
         }
-        V.matrix[focal.node, focal.node] <- vh + V.matrix[focal.node, focal.node] + 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]]
-        mean.vector[focal.node] <- log(bt) + mean.vector[parent.nodes[1]]*all.weights[1, focal.edge] + mean.vector[parent.nodes[2]]*all.weights[2, focal.edge]
+        V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
+        mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
       }
     }
 
