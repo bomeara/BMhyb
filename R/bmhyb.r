@@ -839,7 +839,7 @@ GetVandMFromIgraph <- function(phy.graph, actual.params, measurement.error=NULL,
 
         for (parent.index in sequence(length(parent.nodes))) {
           focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]] + sigma.sq * all.lengths[parent.index,focal.edge]
+          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]] + sigma.sq * all.lengths[parent.index,focal.edge])
         }
 
         if(length(parent.nodes)>2) {
