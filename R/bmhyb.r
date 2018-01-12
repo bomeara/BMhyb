@@ -741,13 +741,33 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	return(V.modified)
 }
 
-MergeTreesIntoNetwork <- function(multiphy) {
+PlotPhyGraph <- function(phy.graph) {
+  # TODO: get brlen, suppress internal node names
+  plot(phy.graph, layout = layout_as_tree, vertex.size=5)
+}
+
+ConvertPhyWithFlowIntoMultiphy <- function(phy, flow) {
   phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+
+}
+
+AddNodeLabels <- function(phy) {
+  nodes <- seq(from=ape::Ntip(phy)+1, length.out=ape::Nnode(phy))
+  for (node.index in sequence(length(nodes))) {
+    phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
+  }
+  return(phy)
+}
+
+MergeTreesIntoPhyGraph<- function(multiphy) {
+  phy.graph <- as.igraph(AddNodeLabels(multiphy[[1]]), directed=TRUE)
   phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
   phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
   if(length(multiphy)>1) {
     for (i in 2:length(multiphy)) {
-      phy.graph2 <- as.igraph(multiphy[[i]], directed=TRUE)
+      phy.graph2 <- as.igraph(AddNodeLabels(multiphy[[i]]), directed=TRUE)
       phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
       phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
 
