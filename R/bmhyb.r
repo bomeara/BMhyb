@@ -801,7 +801,7 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
 
   V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
   mean.vector <- rep(0, length(igraph::V(phy.graph)))
-  postorder.traversal <- igraph::dfs(phy.graph, "Node1")$order
+  postorder.traversal <- igraph::dfs(phy.graph, names(V(phy.graph))[which.max(nchar(names(V(phy.graph))))])$order
   rownames(V.matrix) <- names(postorder.traversal)
   colnames(V.matrix) <- names(postorder.traversal)
   names(mean.vector) <- names(postorder.traversal)
@@ -837,9 +837,16 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
         }
         focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
-
+        if(any(is.na(V.matrix))) {
+          print("841")
+          stop()
+        }
         V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
         mean.vector[focal.node] <- mean.vector[parent.node]
+        if(any(is.na(V.matrix))) {
+          print("847")
+          stop()
+        }
       } else { #hybrid node
         focal.node <- names(postorder.traversal)[focal.index]
         parent.nodes <- names(parents[[focal.index]])
@@ -848,7 +855,11 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
           V.matrix[focal.node, other.node] <- 0
           for (parent.index in sequence(length(parent.nodes))) {
             focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node]
+            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
+            if(any(is.na(V.matrix))) {
+              print("860")
+              stop()
+            }
           }
           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
         }
@@ -860,6 +871,10 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
         for (parent.index in sequence(length(parent.nodes))) {
           focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
           V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]] + sigma.sq * all.lengths[parent.index,focal.edge])
+          if(any(is.na(V.matrix))) {
+            print("876")
+            stop()
+          }
         }
 
         if(length(parent.nodes)>2) {
@@ -867,6 +882,10 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
         }
         V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
         mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
+        if(any(is.na(V.matrix))) {
+          print("886")
+          stop()
+        }
       }
     }
 
