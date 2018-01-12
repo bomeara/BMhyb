@@ -781,6 +781,38 @@ MergeTreesIntoPhyGraph<- function(multiphy) {
   return(phy.graph)
 }
 
+ExhaustiveV <- function(x, phylogenies, phylogeny.weights, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+  bt <- 1
+	vh <- 0
+	sigma.sq <- x[1]
+	mu <- x[2]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+  }
+	bt.location <- which(names(actual.params)=="bt")
+	if(length(bt.location)==1) {
+		bt<-x[bt.location]
+	}
+	vh.location <- which(names(actual.params)=="vh")
+	if(length(vh.location)==1) {
+		vh<-x[vh.location]
+	}
+
+  all.V.matrices <- sigma.sq*lapply(phylogenies, ape::vcv)
+  V.matrix <- 0*all.V.matrices[[1]]
+  mean.vector <- rep(0, length(igraph::V(phy.graph)))
+  for (tree.rep in sequence(length(phylogenies))) {
+    for (i in sequence(nrow(V.matrix))) {
+      row.taxon <- rownames(V.matrix)[i]
+      for(j in sequence(ncol(V.matrix))) {
+        col.taxon <- colnames(V.matrix)[j]
+        V.matrix[i,j] <- V.matrix[i,j] + (phylogeny.weights[tree.rep]^2)*all.V.matrices[[tree.rep]][row.taxon, col.taxon]
+      }
+    }
+  }
+}
+
 GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
   bt <- 1
 	vh <- 0
@@ -870,7 +902,7 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
 
         for (parent.index in sequence(length(parent.nodes))) {
           focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]] + sigma.sq * all.lengths[parent.index,focal.edge])
+          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
           if(any(is.na(V.matrix))) {
             print("876")
             stop()
