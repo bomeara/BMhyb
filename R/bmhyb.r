@@ -855,6 +855,8 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
 
   all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
   all.weights[is.na(all.weights)] <- 0
+  all.lengths[is.na(all.lengths)] <- 0
+
 
   # Algorithm from Bastide et al., Syst Biol. 2018 in press
   for (focal.index in sequence(length(names(postorder.traversal)))) {
@@ -924,9 +926,9 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
 
   }
   if(drop.internal) {
-    elements.to.keep <- !grepl("Node\\d", names(mean.vector))
+    elements.to.keep <- !grepl("Node_", names(mean.vector))
     mean.vector <- mean.vector[elements.to.keep]
-    elements.to.keep <- !grepl("Node\\d", rownames(V.matrix))
+    elements.to.keep <- !grepl("Node_", rownames(V.matrix))
     V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
   }
   diag(V.matrix) <- diag(V.matrix) + SE^2
