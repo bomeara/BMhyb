@@ -844,7 +844,7 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
 
   matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
 
-  all.weights <- matrix(nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
+  all.weights <- matrix(0, nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
   for (length.index in sequence(length(matching.attribute.names))) {
     all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
   }
@@ -854,6 +854,7 @@ GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NU
   }
 
   all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
+  all.weights[is.na(all.weights)] <- 0
 
   # Algorithm from Bastide et al., Syst Biol. 2018 in press
   for (focal.index in sequence(length(names(postorder.traversal)))) {
