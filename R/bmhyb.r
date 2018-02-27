@@ -756,7 +756,7 @@ ConvertPhyWithFlowIntoMultiphy <- function(phy, flow) {
 AddNodeLabels <- function(phy) {
   nodes <- seq(from=ape::Ntip(phy)+1, length.out=ape::Nnode(phy))
   for (node.index in sequence(length(nodes))) {
-    phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
+    phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(ape::extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
   }
   return(phy)
 }
@@ -1326,7 +1326,7 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
 
 GetClade <- function(phy, clade.size) {
 	nodes <- phy$edge[,1]
-	subtrees <- lapply(nodes, extract.clade, phy=phy)
+	subtrees <- lapply(nodes, ape::extract.clade, phy=phy)
 	counts <- sapply(subtrees, Ntip)
 	matches<-subtrees[which(counts==clade.size)]
 	if(length(matches)==0) {
