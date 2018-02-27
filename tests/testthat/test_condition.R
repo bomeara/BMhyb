@@ -43,7 +43,7 @@ test_that("MergingTrees", {
   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
   x <- c(1, 0, 1)
   results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
-  expect_equal(nrow(result$V.modified), 4)
+  expect_equal(nrow(results$V.modified), 4)
 })
 
 test_that("NonNetworkWorks", {
@@ -57,5 +57,5 @@ test_that("NonNetworkWorks", {
   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
   x <- c(1, 0, 1)
   results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
-  expect_lte(max(abs(result$V.modified - ape::vcv(phy1))),1e-8)
+  expect_lte(max(abs(results$V.modified - ape::vcv(phy1))),1e-8)
 })
