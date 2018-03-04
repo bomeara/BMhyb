@@ -11,6 +11,7 @@ Imports:
     numDeriv,
     geiger,
     ape,
+    igraph,
     TreeSim,
     phytools,
     phylobase,

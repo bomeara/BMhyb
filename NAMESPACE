@@ -1,5 +1,5 @@
 exportPattern("^[^\\.]")
-import(corpcor,numDeriv, geiger, mvtnorm)
+import(corpcor,numDeriv, geiger, mvtnorm, ape, igraph, viridis)
 # importFrom("ape", vcv.phylo, Ntip, branching.times, bind.tree, drop.tip, extract.clade, as.igraph)
 importFrom("TreeSim", sim.bd.taxa.age)
 importFrom("phytools", findMRCA, getDescendants, nodeheight, nodeHeights)
