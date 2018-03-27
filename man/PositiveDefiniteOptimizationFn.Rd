@@ -16,7 +16,7 @@ Distance Function between two matrices for optimization searching of positive de
   \item{x}{
  x: a vector that contains elements in the upper triangular part of the adjusted variance covariance matrix.
  }
- \item{oringinal}{
+ \item{original}{
   original:  a vector that contains elements in the upper triangular part of the original variance covariance matrix.
  }
 }

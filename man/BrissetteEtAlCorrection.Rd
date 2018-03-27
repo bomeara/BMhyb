@@ -19,8 +19,8 @@
   \item{min.eigenvalue}{
    minimum of eigenvalues of V.modified
    }
-  \item{max.attempt}{
-  maimum number of attempt for transformation
+  \item{max.attempts}{
+  maximum number of attempt for transformation
   }
 }
 
