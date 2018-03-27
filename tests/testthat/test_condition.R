@@ -31,31 +31,31 @@ test_that("BasicRun",{
 
 })
 
-
-test_that("MergingTrees", {
-  # idea is a network, decomposed into trees -- does it come back
-  phy1 <- ape::read.tree(text="(((A:2,B:2):1,C:3):5,D:8);")
-  phy2 <- ape::read.tree(text="(((B:2,C:2):1,A:3):5,D:8);")
-  phy.graph <- MergeTreesIntoPhyGraph(c(phy1, phy2))
-  free.parameters<-rep(TRUE, 5)
-  names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-  x <- c(1, 0, 1)
-  results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
-  expect_equal(nrow(results$V.modified), 4)
-})
-
-test_that("NonNetworkWorks", {
-  # idea is a network, decomposed into trees -- does it come back
-  phy1 <- ape::read.tree(text="(((A:2,B:2):1,C:3):5,D:8);")
-  phy2 <- phy1
-  phy.graph <- MergeTreesIntoPhyGraph(c(phy1, phy2))
-  free.parameters<-rep(TRUE, 5)
-  names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-  x <- c(1, 0, 1)
-  results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
-  expect_lte(max(abs(results$V.modified - ape::vcv(phy1))),1e-8)
-})
+#
+# test_that("MergingTrees", {
+#   # idea is a network, decomposed into trees -- does it come back
+#   phy1 <- ape::read.tree(text="(((A:2,B:2):1,C:3):5,D:8);")
+#   phy2 <- ape::read.tree(text="(((B:2,C:2):1,A:3):5,D:8);")
+#   phy.graph <- MergeTreesIntoPhyGraph(c(phy1, phy2))
+#   free.parameters<-rep(TRUE, 5)
+#   names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+#   free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+#   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+#   x <- c(1, 0, 1)
+#   results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
+#   expect_equal(nrow(results$V.modified), 4)
+# })
+#
+# test_that("NonNetworkWorks", {
+#   # idea is a network, decomposed into trees -- does it come back
+#   phy1 <- ape::read.tree(text="(((A:2,B:2):1,C:3):5,D:8);")
+#   phy2 <- phy1
+#   phy.graph <- MergeTreesIntoPhyGraph(c(phy1, phy2))
+#   free.parameters<-rep(TRUE, 5)
+#   names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+#   free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+#   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+#   x <- c(1, 0, 1)
+#   results <- GetVandMFromIgraph(x, phy.graph, free.parameters)
+#   expect_lte(max(abs(results$V.modified - ape::vcv(phy1))),1e-8)
+# })

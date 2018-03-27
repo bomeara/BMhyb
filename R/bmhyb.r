@@ -680,66 +680,66 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
   return(V.corrected)
 }
 
-GetVModifiedOriginalIsh <- function(x, phy, flow, actual.params, measurement.error=NULL) {
-	bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-}
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
-	V.original <- sigma.sq * times.original
-	V.modified <- V.original
-	for (flow.index in sequence(dim(flow)[1])) {
-		recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
-    gamma <- flow$gamma[flow.index]
-		if(length(recipient.index)!=1) {
-			stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
-		}
-		donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
-		if(length(donor.index)!=1) {
-			stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
-		}
-		V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
-		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
-		#covariance managed, now to manage the variance
-		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
-        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
-    if(dim(flow)[1]>1){
-    flow.1.index<-flow.index
-    recipient.1.index <- which(rownames(V.modified) == flow$recipient[flow.1.index])
-    donor.1.index<-donor.index
-    for (flow.2.index in sequence(dim(flow)[1])) {
-      recipient.2.index<-which(rownames(V.modified)==flow$recipient[flow.2.index])
-      donor.2.index<-which(rownames(V.modified)==flow$donor[flow.2.index])
-      # case 1: (same donor) flow came in "before" speciation
-      if(flow.1.index!=flow.2.index && flow$donor[flow.1.index]==flow$donor[flow.2.index] && V.original[recipient.1.index,recipient.2.index]> max(flow$time.from.root.recipient[flow.1.index],flow$time.from.root.recipient[flow.2.index] ) ){
-         V.modified[recipient.1.index, recipient.2.index]<-(V.original[recipient.1.index,recipient.2.index] - sigma.sq*flow$time.from.root.recipient[flow.1.index]) + (1-gamma)^2*sigma.sq*flow$time.from.root.recipient[flow.1.index] + gamma^2*sigma.sq*flow$time.from.root.recipient[flow.2.index] + gamma*(1-gamma)*sigma.sq*(V.original[recipient.1.index,donor.index]+V.original[recipient.2.index,donor.index])
-         }#end case 1
-      # case 2: (same donor) flow came in "after" speciation
-      if(flow.1.index!=flow.2.index && flow$donor[flow.1.index]==flow$donor[flow.2.index] && V.original[recipient.1.index,recipient.2.index] < min(flow$time.from.root.recipient[flow.1.index], flow$time.from.root.recipient[flow.2.index]) ){
-        V.modified[recipient.1.index, recipient.2.index]<- (1-gamma)^2*sigma.sq*flow$time.from.root.recipient[flow.1.index] + gamma^2*sigma.sq*flow$time.from.root.recipient[flow.2.index]+gamma*(1-gamma)*sigma.sq*(V.original[recipient.1.index,donor.index]+V.original[recipient.2.index,donor.index])
-        }#end case 2
-      }#end for flow.index.2
-    }#end if(dim(flow)[1]>1)
-	}
-  if(is.null(measurement.error)) {
-	   diag(V.modified) <- diag(V.modified)+SE^2
-  } else {
-    diag(V.modified) <- diag(V.modified)+measurement.error^2
-  }
-	return(V.modified)
-}
+# GetVModifiedOriginalIsh <- function(x, phy, flow, actual.params, measurement.error=NULL) {
+# 	bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+# }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+# 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
+# 	V.original <- sigma.sq * times.original
+# 	V.modified <- V.original
+# 	for (flow.index in sequence(dim(flow)[1])) {
+# 		recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
+#     gamma <- flow$gamma[flow.index]
+# 		if(length(recipient.index)!=1) {
+# 			stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
+# 		}
+# 		donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
+# 		if(length(donor.index)!=1) {
+# 			stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
+# 		}
+# 		V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
+# 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
+# 		#covariance managed, now to manage the variance
+# 		V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
+#         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
+#     if(dim(flow)[1]>1){
+#     flow.1.index<-flow.index
+#     recipient.1.index <- which(rownames(V.modified) == flow$recipient[flow.1.index])
+#     donor.1.index<-donor.index
+#     for (flow.2.index in sequence(dim(flow)[1])) {
+#       recipient.2.index<-which(rownames(V.modified)==flow$recipient[flow.2.index])
+#       donor.2.index<-which(rownames(V.modified)==flow$donor[flow.2.index])
+#       # case 1: (same donor) flow came in "before" speciation
+#       if(flow.1.index!=flow.2.index && flow$donor[flow.1.index]==flow$donor[flow.2.index] && V.original[recipient.1.index,recipient.2.index]> max(flow$time.from.root.recipient[flow.1.index],flow$time.from.root.recipient[flow.2.index] ) ){
+#          V.modified[recipient.1.index, recipient.2.index]<-(V.original[recipient.1.index,recipient.2.index] - sigma.sq*flow$time.from.root.recipient[flow.1.index]) + (1-gamma)^2*sigma.sq*flow$time.from.root.recipient[flow.1.index] + gamma^2*sigma.sq*flow$time.from.root.recipient[flow.2.index] + gamma*(1-gamma)*sigma.sq*(V.original[recipient.1.index,donor.index]+V.original[recipient.2.index,donor.index])
+#          }#end case 1
+#       # case 2: (same donor) flow came in "after" speciation
+#       if(flow.1.index!=flow.2.index && flow$donor[flow.1.index]==flow$donor[flow.2.index] && V.original[recipient.1.index,recipient.2.index] < min(flow$time.from.root.recipient[flow.1.index], flow$time.from.root.recipient[flow.2.index]) ){
+#         V.modified[recipient.1.index, recipient.2.index]<- (1-gamma)^2*sigma.sq*flow$time.from.root.recipient[flow.1.index] + gamma^2*sigma.sq*flow$time.from.root.recipient[flow.2.index]+gamma*(1-gamma)*sigma.sq*(V.original[recipient.1.index,donor.index]+V.original[recipient.2.index,donor.index])
+#         }#end case 2
+#       }#end for flow.index.2
+#     }#end if(dim(flow)[1]>1)
+# 	}
+#   if(is.null(measurement.error)) {
+# 	   diag(V.modified) <- diag(V.modified)+SE^2
+#   } else {
+#     diag(V.modified) <- diag(V.modified)+measurement.error^2
+#   }
+# 	return(V.modified)
+# }
 
 GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	bt <- 1
@@ -771,6 +771,7 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 		if(length(donor.index)!=1) {
 			stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
 		}
+
 		V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
 		V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
 		#covariance managed, now to manage the variance
@@ -802,383 +803,383 @@ GetVModified <- function(x, phy, flow, actual.params, measurement.error=NULL) {
 	return(V.modified)
 }
 
-PlotPhyGraph <- function(phy.graph) {
-  # TODO: get brlen, suppress internal node names
-  plot(phy.graph, layout = layout_as_tree, vertex.size=5)
-}
+# PlotPhyGraph <- function(phy.graph) {
+#   # TODO: get brlen, suppress internal node names
+#   plot(phy.graph, layout = layout_as_tree, vertex.size=5)
+# }
+#
+# ConvertPhyWithFlowIntoMultiphy <- function(phy, flow) {
+#   phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
+#   phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+#   phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+#
+# }
+#
+# AddNodeLabels <- function(phy) {
+#   nodes <- seq(from=ape::Ntip(phy)+1, length.out=ape::Nnode(phy))
+#   for (node.index in sequence(length(nodes))) {
+#     phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(ape::extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
+#   }
+#   return(phy)
+# }
 
-ConvertPhyWithFlowIntoMultiphy <- function(phy, flow) {
-  phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
-  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
-  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+# MergeTreesIntoPhyGraph<- function(multiphy) {
+#   stop("This function is not good. It creates too many input edges to non-hybrid nodes")
+#   phy.graph <- as.igraph(AddNodeLabels(multiphy[[1]]), directed=TRUE)
+#   phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+#   phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+#   if(length(multiphy)>1) {
+#     for (i in 2:length(multiphy)) {
+#       phy.graph2 <- as.igraph(AddNodeLabels(multiphy[[i]]), directed=TRUE)
+#       phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
+#       phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
+#
+#       phy.graph <- phy.graph  %u% phy.graph2
+#     }
+#   }
+#   edge.properties <- data.frame(edge_attr(phy.graph))
+#   all.weights <- edge.properties[,grepl("weight", colnames(edge.properties))]
+#   sum.weights <- rowSums(all.weights, na.rm=TRUE)
+#   phy.graph <- set_edge_attr(phy.graph, "overall_weight", value=sum.weights)
+#   return(phy.graph)
+# }
 
-}
+# ExhaustiveV <- function(x, phylogenies, phylogeny.weights, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+#   bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+#   }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+#
+#   all.V.matrices <- sigma.sq*lapply(phylogenies, ape::vcv)
+#   V.matrix <- 0*all.V.matrices[[1]]
+#   mean.vector <- rep(0, length(igraph::V(phy.graph)))
+#   for (tree.rep in sequence(length(phylogenies))) {
+#     for (i in sequence(nrow(V.matrix))) {
+#       row.taxon <- rownames(V.matrix)[i]
+#       for(j in sequence(ncol(V.matrix))) {
+#         col.taxon <- colnames(V.matrix)[j]
+#         V.matrix[i,j] <- V.matrix[i,j] + (phylogeny.weights[tree.rep]^2)*all.V.matrices[[tree.rep]][row.taxon, col.taxon]
+#       }
+#     }
+#   }
+# }
 
-AddNodeLabels <- function(phy) {
-  nodes <- seq(from=ape::Ntip(phy)+1, length.out=ape::Nnode(phy))
-  for (node.index in sequence(length(nodes))) {
-    phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(ape::extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
-  }
-  return(phy)
-}
+# GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+#   bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+#   }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+#
+#   V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
+#   mean.vector <- rep(0, length(igraph::V(phy.graph)))
+#   postorder.traversal <- igraph::dfs(phy.graph, names(V(phy.graph))[which.max(nchar(names(V(phy.graph))))])$order
+#
+#   rownames(V.matrix) <- names(postorder.traversal)
+#   colnames(V.matrix) <- names(postorder.traversal)
+#   names(mean.vector) <- names(postorder.traversal)
+#   parents <- igraph::adjacent_vertices(phy.graph, names(postorder.traversal), mode="in")
+#   all.attribute.names <- names(igraph::get.edge.attribute(phy.graph))
+#   matching.attribute.names <- all.attribute.names[grepl("length_",all.attribute.names )]
+#   all.lengths <- matrix(nrow=length(matching.attribute.names), ncol=length(igraph::E(phy.graph)))
+#
+#   matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
+#
+#   all.weights <- matrix(0, nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
+#   for (length.index in sequence(length(matching.attribute.names))) {
+#     all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
+#   }
+#
+#   for (weight.index in sequence(length(matching.weight.names))) {
+#     all.weights[weight.index,] <- get.edge.attribute(phy.graph, name=matching.weight.names[weight.index])
+#   }
+#
+#   all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
+#   all.weights[is.na(all.weights)] <- 0
+#   all.lengths[is.na(all.lengths)] <- 0
+#
+#
+#   # Algorithm from Bastide et al., Syst Biol. 2018 in press
+#   for (focal.index in sequence(length(names(postorder.traversal)))) {
+#     if(focal.index==1) {
+#       mean.vector[1] <- mu
+#     } else {
+#       if(length(parents[[focal.index]])==1) { #tree node
+#         focal.node <- names(postorder.traversal)[focal.index]
+#         parent.node <- names(parents[[focal.index]])
+#         for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+#           other.node <- names(postorder.traversal)[other.node.index]
+#           V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
+#           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+#         }
+#         focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
+#         if(any(is.na(V.matrix))) {
+#           print("841")
+#           stop()
+#         }
+#         V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
+#         mean.vector[focal.node] <- mean.vector[parent.node]
+#         if(any(is.na(V.matrix))) {
+#           print("847")
+#           stop()
+#         }
+#       } else { #hybrid node
+#         focal.node <- names(postorder.traversal)[focal.index]
+#         parent.nodes <- names(parents[[focal.index]])
+#         for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+#           other.node <- names(postorder.traversal)[other.node.index]
+#           V.matrix[focal.node, other.node] <- 0
+#           for (parent.index in sequence(length(parent.nodes))) {
+#             focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+#             V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
+#             if(any(is.na(V.matrix))) {
+#               print("860")
+#               stop()
+#             }
+#           }
+#           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+#         }
+#
+#         #now for Vii
+#         V.matrix[focal.node, focal.node] <- 0
+#         focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
+#
+#         for (parent.index in sequence(length(parent.nodes))) {
+#           focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+#           V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
+#           if(any(is.na(V.matrix))) {
+#             print("876")
+#             stop()
+#           }
+#         }
+#
+#         if(length(parent.nodes)>2) {
+#           stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
+#         }
+#         V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
+#         mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
+#         if(any(is.na(V.matrix))) {
+#           print("886")
+#           stop()
+#         }
+#       }
+#     }
+#
+#   }
+#   if(drop.internal) {
+#     elements.to.keep <- !grepl("Node_", names(mean.vector))
+#     mean.vector <- mean.vector[elements.to.keep]
+#     elements.to.keep <- !grepl("Node_", rownames(V.matrix))
+#     V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
+#   }
+#   diag(V.matrix) <- diag(V.matrix) + SE^2
+#   return(list(V.modified=V.matrix, means.modified=mean.vector))
+# }
+#
+# ExpandEvonet <- function(phy.graph) {
+#   phy.graph <- reorder(phy.graph, "cladewise")
+#   phy.graph$edge.network <- rbind(phy.graph$edge, phy.graph$reticulation)
+#   reticulation.lengths <- rep(NA, nrow(phy.graph$reticulation))
+#   for (i in sequence(nrow(phy.graph$reticulation))) {
+#     reticulation.lengths[i] <- abs(phytools::nodeheight(phy.graph, phy.graph$reticulation[i,1])-phytools::nodeheight(phy.graph, phy.graph$reticulation[i,2]))
+#   }
+#   phy.graph$edge.length.network <- c(phy.graph$edge.length, reticulation.lengths)
+#   return(phy.graph)
+# }
 
-MergeTreesIntoPhyGraph<- function(multiphy) {
-  stop("This function is not good. It creates too many input edges to non-hybrid nodes")
-  phy.graph <- as.igraph(AddNodeLabels(multiphy[[1]]), directed=TRUE)
-  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
-  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
-  if(length(multiphy)>1) {
-    for (i in 2:length(multiphy)) {
-      phy.graph2 <- as.igraph(AddNodeLabels(multiphy[[i]]), directed=TRUE)
-      phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
-      phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
-
-      phy.graph <- phy.graph  %u% phy.graph2
-    }
-  }
-  edge.properties <- data.frame(edge_attr(phy.graph))
-  all.weights <- edge.properties[,grepl("weight", colnames(edge.properties))]
-  sum.weights <- rowSums(all.weights, na.rm=TRUE)
-  phy.graph <- set_edge_attr(phy.graph, "overall_weight", value=sum.weights)
-  return(phy.graph)
-}
-
-ExhaustiveV <- function(x, phylogenies, phylogeny.weights, actual.params, measurement.error=NULL, drop.internal=TRUE) {
-  bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-  }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-
-  all.V.matrices <- sigma.sq*lapply(phylogenies, ape::vcv)
-  V.matrix <- 0*all.V.matrices[[1]]
-  mean.vector <- rep(0, length(igraph::V(phy.graph)))
-  for (tree.rep in sequence(length(phylogenies))) {
-    for (i in sequence(nrow(V.matrix))) {
-      row.taxon <- rownames(V.matrix)[i]
-      for(j in sequence(ncol(V.matrix))) {
-        col.taxon <- colnames(V.matrix)[j]
-        V.matrix[i,j] <- V.matrix[i,j] + (phylogeny.weights[tree.rep]^2)*all.V.matrices[[tree.rep]][row.taxon, col.taxon]
-      }
-    }
-  }
-}
-
-GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
-  bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-  }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-
-  V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
-  mean.vector <- rep(0, length(igraph::V(phy.graph)))
-  postorder.traversal <- igraph::dfs(phy.graph, names(V(phy.graph))[which.max(nchar(names(V(phy.graph))))])$order
-
-  rownames(V.matrix) <- names(postorder.traversal)
-  colnames(V.matrix) <- names(postorder.traversal)
-  names(mean.vector) <- names(postorder.traversal)
-  parents <- igraph::adjacent_vertices(phy.graph, names(postorder.traversal), mode="in")
-  all.attribute.names <- names(igraph::get.edge.attribute(phy.graph))
-  matching.attribute.names <- all.attribute.names[grepl("length_",all.attribute.names )]
-  all.lengths <- matrix(nrow=length(matching.attribute.names), ncol=length(igraph::E(phy.graph)))
-
-  matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
-
-  all.weights <- matrix(0, nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
-  for (length.index in sequence(length(matching.attribute.names))) {
-    all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
-  }
-
-  for (weight.index in sequence(length(matching.weight.names))) {
-    all.weights[weight.index,] <- get.edge.attribute(phy.graph, name=matching.weight.names[weight.index])
-  }
-
-  all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
-  all.weights[is.na(all.weights)] <- 0
-  all.lengths[is.na(all.lengths)] <- 0
-
-
-  # Algorithm from Bastide et al., Syst Biol. 2018 in press
-  for (focal.index in sequence(length(names(postorder.traversal)))) {
-    if(focal.index==1) {
-      mean.vector[1] <- mu
-    } else {
-      if(length(parents[[focal.index]])==1) { #tree node
-        focal.node <- names(postorder.traversal)[focal.index]
-        parent.node <- names(parents[[focal.index]])
-        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
-          other.node <- names(postorder.traversal)[other.node.index]
-          V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
-          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
-        }
-        focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
-        if(any(is.na(V.matrix))) {
-          print("841")
-          stop()
-        }
-        V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
-        mean.vector[focal.node] <- mean.vector[parent.node]
-        if(any(is.na(V.matrix))) {
-          print("847")
-          stop()
-        }
-      } else { #hybrid node
-        focal.node <- names(postorder.traversal)[focal.index]
-        parent.nodes <- names(parents[[focal.index]])
-        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
-          other.node <- names(postorder.traversal)[other.node.index]
-          V.matrix[focal.node, other.node] <- 0
-          for (parent.index in sequence(length(parent.nodes))) {
-            focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
-            if(any(is.na(V.matrix))) {
-              print("860")
-              stop()
-            }
-          }
-          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
-        }
-
-        #now for Vii
-        V.matrix[focal.node, focal.node] <- 0
-        focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
-
-        for (parent.index in sequence(length(parent.nodes))) {
-          focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
-          if(any(is.na(V.matrix))) {
-            print("876")
-            stop()
-          }
-        }
-
-        if(length(parent.nodes)>2) {
-          stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
-        }
-        V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
-        mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
-        if(any(is.na(V.matrix))) {
-          print("886")
-          stop()
-        }
-      }
-    }
-
-  }
-  if(drop.internal) {
-    elements.to.keep <- !grepl("Node_", names(mean.vector))
-    mean.vector <- mean.vector[elements.to.keep]
-    elements.to.keep <- !grepl("Node_", rownames(V.matrix))
-    V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
-  }
-  diag(V.matrix) <- diag(V.matrix) + SE^2
-  return(list(V.modified=V.matrix, means.modified=mean.vector))
-}
-
-ExpandEvonet <- function(phy.graph) {
-  phy.graph <- reorder(phy.graph, "cladewise")
-  phy.graph$edge.network <- rbind(phy.graph$edge, phy.graph$reticulation)
-  reticulation.lengths <- rep(NA, nrow(phy.graph$reticulation))
-  for (i in sequence(nrow(phy.graph$reticulation))) {
-    reticulation.lengths[i] <- abs(phytools::nodeheight(phy.graph, phy.graph$reticulation[i,1])-phytools::nodeheight(phy.graph, phy.graph$reticulation[i,2]))
-  }
-  phy.graph$edge.length.network <- c(phy.graph$edge.length, reticulation.lengths)
-  return(phy.graph)
-}
-
-GetVandMFromExpandedEvonet <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
-  bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(!("edge.length.network" %in% names(phy.graph))) {
-    phy.graph <- ExpandEvonet(phy.graph)
-  }
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-  }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-  N.all.nodes <- ape::Nnode(phy.graph)+ape::Ntip(phy.graph)
-  V.matrix <- matrix(0, nrow=N.all.nodes, ncol=N.all.nodes)
-  mean.vector <- rep(0, N.all.nodes)
-  rownames(V.matrix) <- colnames(V.matrix) <- names(mean.vector) <- sequence(N.all.nodes)
-
-##################
-# Start adding here. Go up the tree using the $edge.network, top to bottom, using $edge.length.network for edge lengths
-
-  # Algorithm from Bastide et al., Syst Biol. 2018 in press
-  for (focal.index in sequence(length(names(postorder.traversal)))) {
-    if(focal.index==1) {
-      mean.vector[1] <- mu
-    } else {
-      if(length(parents[[focal.index]])==1) { #tree node
-        focal.node <- names(postorder.traversal)[focal.index]
-        parent.node <- names(parents[[focal.index]])
-        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
-          other.node <- names(postorder.traversal)[other.node.index]
-          V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
-          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
-        }
-        focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
-        if(any(is.na(V.matrix))) {
-          print("841")
-          stop()
-        }
-        V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
-        mean.vector[focal.node] <- mean.vector[parent.node]
-        if(any(is.na(V.matrix))) {
-          print("847")
-          stop()
-        }
-      } else { #hybrid node
-        focal.node <- names(postorder.traversal)[focal.index]
-        parent.nodes <- names(parents[[focal.index]])
-        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
-          other.node <- names(postorder.traversal)[other.node.index]
-          V.matrix[focal.node, other.node] <- 0
-          for (parent.index in sequence(length(parent.nodes))) {
-            focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
-            if(any(is.na(V.matrix))) {
-              print("860")
-              stop()
-            }
-          }
-          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
-        }
-
-        #now for Vii
-        V.matrix[focal.node, focal.node] <- 0
-        focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
-
-        for (parent.index in sequence(length(parent.nodes))) {
-          focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
-          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
-          if(any(is.na(V.matrix))) {
-            print("876")
-            stop()
-          }
-        }
-
-        if(length(parent.nodes)>2) {
-          stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
-        }
-        V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
-        mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
-        if(any(is.na(V.matrix))) {
-          print("886")
-          stop()
-        }
-      }
-    }
-
-  }
-  if(drop.internal) {
-    elements.to.keep <- !grepl("Node_", names(mean.vector))
-    mean.vector <- mean.vector[elements.to.keep]
-    elements.to.keep <- !grepl("Node_", rownames(V.matrix))
-    V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
-  }
-  diag(V.matrix) <- diag(V.matrix) + SE^2
-  return(list(V.modified=V.matrix, means.modified=mean.vector))
-}
-
-GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
-	bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-  }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-
-  phy.network <- igraph::as.igraph(phy)
-
-
-
-  #phy.all.nodes <- sort(unique(c(phy$edge)))
-
-  ## TODO: add nodes for the hybridizations. Maybe extend phylo object to have multiple edges? Or use igraph? as.igraph then add edges, then traverse path on each node
-
-  vcv.all <- matrix(0, nrow=length(phy.all.nodes), ncol=length(phy.all.nodes))
-
-
-
-
-
-
-
-
-
-
-
-
-	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
-	V.original <- sigma.sq * times.original
-	V.modified <- V.original
-  for (flow.index in sequence(dim(flow)[1])) {
-    recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
-    gamma <- flow$gamma[flow.index]
-    if(length(recipient.index)!=1) {
-      stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
-    }
-    donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
-    if(length(donor.index)!=1) {
-      stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
-    }
-    V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
-    V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
-    #covariance managed, now to manage the variance
-    V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
-        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
-  }
-  if(is.null(measurement.error)) {
-	   diag(V.modified) <- diag(V.modified)+SE^2
-  } else {
-    diag(V.modified) <- diag(V.modified)+measurement.error^2
-  }
-	return(V.modified)
-}
+# GetVandMFromExpandedEvonet <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+#   bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(!("edge.length.network" %in% names(phy.graph))) {
+#     phy.graph <- ExpandEvonet(phy.graph)
+#   }
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+#   }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+#   N.all.nodes <- ape::Nnode(phy.graph)+ape::Ntip(phy.graph)
+#   V.matrix <- matrix(0, nrow=N.all.nodes, ncol=N.all.nodes)
+#   mean.vector <- rep(0, N.all.nodes)
+#   rownames(V.matrix) <- colnames(V.matrix) <- names(mean.vector) <- sequence(N.all.nodes)
+#
+# ##################
+# # Start adding here. Go up the tree using the $edge.network, top to bottom, using $edge.length.network for edge lengths
+#
+#   # Algorithm from Bastide et al., Syst Biol. 2018 in press
+#   for (focal.index in sequence(length(names(postorder.traversal)))) {
+#     if(focal.index==1) {
+#       mean.vector[1] <- mu
+#     } else {
+#       if(length(parents[[focal.index]])==1) { #tree node
+#         focal.node <- names(postorder.traversal)[focal.index]
+#         parent.node <- names(parents[[focal.index]])
+#         for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+#           other.node <- names(postorder.traversal)[other.node.index]
+#           V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
+#           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+#         }
+#         focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
+#         if(any(is.na(V.matrix))) {
+#           print("841")
+#           stop()
+#         }
+#         V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
+#         mean.vector[focal.node] <- mean.vector[parent.node]
+#         if(any(is.na(V.matrix))) {
+#           print("847")
+#           stop()
+#         }
+#       } else { #hybrid node
+#         focal.node <- names(postorder.traversal)[focal.index]
+#         parent.nodes <- names(parents[[focal.index]])
+#         for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+#           other.node <- names(postorder.traversal)[other.node.index]
+#           V.matrix[focal.node, other.node] <- 0
+#           for (parent.index in sequence(length(parent.nodes))) {
+#             focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+#             V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
+#             if(any(is.na(V.matrix))) {
+#               print("860")
+#               stop()
+#             }
+#           }
+#           V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+#         }
+#
+#         #now for Vii
+#         V.matrix[focal.node, focal.node] <- 0
+#         focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
+#
+#         for (parent.index in sequence(length(parent.nodes))) {
+#           focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+#           V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
+#           if(any(is.na(V.matrix))) {
+#             print("876")
+#             stop()
+#           }
+#         }
+#
+#         if(length(parent.nodes)>2) {
+#           stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
+#         }
+#         V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
+#         mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
+#         if(any(is.na(V.matrix))) {
+#           print("886")
+#           stop()
+#         }
+#       }
+#     }
+#
+#   }
+#   if(drop.internal) {
+#     elements.to.keep <- !grepl("Node_", names(mean.vector))
+#     mean.vector <- mean.vector[elements.to.keep]
+#     elements.to.keep <- !grepl("Node_", rownames(V.matrix))
+#     V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
+#   }
+#   diag(V.matrix) <- diag(V.matrix) + SE^2
+#   return(list(V.modified=V.matrix, means.modified=mean.vector))
+# }
+#
+# GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
+# 	bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+#   }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+#
+#   phy.network <- igraph::as.igraph(phy)
+#
+#
+#
+#   #phy.all.nodes <- sort(unique(c(phy$edge)))
+#
+#   ## TODO: add nodes for the hybridizations. Maybe extend phylo object to have multiple edges? Or use igraph? as.igraph then add edges, then traverse path on each node
+#
+#   vcv.all <- matrix(0, nrow=length(phy.all.nodes), ncol=length(phy.all.nodes))
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
+# 	V.original <- sigma.sq * times.original
+# 	V.modified <- V.original
+#   for (flow.index in sequence(dim(flow)[1])) {
+#     recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
+#     gamma <- flow$gamma[flow.index]
+#     if(length(recipient.index)!=1) {
+#       stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
+#     }
+#     donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
+#     if(length(donor.index)!=1) {
+#       stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
+#     }
+#     V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
+#     V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
+#     #covariance managed, now to manage the variance
+#     V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
+#         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
+#   }
+#   if(is.null(measurement.error)) {
+# 	   diag(V.modified) <- diag(V.modified)+SE^2
+#   } else {
+#     diag(V.modified) <- diag(V.modified)+measurement.error^2
+#   }
+# 	return(V.modified)
+# }
 
 GetMeansModified <- function(x, phy, flow, actual.params) {
 	badval<-(0.5)*.Machine$double.xmax
