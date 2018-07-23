@@ -31,6 +31,35 @@ test_that("BasicRun",{
 
 })
 
+test_that("Issue 13 is solved", {
+  create_paper_network <- function(gamma, t1, t2, t3){
+      phy <- ape::read.tree(text = paste0("((R:", t3, ",Y:", t3, "):", t1 + t2, ",X:", t1 + t2 + t3, ");"))
+      network <- list(phy = phy,
+                      flow = data.frame(donor = "X",
+                                        recipient = "R",
+                                        gamma = gamma,
+                                        time.from.root.donor = t1,
+                                        time.from.root.recipient = t1 + t2))
+      network$flow$donor <- as.character(network$flow$donor)
+      network$flow$recipient <- as.character(network$flow$recipient)
+      return(network)
+  }
+
+  gamma <- 0.5
+  t1 <- 0.3; t2 <- 0.4; t3 <- 0.3; # unit height
+  network <- create_paper_network(gamma, t1, t2, t3)
+
+  #PlotNetwork(network$phy, network$flow)
+  #axis(1, at = c(0, t1, t1+t2, t1+t2+t3), labels = c("0", "t1", "t1+t2", "t1+t2+t3"))
+
+  sigma2 = 1
+  x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
+  actual.params <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  vcv_BMhyb <- GetVModified(x, network$phy, network$flow, actual.params)
+  expect_equal(vcv_BMhyb, structure(c(0.65, 0.7, 0.15, 0.7, 1, 0, 0.15, 0, 1), .Dim = c(3L,
++ 3L), .Dimnames = list(c("R", "Y", "X"), c("R", "Y", "X")))) #from Issue 13
+})
+
 #
 # test_that("MergingTrees", {
 #   # idea is a network, decomposed into trees -- does it come back
