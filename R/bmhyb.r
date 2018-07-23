@@ -1370,7 +1370,7 @@ SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=
 		if(length(used.recipients)==ntax.hybrid) {
 			done=TRUE
 		}
-    if(length(CheckFlow)>0) {
+    if(length(CheckFlow(phy, flow)$problem.taxa)>0) {
       done=FALSE
     }
 	}
