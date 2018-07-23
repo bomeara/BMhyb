@@ -9,17 +9,18 @@
 	}
 
 \usage{
-	CheckFlow(flow)
+	CheckFlow(phy,flow)
 	}
 
 \arguments{
+\item{phy}{your phylogeny}
 \item{flow}{a data.frame with gene flow.}
 	}
 
 
 
 \value{
-	Vector of recipients that violate the algorithm's restrictions
+	A list containing problem.taxa, a vector of recipients that violate the algorithm's restrictions, and all.events, a data.frame of lumped events that lumps into events, rather than sets of taxa.
  	}
 
 \author{

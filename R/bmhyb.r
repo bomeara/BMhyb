@@ -55,8 +55,9 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
 BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
-  if(max(table(flow$recipient))>1) {
-    stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(names(table(flow$recipient)[which(table(flow$recipient)>1)]), collapse=", "), "that are causing the issue"))
+  flow.problems <- CheckFlow(phy, flow)$problem.taxa
+  if(length(flow.problems)>0) {
+    stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
   }
   if(n.random.start.points>0 & is.null(starting.values)) {
     grid.results <- BMhybGrid(data=data, phy=phy, flow=flow, verbose=FALSE, precision=precision, n.points=n.random.start.points, attempt.deletion.fix=FALSE, measurement.error=measurement.error, get.se=FALSE, plot.se=FALSE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
@@ -317,15 +318,58 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
 	return(results.summary)
 }
 
-CheckFlow <- function(flow) {
-  problems <- c()
-  if(max(table(flow$recipient))>1) {
-    problems <- names(table(flow$recipient)[which(table(flow$recipient)>1)])
+CheckFlow <- function(phy, flow) {
+  lumped.flow <- LumpIntoClades(phy, flow)
+  problem.events <- c()
+  problem.taxa <- c()
+  lumped.flow$problem <- FALSE
+  for (event.index in sequence(nrow(lumped.flow))) {
+    remaining.flow <- lumped.flow[-event.index,]
+    recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
+    for (taxon.index in sequence(length(recipient.taxa))) {
+      if(any(grepl(recipient.taxa[taxon.index], remaining.flow$recipient.clades))) {
+        problem.taxa <- append(problem.taxa, recipient.taxa[taxon.index])
+        lumped.flow$problem[event.index] <- TRUE
+      }
+    }
   }
-  return(problems)
+  problem.taxa <- unique(problem.taxa)
+  return(list(problem.taxa=problem.taxa, all.events=lumped.flow))
+}
+
+AdjustFlow <- function(data, phy, flow, remove=c("taxa", "events")) {
+  problems <- CheckFlow(phy, flow)
+  number.of.attempts <- 0
+  while(length(problems$problem.taxa)>0) {
+    number.of.attempts <- number.of.attempts + 1
+    if(remove=="taxa") {
+      taxon.to.delete <- sample(problems$problem.taxa, 1)
+      phy <- drop.tip(phy, taxon.to.delete)
+      pruned <- geiger::treedata(phy, data)
+      phy <- pruned$phy
+      data <- pruned$data
+      flow <- subset(flow, flow$recipient!=taxon.to.delete)
+      flow <- subset(flow, flow$donor!=taxon.to.delete)
+    } else {
+      pruned.flow <- problems$all.events[-sample(which(problems$all.events$problem),1),]
+      flow <- UnlumpIntoTaxa(pruned.flow)
+      flow$problem <- NULL
+      # flow$events_names <- as.numeric(as.factor(paste(flow$time.from.root.donor, flow$time.from.root.recipient))) # finally a reason to use factors.
+      # problem.events <- unique(flow$events_names[which(flow$recipient %in% problems)])
+      # problem.event.to.delete <- sample(problem.events, 1)
+      # flow <- flow[-which(flow$events_names==problem.event.to.delete),]
+      # flow$events_names <- NULL
+    }
+    problems <- CheckFlow(phy, flow)
+  }
+  return(list(data=data, phy=phy, flow=flow, number.of.attempts=number.of.attempts))
 }
 
 BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+  flow.problems <- CheckFlow(phy, flow)$problem.taxa
+  if(length(flow.problems)>0) {
+    stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
+  }
 	if(min(flow$gamma)<0) {
 		stop("Min value of flow is too low; should be between zero and one")
 	}
@@ -1400,6 +1444,16 @@ LumpIntoClades <- function(phy, flow) {
 
 	}
 	return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
+}
+
+UnlumpIntoTaxa <- function(lumped.flow) {
+  flow <- data.frame()
+  for (event.index in sequence(nrow(lumped.flow))) {
+    donor.taxa <- strsplit(lumped.flow$donor.clades[event.index], ",")[[1]]
+    recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
+    flow <- rbind(flow, expand.grid(donor=donor.taxa, recipient=recipient.taxa, gamma=lumped.flow$gamma[event.index], time.from.root.donor = lumped.flow$time.from.root.donor[event.index], time.from.root.recipient =  lumped.flow$time.from.root.recipient[event.index], event=event.index))
+  }
+  return(flow)
 }
 
 AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
