@@ -68,6 +68,6 @@ sigma.sq <- 0.01;mu <- 1;SE <- 0
 	data<-rnorm(ntax.nonhybrid+ntax.hybrid)
 	names(data)<-paste("t",(1:(ntax.nonhybrid+ntax.hybrid)),sep="")
 	#calculate the likelihood value
-	CalculateLikelihood(c(sigma.sq,mu,SE), data, network$phy, network$flow, "vh",
+	CalculateLikelihood(c(sigma.sq,mu,1,0,SE), data, network$phy, network$flow, "vh",
 	precision=2, proportion.mix.with.diag=0, allow.extrapolation=TRUE)
 	}
