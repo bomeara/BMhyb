@@ -11,7 +11,7 @@ Converts the lumped description of gene flow into one line per species pair, whi
 UnlumpIntoTaxa(lumped.flow)
 }
 \arguments{
-  \item{flow}{structure of gene flow frum LumpIntoClades}
+  \item{lumped.flow}{structure of gene flow frum LumpIntoClades}
    }
 
 
