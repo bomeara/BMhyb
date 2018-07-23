@@ -782,8 +782,8 @@ GetVModified <- function(x,phy,flow,actual.params,measurement.error=NULL){
         recipient.index.set <- which(rownames(V.modified) %in% sub.flow$recipient)
         donor.index <- which(rownames(V.modified) == sub.flow$donor[1]) #one donor here
         for(index in 1:length(recipient.index.set)){ #so only use recipient index to match the poisition
-          donor.catch.right.recipient <-which(sub.flow$recipient==rownames(V.modified)[index])
           recipient.index<-recipient.index.set[index]
+          donor.catch.right.recipient <-which(sub.flow$recipient==rownames(V.modified)[recipient.index])
           V.modified[recipient.index,donor.index] <- gamma*sub.flow$time.from.root.donor[donor.catch.right.recipient]*sigma.sq
           V.modified[donor.index,recipient.index] <- V.modified[recipient.index,donor.index]
           V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*sub.flow$time.from.root.recipient[donor.catch.right.recipient]) + (gamma^2 + (1- gamma)^2) * (sub.flow$time.from.root.recipient[donor.catch.right.recipient])*sigma.sq + 2*gamma*(1-gamma)*V.original[recipient.index, donor.index] + vh
