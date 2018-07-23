@@ -826,67 +826,67 @@ GetVModified <- function(x,phy,flow,actual.params,measurement.error=NULL){
 # 	return(V.modified)
 # }
 
-GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
-	bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-  SE <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-  }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
-
-  phy.all.nodes <- sort(unique(c(phy$edge)))
-
-  ## TODO: add nodes for the hybridizations. Maybe extend phylo object to have multiple edges? Or use igraph? as.igraph then add edges, then traverse path on each node
-
-  vcv.all <- matrix(0, nrow=length(phy.all.nodes), ncol=length(phy.all.nodes))
-
-
-
-
-
-
-
-
-
-
-
-
-	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
-	V.original <- sigma.sq * times.original
-	V.modified <- V.original
-  for (flow.index in sequence(dim(flow)[1])) {
-    recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
-    gamma <- flow$gamma[flow.index]
-    if(length(recipient.index)!=1) {
-      stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
-    }
-    donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
-    if(length(donor.index)!=1) {
-      stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
-    }
-    V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
-    V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
-    #covariance managed, now to manage the variance
-    V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
-        #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
-  }
-  if(is.null(measurement.error)) {
-	   diag(V.modified) <- diag(V.modified)+SE^2
-  } else {
-    diag(V.modified) <- diag(V.modified)+measurement.error^2
-  }
-	return(V.modified)
-}
+# GetVModifiedUppassApproach <- function(x, phy, flow, actual.params, measurement.error=NULL) {
+# 	bt <- 1
+# 	vh <- 0
+# 	sigma.sq <- x[1]
+# 	mu <- x[2]
+#   SE <- 0
+#   if(is.null(measurement.error)) {
+# 	   SE <- x[length(x)]
+#   }
+# 	bt.location <- which(names(actual.params)=="bt")
+# 	if(length(bt.location)==1) {
+# 		bt<-x[bt.location]
+# 	}
+# 	vh.location <- which(names(actual.params)=="vh")
+# 	if(length(vh.location)==1) {
+# 		vh<-x[vh.location]
+# 	}
+#
+#   phy.all.nodes <- sort(unique(c(phy$edge)))
+#
+#   ## TODO: add nodes for the hybridizations. Maybe extend phylo object to have multiple edges? Or use igraph? as.igraph then add edges, then traverse path on each node
+#
+#   vcv.all <- matrix(0, nrow=length(phy.all.nodes), ncol=length(phy.all.nodes))
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
+# 	V.original <- sigma.sq * times.original
+# 	V.modified <- V.original
+#   for (flow.index in sequence(dim(flow)[1])) {
+#     recipient.index <- which(rownames(V.modified)==flow$recipient[flow.index])
+#     gamma <- flow$gamma[flow.index]
+#     if(length(recipient.index)!=1) {
+#       stop(paste("Tried to find ", flow$recipient[flow.index], " but instead found ", paste(rownames(V.modified)[recipient.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe recipient match that of your tree", sep=""))
+#     }
+#     donor.index <- which(rownames(V.modified)==flow$donor[flow.index])
+#     if(length(donor.index)!=1) {
+#       stop(paste("Tried to find ", flow$donor[flow.index], " but instead found ", paste(rownames(V.modified)[donor.index], sep=" ", collapse= " "), "; make sure the taxon names in the flow dataframe donor match that of your tree", sep=""))
+#     }
+#     V.modified[recipient.index, donor.index] <- (1-gamma) * V.original[recipient.index, donor.index] + (gamma) * (flow$time.from.root.recipient[flow.index]) * sigma.sq #covariance is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path
+#     V.modified[donor.index, recipient.index] <- V.modified[recipient.index, donor.index]
+#     #covariance managed, now to manage the variance
+#     V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*flow$time.from.root.recipient[flow.index])+ (gamma^2 + (1- gamma)^2) * (flow$time.from.root.recipient[flow.index])*sigma.sq +2*gamma*(1-gamma)*V.original[recipient.index, donor.index]  + vh
+#         #this is variance for the hybrid. See math derivation at https://github.com/bomeara/bmhyb/issues/1
+#   }
+#   if(is.null(measurement.error)) {
+# 	   diag(V.modified) <- diag(V.modified)+SE^2
+#   } else {
+#     diag(V.modified) <- diag(V.modified)+measurement.error^2
+#   }
+# 	return(V.modified)
+# }
 
 GetMeansModified <- function(x, phy, flow, actual.params) {
 	badval<-(0.5)*.Machine$double.xmax
