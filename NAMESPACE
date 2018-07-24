@@ -1,5 +1,5 @@
-#exportPattern("^[^\\.]")
-export(AdaptiveConfidenceIntervalSampling, BMhyb, BMhybGrid, AdjustFlow, CheckFlow, ContourFromAdaptiveSampling, LumpIntoClades, PlotAICRegion, PlotNetwork, SimulateNetwork, SimulateTipData, UnlumpIntoTaxa, AICc, AkaikeWeight, AttachHybridsToDonor)
+exportPattern("^[^\\.]")
+#export(AdaptiveConfidenceIntervalSampling, BMhyb, BMhybGrid, AdjustFlow, CheckFlow, ContourFromAdaptiveSampling, LumpIntoClades, PlotAICRegion, PlotNetwork, SimulateNetwork, SimulateTipData, UnlumpIntoTaxa, AICc, AkaikeWeight, AttachHybridsToDonor, CalculateLikelihood, Adjust)
 import(corpcor,numDeriv, geiger, mvtnorm, viridis)
 import(ape, except=edges)
 # importFrom("ape", vcv.phylo, Ntip, branching.times, bind.tree, drop.tip, extract.clade, as.igraph)
