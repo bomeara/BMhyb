@@ -58,5 +58,6 @@
 	#get the variance covariance matrix
 	actual.params <- c(TRUE, TRUE, FALSE, FALSE, TRUE)
 	names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-	GetVModified(c(sigma.sq,mu,SE), network$phy, network$flow, actual.params, measurement.error=0)
+	GetVModified(c(sigma.sq,mu,SE), network$phy, network$flow,
+	actual.params, measurement.error=0)
 }

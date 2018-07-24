@@ -107,7 +107,7 @@ test_that("VH matters", {
   ## Plot
 
   sigma2 = 1
-  x <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=0)
+  x <- c(sigma.sq = sigma2, mu = 0, vh=0, SE=0)
   actual.params<-rep(TRUE, 5)
   names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
   actual.params[which(names(actual.params)=="bt")]<-FALSE
@@ -115,7 +115,7 @@ test_that("VH matters", {
 
   V0 <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
   vh.add = 3
-  y <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=vh.add)
+  y <- c(sigma.sq = sigma2, mu = 0, vh=vh.add,SE = 0)
   V1 <- GetVModified(y, network$phy, network$flow, actual.params, measurement.error=0)
   expect_equal(V1[1,1]-vh.add, V0[1,1])
   expect_equal(V1[3,3], V0[3,3])

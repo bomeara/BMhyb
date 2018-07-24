@@ -198,7 +198,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         attempts <- 1
         while(new.run$convergence!=0 & attempts < 20){#want to get a convergence code 0
           if(verbose) {
-            print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", new.run$value))
+            print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean (1 = maximum number of steps were hit; 10 means the search optimizer became degenerate). Starting again, likely near that point. Negative log likelihood was ", new.run$value, ". Attempting start ", attempts+1, " of 20 max before we give up"))
             print("Parameter estimates were")
             current.params <- new.run$par
             names(current.params) <- names(free.parameters)[which(free.parameters)]
@@ -309,7 +309,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
         local.df$penalty=CalculateLikelihood(best.run$par,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, actual.params=free.parameters[which(free.parameters)], number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
       }
   		print(local.df)
-  		results.summary <- rbind(results.summary, local.df)
+      if(!do.run) { #otherwise, we're going to start it again
+  		    results.summary <- rbind(results.summary, local.df)
+      }
     }
 	}
 	results.summary <- cbind(results.summary, deltaAICc=results.summary$AICc-min(results.summary$AICc))
