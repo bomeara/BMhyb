@@ -26,7 +26,7 @@
   \item{proportion.mix.with.diag}{the proportion value that applies to the diagonal of the vcv matrix.}
 	\item{allow.extrapolation}{a TRUE/FALSE argument.}
 	\item{measurement.error}{estimate or fixed (see details).}
-	\item{do.kappa.check}{check for VCV matrix condition, approximate if poor. Leave TRUE unless you're cleverer than us.}
+	\item{do.kappa.check}{check for VCV matrix condition, approximate if poor. }
   \item{number.of.proportions}{control how many points to use for extrapolation for ill-conditioned matrices.}
 	\item{lower.b}{minimum values of all possible parameters (non-free ones will be deleted).}
 	\item{upper.b}{maximum values of all possible parameters (non-free ones will be deleted).}
@@ -70,6 +70,7 @@ sigma.sq <- 0.01;mu <- 1;SE <- 0
 	#calculate the likelihood value
 	free.params <- rep(TRUE, 5)
 	names(free.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-	CalculateLikelihood(c(sigma.sq,mu,1,0,SE), data, network$phy, network$flow, actual.params=free.params,
-	precision=2, proportion.mix.with.diag=0, allow.extrapolation=TRUE, measurement.error=0)
+	CalculateLikelihood(c(sigma.sq,mu,1,0,SE), data, network$phy, network$flow,
+	actual.params=free.params, precision=2, proportion.mix.with.diag=0,
+	allow.extrapolation=TRUE, measurement.error=0)
 	}

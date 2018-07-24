@@ -5,7 +5,7 @@ test_that("ConditionBadCichlid", {
   free.parameters[which(names(free.parameters)=="bt")]<-FALSE
   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
   x <- c(6, mean(cichlid$data)) #terrible values
-  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=cichlid$data, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE))
+  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=cichlid$data, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
   #V.modified <- GetVModified(x=x, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], measurement.error=NULL)
 #  matrix.condition <- kappa(V.modified, exact=TRUE) high
 })
@@ -17,7 +17,7 @@ test_that("ConditionBadNicotiana", {
   free.parameters[which(names(free.parameters)=="bt")]<-FALSE
   free.parameters[which(names(free.parameters)=="vh")]<-FALSE
   x <- c(6, mean(nicotiana$data)) #terrible values
-  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=nicotiana$data, phy=nicotiana$phy, flow=nicotiana$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE))
+  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=nicotiana$data, phy=nicotiana$phy, flow=nicotiana$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
   #V.modified <- GetVModified(x=x, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], measurement.error=NULL)
 #  matrix.condition <- kappa(V.modified, exact=TRUE) high
 })
