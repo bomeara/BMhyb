@@ -53,8 +53,8 @@
     sigma.sq <- 0.01;mu <- 1;SE <- 0;bt<-12;vh<-0
     par<-c(sigma.sq,mu,SE,bt,vh)
     names(par)<-c("sigma.sq","mu","SE","bt","vh")
-    actual.params<-12
-    names(actual.params)<-"bt"
+    actual.params <- rep(TRUE, 5)
+    names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
 	#calculate the species means
 	GetMeansModified(par, network$phy, network$flow,actual.params)
 	}

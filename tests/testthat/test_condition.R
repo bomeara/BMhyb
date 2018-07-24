@@ -24,7 +24,7 @@ test_that("ConditionBadNicotiana", {
 
 test_that("BasicRun",{
   utils::data("cichlid")
-  result <- BMhyb(cichlid$data, cichlid$phy, cichlid$flow, n.points=100, get.se=TRUE, plot.se=FALSE)
+  result <- BMhyb(cichlid$data, cichlid$phy, cichlid$flow, n.points=100, get.se=TRUE, plot.se=FALSE, measurement.error=0,n.random.start.points=100)
   expect_equal(class(result), "data.frame")
   expect_equal(nrow(result), 4)
   expect_equal(ncol(result), 22)
@@ -53,10 +53,10 @@ test_that("Issue 13 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.parameters<-rep(TRUE, 5)
-  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
-  actual.parameters[which(names(actual.parameters)=="vh")]<-FALSE
+  actual.params<-rep(TRUE, 5)
+  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.params[which(names(actual.params)=="bt")]<-FALSE
+  actual.params[which(names(actual.params)=="vh")]<-FALSE
   vcv_BMhyb <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
   expect_equal(vcv_BMhyb, structure(c(0.65, 0.7, 0.15, 0.7, 1, 0, 0.15, 0, 1), .Dim = c(3L,
 + 3L), .Dimnames = list(c("R", "Y", "X"), c("R", "Y", "X")))) #from Issue 13
@@ -80,11 +80,11 @@ test_that("Issue 14 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.parameters<-rep(TRUE, 5)
-  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
-  actual.parameters[which(names(actual.parameters)=="vh")]<-FALSE
-  actual.parameters[which(names(actual.parameters)=="SE")]<-FALSE
+  actual.params<-rep(TRUE, 5)
+  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.params[which(names(actual.params)=="bt")]<-FALSE
+  actual.params[which(names(actual.params)=="vh")]<-FALSE
+  actual.params[which(names(actual.params)=="SE")]<-FALSE
   expect_equal(GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0), structure(c(0.85, 0.55, 0.15, 0.55, 0.85, 0.15, 0.15, 0.15, 1
 ), .Dim = c(3L, 3L), .Dimnames = list(c("R", "Y", "X"), c("R",
 "Y", "X"))))
@@ -108,17 +108,17 @@ test_that("VH matters", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=0)
-  actual.parameters<-rep(TRUE, 5)
-  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
-  actual.parameters[which(names(actual.parameters)=="SE")]<-FALSE
+  actual.params<-rep(TRUE, 5)
+  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.params[which(names(actual.params)=="bt")]<-FALSE
+  actual.params[which(names(actual.params)=="SE")]<-FALSE
 
-  V0 <- GetVModified(x, network$phy, network$flow, actual.parameters, measurement.error=0)
+  V0 <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
   vh.add = 3
   y <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=vh.add)
-  V1 <- GetVModified(y, network$phy, network$flow, actual.parameters, measurement.error=0)
+  V1 <- GetVModified(y, network$phy, network$flow, actual.params, measurement.error=0)
   expect_equal(V1[1,1]-vh.add, V0[1,1])
-  expect_equal(V1[2,2], V0[2,2])
+  expect_equal(V1[3,3], V0[3,3])
 })
 
 #
