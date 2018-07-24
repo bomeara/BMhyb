@@ -1,4 +1,5 @@
-exportPattern("^[^\\.]")
+#exportPattern("^[^\\.]")
+export("AdaptiveConfidenceIntervalSampling", "BMhyb", "BMhybGrid", "AdjustFlow", "CheckFlow", "ContourFromAdaptiveSampling", "LumpIntoClades" "PlotAICRegion", "nicotiana", "cichlid", "PlotNetwork", "SimulateNetwork", "SimulateTipData", "UnlumpIntoTaxa")
 import(corpcor,numDeriv, geiger, mvtnorm, viridis)
 import(ape, except=edges)
 # importFrom("ape", vcv.phylo, Ntip, branching.times, bind.tree, drop.tip, extract.clade, as.igraph)

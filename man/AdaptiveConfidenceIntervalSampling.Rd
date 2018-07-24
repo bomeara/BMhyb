@@ -73,7 +73,7 @@ This function starts with a set of parameter values, generates new points using 
 	interval.results <- AdaptiveConfidenceIntervalSampling(parameters, fn=CalculateLikelihood,
 	lower=c(0, -Inf, 0, 0, 0)[which(free.parameters)], n.points=100,data=tips,
 	phy=network$phy, flow=network$flow, actual.params =
-	free.parameters[which(free.parameters)], allow.extrapolation=TRUE)
+	free.parameters[which(free.parameters)], allow.extrapolation=TRUE, measurement.error=NULL)
 
   #show the results
 	interval.results.in <- interval.results[which(interval.results[,1] -

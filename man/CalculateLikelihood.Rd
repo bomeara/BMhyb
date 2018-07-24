@@ -10,7 +10,7 @@
 \usage{
 	CalculateLikelihood(x, data, phy, flow, actual.params, precision=2,
 	proportion.mix.with.diag=0, allow.extrapolation=FALSE,
-	measurement.error = NULL, do.kappa.check = FALSE, number.of.proportions=101,
+	measurement.error , do.kappa.check = FALSE, number.of.proportions=101,
 	lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100),
 	badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE,
 	do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...)
@@ -39,7 +39,7 @@
 }
 
 \details{
-	This function calculates the likelihood value. As described in the argument, the \eqn{x} contains the parameter of interests including over all mean \eqn{\mu}, the rate of evolution \eqn{\sigma^2}, the measurement error SE and the hybrid vigor \eqn{\beta} and the variation at the burst of hybridization \eqn{v_H}. Names of the taxa in data vector and the phylogeny must be match for further analysis, otherwise it would terminate immediately. The negative log likelihood function is calculated and a reasonable likelihood value is returned by checking the variance covariance matrix where a precision number is used for verifying the log conditioned number of the variance covariance of the network model. When the matrix is ill conditioned, we modestly adjust the matrix by the shrink the value of the off diagonal matrix using a proportion array. Then the likelihood is calculated using a spline approximation.
+	This function calculates the likelihood value. As described in the argument, the \eqn{x} contains the parameter of interests including over all mean \eqn{\mu}, the rate of evolution \eqn{\sigma^2}, the measurement error SE and the hybrid vigor \eqn{\beta} and the variation at the burst of hybridization \eqn{v_H}. Names of the taxa in data vector and the phylogeny must be match for further analysis, otherwise it would terminate immediately. The negative log likelihood function is calculated and a reasonable likelihood value is returned by checking the variance covariance matrix where a precision number is used for verifying the log conditioned number of the variance covariance of the network model. When the matrix is ill conditioned, we modestly adjust the matrix by the shrink the value of the off diagonal matrix using a proportion array. Then the likelihood is calculated using a spline approximation. Make sure to set measurement.error: set it to NULL to have this be a free parameter, or use a vector of values (one per taxon), or a single value (perhaps 0) for all taxa. See ?BMhyb for what this parameter means.
 	}
 
 \value{
@@ -68,6 +68,8 @@ sigma.sq <- 0.01;mu <- 1;SE <- 0
 	data<-rnorm(ntax.nonhybrid+ntax.hybrid)
 	names(data)<-paste("t",(1:(ntax.nonhybrid+ntax.hybrid)),sep="")
 	#calculate the likelihood value
-	CalculateLikelihood(c(sigma.sq,mu,1,0,SE), data, network$phy, network$flow, "vh",
-	precision=2, proportion.mix.with.diag=0, allow.extrapolation=TRUE)
+	free.params <- rep(TRUE, 5)
+	names(free.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+	CalculateLikelihood(c(sigma.sq,mu,1,0,SE), data, network$phy, network$flow, actual.params=free.params,
+	precision=2, proportion.mix.with.diag=0, allow.extrapolation=TRUE, measurement.error=0)
 	}

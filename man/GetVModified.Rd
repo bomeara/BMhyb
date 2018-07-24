@@ -9,7 +9,7 @@
 	}
 
 \usage{
-	GetVModified(x, phy, flow, actual.params, measurement.error = NULL)
+	GetVModified(x, phy, flow, actual.params, measurement.error)
 	}
 
 \arguments{
@@ -25,11 +25,11 @@
  \item{actual.params}{
  	The parameters that are related to the hybridization including the hybrid vigor \eqn{\beta} and variation at the burst of hybridization \eqn{v_H}.
  	}
-	\item{measurement.error}{estimate or fixed (see details).}
+	\item{measurement.error}{estimate or fixed (see details of BMhyb).}
 }
 
 \details{
-	This function calculates the variance covariance matrix under the network model. The function first read tree in \emph{phylo} class and convert the variance covariance matrix use the Brownian motion model. It then uses the structure of the gene flow to identify the hybrid species, parents and the direction of the flow. The covariance of between the hybrid and non hybrid species is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path. For more detail about the model description, please see Jhwueng and O'Meara 2016.
+	This function calculates the variance covariance matrix under the network model. The function first read tree in \emph{phylo} class and convert the variance covariance matrix use the Brownian motion model. It then uses the structure of the gene flow to identify the hybrid species, parents and the direction of the flow. The covariance of between the hybrid and non hybrid species is the weighted sum of the covariance from evolution along the tree plus evolution along the migration path. For more detail about the model description, please see Jhwueng and O'Meara 2018.
 	}
 
 \value{
