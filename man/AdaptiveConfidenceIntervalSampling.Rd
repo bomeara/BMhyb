@@ -8,7 +8,7 @@ This function uses an adaptive cluster sampling technique to generate confidence
 }
 \usage{
 AdaptiveConfidenceIntervalSampling(par, fn, lower=-Inf, upper=Inf, desired.delta = 2,
-n.points=5000, verbose=TRUE,  measurement.error=NULL, do.kappa.check=FALSE,
+n.points=5000, verbose=TRUE,  measurement.error, do.kappa.check=FALSE,
 allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=FALSE, ...)
 }
 
@@ -29,7 +29,7 @@ allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=F
   \item{...}{further arguments passed(see details).}
 }
 \details{
-This function starts with a set of parameter values, generates new points using the function \code{GeneratedValues}, and the likelihood value is calculated. Following an idea by Edwards (1992), a support region is based on points within a certain likelihood score of the best one (by default, 2 log likelihood units). The function tries to look over a region wide enough to encompass parameter values that are in this range. Note this is done for all traits at once. This generates wider (more conservative) confidence regions than looking at each parameter value separately. For example, if there were a ridge such that two values can covary without changing the likelihood, a univariate procedure that changes one but holds the others constant would give a narrow region, while our approach of trying many points would give a much wider region.
+This function starts with a set of parameter values, generates new points using the function \code{GeneratedValues}, and the likelihood value is calculated. Following an idea by Edwards (1992), a support region is based on points within a certain likelihood score of the best one (by default, 2 log likelihood units). The function tries to look over a region wide enough to encompass parameter values that are in this range. Note this is done for all traits at once. This generates wider (more conservative) confidence regions than looking at each parameter value separately. For example, if there were a ridge such that two values can covary without changing the likelihood, a univariate procedure that changes one but holds the others constant would give a narrow region, while our approach of trying many points would give a much wider region. Make sure to set measurement.error: set it to NULL to have this be a free parameter, or use a vector of values (one per taxon), or a single value (perhaps 0) for all taxa. See ?BMhyb for what this parameter means.
 }
 
 \value{

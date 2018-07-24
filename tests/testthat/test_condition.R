@@ -53,8 +53,11 @@ test_that("Issue 13 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.params <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  vcv_BMhyb <- GetVModified(x, network$phy, network$flow, actual.params)
+  actual.parameters<-rep(TRUE, 5)
+  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
+  actual.parameters[which(names(actual.parameters)=="vh")]<-FALSE
+  vcv_BMhyb <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
   expect_equal(vcv_BMhyb, structure(c(0.65, 0.7, 0.15, 0.7, 1, 0, 0.15, 0, 1), .Dim = c(3L,
 + 3L), .Dimnames = list(c("R", "Y", "X"), c("R", "Y", "X")))) #from Issue 13
 })
@@ -77,10 +80,45 @@ test_that("Issue 14 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.params <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  expect_equal(GetVModified(x, network$phy, network$flow, actual.params), structure(c(0.85, 0.55, 0.15, 0.55, 0.85, 0.15, 0.15, 0.15, 1
+  actual.parameters<-rep(TRUE, 5)
+  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
+  actual.parameters[which(names(actual.parameters)=="vh")]<-FALSE
+  actual.parameters[which(names(actual.parameters)=="SE")]<-FALSE
+  expect_equal(GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0), structure(c(0.85, 0.55, 0.15, 0.55, 0.85, 0.15, 0.15, 0.15, 1
 ), .Dim = c(3L, 3L), .Dimnames = list(c("R", "Y", "X"), c("R",
 "Y", "X"))))
+})
+
+test_that("VH matters", {
+  gamma <- 0.5
+  t1 <- 0.3; t2 <- 0.4; t3 <- 0.3;
+  phy <- ape::read.tree(text = paste0("((R:", t3, ",Y:", t3, "):", t1 + t2, ",X:", t1 + t2 + t3, ");"))
+  ## Network
+  don_recp <- expand.grid(c("X"), c("Y", "R"))
+  network <- list(phy = phy,
+                  flow = data.frame(donor = don_recp[,1],
+                                    recipient = don_recp[,2],
+                                    gamma = rep(gamma, 2),
+                                    time.from.root.donor = rep(t1, 2),
+                                    time.from.root.recipient = rep(t1, 2)))
+  network$flow$donor <- as.character(network$flow$donor)
+  network$flow$recipient <- as.character(network$flow$recipient)
+  ## Plot
+
+  sigma2 = 1
+  x <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=0)
+  actual.parameters<-rep(TRUE, 5)
+  names(actual.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  actual.parameters[which(names(actual.parameters)=="bt")]<-FALSE
+  actual.parameters[which(names(actual.parameters)=="SE")]<-FALSE
+
+  V0 <- GetVModified(x, network$phy, network$flow, actual.parameters, measurement.error=0)
+  vh.add = 3
+  y <- c(sigma.sq = sigma2, mu = 0, SE = 0, vh=vh.add)
+  V1 <- GetVModified(y, network$phy, network$flow, actual.parameters, measurement.error=0)
+  expect_equal(V1[1,1]-vh.add, V0[1,1])
+  expect_equal(V1[2,2], V0[2,2])
 })
 
 #

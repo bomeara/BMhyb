@@ -54,7 +54,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
   flow.problems <- CheckFlow(phy, flow)$problem.taxa
   if(length(flow.problems)>0) {
     stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
@@ -113,7 +113,9 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   	}
   }
   if(badval.if.not.positive.definite) {
-    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= rep(TRUE,5)))) {
+    placeholder.params <- rep(TRUE, 5)
+    names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= placeholder.params, measurement.error=0))) {
       if(attempt.deletion.fix) {
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
@@ -365,7 +367,7 @@ AdjustFlow <- function(data, phy, flow, remove=c("taxa", "events")) {
   return(list(data=data, phy=phy, flow=flow, number.of.attempts=number.of.attempts))
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=0, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
   flow.problems <- CheckFlow(phy, flow)$problem.taxa
   if(length(flow.problems)>0) {
     stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
@@ -417,7 +419,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 #  if(badval.if.not.positive.definite) {
     placeholder.params <- rep(TRUE, 5)
     names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= placeholder.params))) {
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= placeholder.params, measurement.error=0))) {
       if(attempt.deletion.fix) {
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
@@ -737,7 +739,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
   return(V.corrected)
 }
 
-GetVModified <- function(x,phy,flow,actual.params,measurement.error=NULL){
+GetVModified <- function(x,phy,flow,actual.params,measurement.error){
   VerifyActualParams(actual.params)
   actual.params <- actual.params[actual.params] # only want the true values
   bt <- 1
@@ -855,7 +857,7 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
+CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
 	badval<-(0.5)*.Machine$double.xmax
   VerifyActualParams(actual.params)
   actual.params <- actual.params[actual.params] # only want the true values
@@ -1048,7 +1050,7 @@ ConvertExpm1 <- function(x) {
   x[which(names(x)=="mu")] <- expm1(x[which(names(x)=="mu")])
 }
 
-AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error=NULL, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=FALSE, ...) {
+AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, desired.delta = 2, n.points=5000, verbose=TRUE, measurement.error, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, likelihood.precision=0.001, restart.mode=FALSE, ...) {
 	starting<-fn(par, measurement.error=measurement.error,  ...)
 	if(length(lower) < length(par)) {
 		lower<-rep(lower, length(par))
@@ -1168,7 +1170,9 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
   current.m.index <- 1
   current.index <- 1
   combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
-  while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params= rep(TRUE,length(params))))) {
+  placeholder.params <- rep(TRUE, 5)
+  names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
+  while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params=placeholder.params, measurement.error=0))) {
     #print(current.index)
     #print(paste0("Dropping ", paste(combos.to.delete[,current.index], collapse=" ")))
     phy.pruned <- ape::drop.tip(phy, combos.to.delete[,current.index])
