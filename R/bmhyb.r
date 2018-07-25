@@ -766,6 +766,7 @@ GetVModified <- function(x,phy,flow,actual.params,measurement.error){
 
 
   flow <- flow[order(flow$time.from.root.donor),]
+  crossing.flows <- any(!((order(flow$time.from.root.donor) == order(flow$time.from.root.recipient))))
     times.original<-vcv.phylo(phy,model="Brownian")
     V.original <- sigma.sq * times.original
     V.modified <- V.original
@@ -802,7 +803,7 @@ GetVModified <- function(x,phy,flow,actual.params,measurement.error){
           for(index.2 in 1:dim(sub.flow)[1]){
             recipient.index.2 <- recipient.index.set[index.2]
             if(recipient.index.1!=recipient.index.2){
-              V.modified[recipient.index.1,recipient.index.2] = (V.original[recipient.index.1,recipient.index.2]- sub.flow$time.from.root.recipient[1]) + (gamma^2+(1-gamma)^2)*sub.flow$time.from.root.recipient[1]
+              V.modified[recipient.index.1,recipient.index.2] = (V.original[recipient.index.1,recipient.index.2]- sub.flow$time.from.root.recipient[1])*sigma.sq + (gamma^2+(1-gamma)^2)*sub.flow$time.from.root.recipient[1]*sigma.sq
             }#end of flow.Index.1 != flow.Index.2
           }#end flow.Index.2
         }#end flow.Index.1

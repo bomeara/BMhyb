@@ -6,10 +6,6 @@
 [![Build
 Status](https://travis-ci.org/bomeara/BMhyb.svg)](https://travis-ci.org/bomeara/BMhyb)
 [![codecov](https://codecov.io/gh/bomeara/BMhyb/branch/master/graph/badge.svg)](https://codecov.io/gh/bomeara/BMhyb)
-[![Github Open
-Issues](https://img.shields.io/github/issues-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues)
-[![Github Closed
-Issues](https://img.shields.io/github/issues-closed-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues?q=is%3Aissue+is%3Aclosed)
 <img class="badge" src="https://www.r-pkg.org/badges/version/BMhyb">
 <img class="badge" src="http://cranlogs.r-pkg.org/badges/grand-total/BMhyb">
 
@@ -403,7 +399,15 @@ column names) and convert it using the `UnlumpIntoTaxa()` function.
 
 Only some hybrid networks can be analyzed using this framework.
 Basically, each lineage must come from no more than one hybridization
-event.
+event. We have tools to check this automatically (`?CheckFlow`). There
+are ways to eliminate problems by deleting hybrid taxa or by deleting
+hybridization events – `AdjustFlow` does this. Clearly, deleting taxa
+eliminates data, which makes you lose precision; deleting events makes
+you change history; neither is ideal. We are conservative with our
+restrictions: for the networks we reject, we cannot guarantee that our
+algorithm returns the correct variance covariance matrix. In such cases,
+you may be interested in 1) building off our model, 2) trying
+[PhyloNetworks](https://github.com/crsl4/PhyloNetworks.jl).
 
 Besides the univariate trait data, another kind of data that can be
 useful is what is commonly called “measurement error.” This could mean
