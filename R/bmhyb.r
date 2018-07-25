@@ -54,7 +54,8 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds=c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+  preset.starting.parameters = NULL
   flow.problems <- CheckFlow(phy, flow)$problem.taxa
   if(length(flow.problems)>0) {
     stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
@@ -108,14 +109,13 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
   	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     }
+    names(starting.values) <- GenerateParamLabels()
   	if(verbose) {
   		print("Done getting starting values")
   	}
   }
   if(badval.if.not.positive.definite) {
-    placeholder.params <- rep(TRUE, 5)
-    names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= placeholder.params, measurement.error=0))) {
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, measurement.error=measurement.error))) {
       if(attempt.deletion.fix) {
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
@@ -132,32 +132,30 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   		if(verbose) {
   			print(paste("Starting model", models[model.index], "of", length(models), "models"))
   		}
-  		free.parameters<-rep(TRUE, 5)
-  		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
   		model <- models[model.index]
   		if(model==1) {
-  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="bt"))]
   		}
   		if(model==2) {
-  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="vh"))]
   		}
   		if(model==3) {
-  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="bt"))]
+        starting.values <- starting.values[-which(names(starting.values=="vh"))]
   		}
       if(!is.null(measurement.error)) {
-        free.parameters[which(names(free.parameters)=="SE")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="SE"))]
       }
 
       if(is.null(preset.starting.parameters)) {
-        preset.starting.parameters <- starting.values[free.parameters]
+        preset.starting.parameters <- starting.values
       }
       # if(badval.if.not.positive.definite) {
       #   if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= free.parameters))) {
       #     stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
       #   }
       # }
-  		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+  		best.run <- optim(par=preset.starting.parameters, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
       best.run$par <- best.run$par
       attempts <- 1
   		while(best.run$convergence!=0){#want to get a convergence code 0
@@ -165,27 +163,23 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
           print(paste0("Initial search had a convergence code of ", best.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", best.run$value))
           print("Parameter estimates were")
           current.params <- best.run$par
-          names(current.params) <- names(free.parameters)[which(free.parameters)]
           print(current.params)
         }
         attempts <- attempts+1
         if(attempts%%3!=1) {
-    		    best.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+    		    best.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[names(preset.starting.parameters)], upper=upper.bounds[names(preset.starting.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
         } else {
-          best.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+          best.run<-optim(par=GenerateRandomValues(data, preset.starting.parameters, lower.bounds[names(preset.starting.parameters)], upper.bounds[names(preset.starting.parameters)]), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
         }
           #best.run$par <- ConvertExpm1(best.run$par)
 
   		}
 
 
-      # opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-      # best.run <- nloptr(x0=starting.values[free.parameters], eval_f=CalculateLikelihood, opts=opts, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], proportion.mix.with.diag=0, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions)
-      # best.run$value = best.run$objective
-      # best.run$par = best.run$solution
+
   		if(verbose) {
   			results.vector<-c(step.count, best.run$value, best.run$par)
-  			names(results.vector) <- c("step","negloglik", names(free.parameters[which(free.parameters)]))
+  			names(results.vector) <- c("step","negloglik", names(best.run$par))
   			print(results.vector)
   		}
   		#this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
@@ -193,7 +187,7 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
       times.without.improvement <- 0
   		while(times.without.improvement<10) {
   			times.without.improvement <- times.without.improvement+1
-        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+        new.run <- optim(par=best.run$par, fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
         #new.run$par <- ConvertExpm1(new.run$par)
         attempts <- 1
         while(new.run$convergence!=0 & attempts < 20){#want to get a convergence code 0
@@ -201,14 +195,13 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
             print(paste0("This search had a convergence code of ", new.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean (1 = maximum number of steps were hit; 10 means the search optimizer became degenerate). Starting again, likely near that point. Negative log likelihood was ", new.run$value, ". Attempting start ", attempts+1, " of 20 max before we give up"))
             print("Parameter estimates were")
             current.params <- new.run$par
-            names(current.params) <- names(free.parameters)[which(free.parameters)]
             print(current.params)
           }
           attempts <- attempts+1
           if(attempts%%3!=1) {
-              new.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+              new.run<-optim(par=GenerateValues(best.run$par, lower=lower.bounds[names(preset.starting.parameters)], upper=upper.bounds[names(preset.starting.parameters)], examined.max=10*best.run$par, examined.min=0.1*best.run$par), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
           } else {
-            new.run<-optim(par=GenerateRandomValues(data, free.parameters, lower.bounds[which(free.parameters)], upper.bounds[which(free.parameters)]),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+            new.run<-optim(par=GenerateRandomValues(data, preset.starting.parameters, lower.bounds[names(preset.starting.parameters)], upper.bounds[names(preset.starting.parameters)]),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
           }
           #  new.run$par <- ConvertExpm1(new.run$par)
 
@@ -233,15 +226,14 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				step.count <- step.count+1
   				results.vector<-c(step.count, times.without.improvement, best.run$value, best.run$par)
-  				names(results.vector) <- c("step", "steps.without.improvement","negloglik", names(free.parameters[which(free.parameters)]))
+  				names(results.vector) <- c("step", "steps.without.improvement","negloglik", names(best.run$par))
   				print(results.vector)
   			}
   		}#end of times.without.improvement<10
   		results[[model.index]] <- best.run
   		#try(hessians[[model.index]] <- hessian(func=CalculateLikelihood, x=new.run$par, data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)]))
   		results.vector.full <- c(NA, NA, 1, 0, 0)
-  		names(results.vector.full) <- names(free.parameters)
-  		names(best.run$par) <- names(free.parameters[which(free.parameters)])
+  		names(results.vector.full) <- GenerateParamLabels()
   		for (i in sequence(length(best.run$par))) {
   			results.vector.full[which(names(results.vector.full)==names(best.run$par)[i])] <- best.run$par[i]
   		}
@@ -249,8 +241,8 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   		#try(print(solve(hessians[[model.index]])))
   		ci.vector<-rep(NA,10)
   		for(parameter in sequence(5)) {
-  			names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
-  			names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
+  			names(ci.vector)[1+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"lower", sep=".")
+  			names(ci.vector)[2+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"upper", sep=".")
   		}
       weird.result <- FALSE
       if(best.run$value>1e100) {
@@ -262,21 +254,20 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   			if(verbose) {
   				print("Now doing simulation to estimate parameter uncertainty")
   			}
-  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[which(free.parameters)], upper=upper.bounds[which(free.parameters)], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+  			interval.results <- AdaptiveConfidenceIntervalSampling(best.run$par, fn=CalculateLikelihood, lower=lower.bounds[names(preset.starting.parameters)], upper=upper.bounds[names(preset.starting.parameters)], data=data, phy=phy, flow=flow, allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = best.run$value, likelihood.precision=likelihood.precision, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
   			interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=2),]
   			interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>2),]
         if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
           print("The sampling to find confidence in parameters actually found a better part of the likelihood surface. Restarting the run for this model at that point")
           best.point <- interval.results[which.min(interval.results[,1]),]
-          names(best.point) <- c("neglnL", names(free.parameters)[which(free.parameters)])
           preset.starting.parameters <- best.point[-1]
           do.run = TRUE
         }
   			if(plot.se) {
-  				pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
-  				par(mfcol=c(1, sum(free.parameters)))
-  				for(parameter in sequence(sum(free.parameters))) {
-  					plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
+  				pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*length(preset.starting.parameters))
+  				par(mfcol=c(1, length(preset.starting.parameters)))
+  				for(parameter in sequence(length(preset.starting.parameters))) {
+  					plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(present.starting.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
   					points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
   					points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
   					points(x= best.run$par[parameter], y= best.run$value, pch=1, col="red", cex=1.5)
@@ -287,13 +278,13 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   				}
   			}
   			if(store.sims) {
-  				colnames(interval.results) <- c("neglnL", names(free.parameters)[which(free.parameters)])
+  				colnames(interval.results) <- c("neglnL", names(preset.starting.parameters))
   				all.sims[[model.index]]<-interval.results
   			}
   			free.index=0
-  			for(parameter in sequence(5)) {
+  			for(parameter in sequence(length(GenerateParamLabels()))) {
 
-  				if(free.parameters[parameter]) { #is estimated
+  				if(grepl(GenerateParamLabels()[parameter], names(preset.starting.parameters))) { #is estimated
   					free.index <- free.index + 1
   					ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
   					ci.vector[2+2*(parameter-1)] <- max(interval.results.in[,free.index+1])
@@ -303,10 +294,10 @@ BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), 
   				}
   			}
   		}
-  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.run$value), best.run$value, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1), stringsAsFactors=FALSE)
+  		local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(preset.starting.parameters), best.run$value), best.run$value, length(preset.starting.parameters), ci.vector), nrow=1), stringsAsFactors=FALSE)
   		colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
       if(do.Higham.correction) {
-        local.df$penalty=CalculateLikelihood(best.run$par,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, actual.params=free.parameters[which(free.parameters)], number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
+        local.df$penalty=CalculateLikelihood(best.run$par,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
       }
   		print(local.df)
       if(!do.run) { #otherwise, we're going to start it again
@@ -369,7 +360,7 @@ AdjustFlow <- function(data, phy, flow, remove=c("taxa", "events")) {
   return(list(data=data, phy=phy, flow=flow, number.of.attempts=number.of.attempts))
 }
 
-BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(0, -Inf, 0.000001, 0, 0), upper.bounds=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds = c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
   flow.problems <- CheckFlow(phy, flow)$problem.taxa
   if(length(flow.problems)>0) {
     stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
@@ -414,14 +405,13 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
   	    starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
   	    starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(branching.times(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     }
+    names(starting.values) <- GenerateParamLabels()
   	if(verbose) {
   		print("Done getting starting values")
   	}
   }
 #  if(badval.if.not.positive.definite) {
-    placeholder.params <- rep(TRUE, 5)
-    names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, actual.params= placeholder.params, measurement.error=0))) {
+    if(!IsPositiveDefinite(GetVModified(starting.values, phy, flow, measurement.error=measurement.error))) {
       if(attempt.deletion.fix) {
         phy <- AttemptDeletionFix(phy, flow, starting.values)
         tips <- tips[names(tips) %in% phy$tip.label]
@@ -440,21 +430,19 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
   		if(verbose) {
   			print(paste("Starting model", models[model.index], "of", length(models), "models"))
   		}
-  		free.parameters<-rep(TRUE, 5)
-  		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  		model <- models[model.index]
+      model <- models[model.index]
   		if(model==1) {
-  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="bt"))]
   		}
   		if(model==2) {
-  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="vh"))]
   		}
   		if(model==3) {
-  			free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  			free.parameters[which(names(free.parameters)=="vh")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="bt"))]
+        starting.values <- starting.values[-which(names(starting.values=="vh"))]
   		}
       if(!is.null(measurement.error)) {
-        free.parameters[which(names(free.parameters)=="SE")]<-FALSE
+        starting.values <- starting.values[-which(names(starting.values=="SE"))]
       }
 
       starting.mins <- c(0, min(data)-(max(data)-min(data)), 0, 0, 0)
@@ -465,12 +453,12 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       for (i in sequence(length(starting.maxes))) {
         starting.maxes[i] <- min(starting.maxes[i], upper.bounds[i])
       }
-      names(starting.mins) <- names(free.parameters)
-      names(starting.maxes) <- names(free.parameters)
+      names(starting.mins) <- names(preset.starting.parameters)
+      names(starting.maxes) <- names(preset.starting.parameters)
       ci.vector<-rep(NA,10)
       for(parameter in sequence(5)) {
-        names(ci.vector)[1+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"lower", sep=".")
-        names(ci.vector)[2+2*(parameter-1)] <- paste(names(free.parameters)[parameter],"upper", sep=".")
+        names(ci.vector)[1+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"lower", sep=".")
+        names(ci.vector)[2+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"upper", sep=".")
       }
 
       # if(badval.if.not.positive.definite) {
@@ -498,17 +486,16 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         starting.maxes["SE"] <- 0
       }
 
-      #starting.mins <- starting.mins[free.parameters]
-    #  starting.maxes <- starting.mins[free.parameters]
+
       grid.of.points <- lhs::randomLHS(n=n.points, k=length(starting.mins))
       for(parameter.index in sequence(ncol(grid.of.points))) {
         grid.of.points[,parameter.index] <- starting.mins[parameter.index] + grid.of.points[,parameter.index] * (starting.maxes[parameter.index] - starting.mins[parameter.index])
       }
-      colnames(grid.of.points) <- names(free.parameters)
+      colnames(grid.of.points) <- names(starting.parameters)
       likelihoods <- rep(NA, n.points)
 
       for (rep.index in sequence(n.points)) {
-        local.likelihood <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction))
+        local.likelihood <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction))
         if(!is.numeric(local.likelihood)) {
           local.likelihood <- (0.5)*.Machine$double.xmax
         }
@@ -524,8 +511,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
 
 
       results.vector.full <- c(NA, NA, 1, 0, 0)
-      names(results.vector.full) <- names(free.parameters)
-    #  names(best.run$par) <- names(free.parameters[which(free.parameters)])
+      names(results.vector.full) <- GenerateParamLabels()
       for (i in sequence(length(best.params))) {
         results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
       }
@@ -538,8 +524,8 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       }
       previous.results <- cbind(likelihoods, grid.of.points)
       colnames(previous.results)[1] <- "NegLogL"
-      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[free.parameters], fn=CalculateLikelihood, lower=lower.bounds[free.parameters], upper=upper.bounds[free.parameters], data=data, phy=phy, flow=flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[free.parameters], upper.b=upper.bounds[free.parameters], do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
-      colnames(interval.results) <- c("NegLogL", names(free.parameters[free.parameters]))
+      interval.results <- AdaptiveConfidenceIntervalSampling(best.params[names(preset.starting.parameters)], fn=CalculateLikelihood, lower=lower.bounds[names(preset.starting.parameters)], upper=upper.bounds[names(preset.starting.parameters)], data=data, phy=phy, flow=flow, allow.extrapolation=allow.extrapolation, n.points=n.points,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions.adaptive, allow.restart=allow.restart, best.lnl = min(likelihoods), likelihood.precision=likelihood.precision, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
+      colnames(interval.results) <- c("NegLogL", GenerateParamLabels())
       if(!any(grepl("bt", names(interval.results)))) {
         interval.results$bt <- 1
       }
@@ -555,13 +541,7 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       interval.results <- interval.results[is.finite(interval.results[,1]),]
       interval.results.in <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))<=2),]
       interval.results.out <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))>2),]
-      # if(best.run$value - min(interval.results[,1]) > likelihood.precision) {
-      #   print("The sampling to find confidence in parameters actually found a better part of the likelihood surface. Restarting the run for this model at that point")
-      #   best.point <- interval.results[which.min(interval.results[,1]),]
-      #   names(best.point) <- c("neglnL", names(free.parameters)[which(free.parameters)])
-      #   preset.starting.parameters <- best.point[-1]
-      #   do.run = TRUE
-      # }
+
       for(parameter in sequence(ncol(interval.results)-1)) {
         parameter.name <- names(interval.results)[parameter+1]
         ci.vector[paste0(parameter.name, ".upper")] <- max(interval.results.in[,parameter+1], na.rm=TRUE)
@@ -570,17 +550,17 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
       if(min(interval.results$NegLogL, na.rm=TRUE) <  min(likelihoods)) {
           best.params <- interval.results[which.min(interval.results$NegLogL), -1]
             results.vector.full <- c(NA, NA, 1, 0, 0)
-            names(results.vector.full) <- names(free.parameters)
+            names(results.vector.full) <- GenerateParamLabels()
             for (i in sequence(length(best.params))) {
               results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
             }
             best.likelihood <- min(interval.results$NegLogL, na.rm=TRUE)
       }
       if(plot.se) {
-        pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
-        par(mfcol=c(1, sum(free.parameters)))
-        for(parameter in sequence(sum(free.parameters))) {
-          plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(free.parameters[which(free.parameters)])[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
+        pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*length(starting.parameters))
+        par(mfcol=c(1, length(starting.parameters)))
+        for(parameter in sequence(length(starting.parameters))) {
+          plot(x=interval.results[,parameter+1], y=interval.results[,1], type="n", xlab=names(starting.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(interval.results[,1]), min(interval.results[,1])+10))
           points(x=interval.results.in[,parameter+1], y=interval.results.in[,1], pch=16, col="black")
           points(x=interval.results.out[,parameter+1], y=interval.results.out[,1], pch=16, col="gray")
           points(x= best.params[parameter], y= best.likelihood, pch=1, col="red", cex=1.5)
@@ -591,41 +571,24 @@ BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=T
         }
       }
     }
-    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), best.likelihood), best.likelihood, length(free.parameters[which(free.parameters)]), ci.vector), nrow=1), stringsAsFactors=FALSE)
+    local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(starting.parameters), best.likelihood), best.likelihood, length(starting.parameters), ci.vector), nrow=1), stringsAsFactors=FALSE)
     local.df <- apply(local.df, 2, unlist)
     names(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
 
-    # local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), likelihoods[best.one]), likelihoods[best.one], length(free.parameters[which(free.parameters)])), nrow=1))
-    # colnames(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K")
-    # print(local.df)
+
     if(do.Higham.correction) {
       param.estimates <- unlist(results.vector.full)
-      names(param.estimates) <- names(free.parameters)
-      local.df$penalty=CalculateLikelihood(param.estimates,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check, actual.params=free.parameters[which(free.parameters)], number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[which(free.parameters)], upper.b=upper.bounds[which(free.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
+      names(param.estimates) <- names(preset.starting.parameters)
+      local.df$penalty=CalculateLikelihood(param.estimates,data=data, phy=phy, flow=flow,  measurement.error=measurement.error, do.kappa.check=do.kappa.check,  number.of.proportions=number.of.proportions.adaptive,  likelihood.precision=likelihood.precision, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], restart.mode=TRUE, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction, return.penalty=TRUE)
     }
     all.points <- data.frame(grid.of.points, stringsAsFactors=FALSE)
     all.points$NegLogL <- likelihoods
     all.points$Model <- models[model.index]
-    all.points$AICc <- AICc(Ntip(phy),k=length(free.parameters[which(free.parameters)]), all.points$NegLogL)
-    all.points$K <- length(free.parameters[which(free.parameters)])
+    all.points$AICc <- AICc(Ntip(phy),k=length(starting.parameters), all.points$NegLogL)
+    all.points$K <- length(starting.parameters)
     results.summary <- rbind(results.summary, data.frame(t(local.df), stringsAsFactors=FALSE))
     all.sims <- rbind(all.sims, all.points)
-    # if(plot.se) {
-    #   pdf(file=paste("Model",models[model.index], "_uncertainty_plot.pdf", sep=""), height=5, width=5*sum(free.parameters))
-    #   par(mfcol=c(1, sum(free.parameters)))
-    #   for(parameter in sequence(length(free.parameters))) {
-    #     if(free.parameters[parameter]) {
-    #
-    #       plot(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], type="n", xlab=names(free.parameters)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.points[,"NegLogL"]), min(all.points[,"NegLogL"])+10))
-    #       points(x=all.points[,names(free.parameters)[parameter]], y=all.points[,"NegLogL"], pch=16, col=ifelse(all.points[,"NegLogL"] < (min(all.points[,"NegLogL"])+2), "black", "gray"))
-    #       points(x= all.points[which.min(all.points[,"NegLogL"])[1],names(free.parameters)[parameter]], y= all.points$NegLogL[which.min(all.points[,"NegLogL"])[1]], pch=1, col="red", cex=1.5)
-    #     }
-    #   }
-    #   dev.off()
-    #   if(verbose) {
-    #     print(paste("Uncertainty plot has been saved in Model",models[model.index], "_uncertainty_plot.pdf in ", getwd(), sep=""))
-    #   }
-    # }
+
 	}
 	results.summary <- cbind(results.summary, deltaAICc=as.numeric(results.summary$AICc)-min(as.numeric(results.summary$AICc)))
 	results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
@@ -655,28 +618,7 @@ PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
   }
 }
 
-# PlotUncertainty <- function(results, model.index, make.pdf=TRUE, region=2) {
-#   model.sims <- results$sims[[model.index]]
-#   best.likelihood <- min(model.sims$neglnL)
-#   model.sims.in <- subset(model.sims, neglnL < best.likelihood+region)
-#   model.sims.out <- subset(model.sims, neglnL >= best.likelihood+region)
-#   best.run <- model.sims[which.min(model.sims$neglnL)[1],]
-#   number.free.parameters <- dim(model.sims)[2] - 1
-#   free.parameters <- colnames(model.sims)[-1]
-#   if(make.pdf) {
-#     pdf(file=paste("Model",model.index, "_uncertainty_plot.pdf", sep=""), height=5, width=5*number.free.parameters)
-#   }
-#   par(mfcol=c(1, number.free.parameters))
-#   for(parameter in sequence(number.free.parameters)) {
-#     plot(x=model.sims[,parameter+1], y=model.sims[,1], type="n", xlab=free.parameters[parameter], ylab="NegLnL", bty="n", ylim=c(min(model.sims[,1]), min(model.sims[,1])+10))
-#     points(x=model.sims.in[,parameter+1], y=model.sims.in[,1], pch=16, col="black")
-#     points(x=model.sims.out[,parameter+1], y=model.sims.out[,1], pch=16, col="gray")
-#     points(x= best.run[parameter+1], y= best.run[1], pch=1, col="red", cex=1.5)
-#   }
-#   if(make.pdf) {
-#     dev.off()
-#   }
-# }
+
 
 DetPass <- function(phy) {
 	det.pass <- TRUE
@@ -741,27 +683,23 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
   return(V.corrected)
 }
 
-GetVModified <- function(x,phy,flow,actual.params,measurement.error){
-  VerifyActualParams(actual.params)
-  actual.params <- actual.params[actual.params] # only want the true values
+GetVModified <- function(x,phy,flow,measurement.error){
   bt <- 1
   vh <- 0
-  sigma.sq <-x[1]
-  mu <- x[2]
+  sigma.sq <-x['sigma.sq']
+  mu <- x['mu']
   SE <- 0
 
-  if(is.null(measurement.error)){
-    SE <- x[length(x)]
+  if(grepl('SE', names(x))) {
+    SE <- x['SE']
   }
 
-  bt.location <- which(names(actual.params)=="bt")
-  if(length(bt.location)==1){
-    bt<-x[bt.location]
+  if(grepl('bt', names(x))) {
+    bt <- x['bt']
   }
 
-  vh.location <- which(names(actual.params)=="vh")
-  if(length(vh.location)==1){
-    vh <- x[vh.location]
+  if(grepl('vh', names(x))) {
+    vh <- x['vh']
   }
 
 
@@ -818,23 +756,26 @@ GetVModified <- function(x,phy,flow,actual.params,measurement.error){
   return(V.modified)
 }
 
-GetMeansModified <- function(x, phy, flow, actual.params) {
-  VerifyActualParams(actual.params)
-  actual.params <- actual.params[actual.params] # only want the true values
+GetMeansModified <- function(x, phy, flow) {
 	badval<-(0.5)*.Machine$double.xmax
-	bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
-	#SE <- x[length(x)]
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
+  bt <- 1
+  vh <- 0
+  sigma.sq <-x['sigma.sq']
+  mu <- x['mu']
+  SE <- 0
+
+  if(grepl('SE', names(x))) {
+    SE <- x['SE']
+  }
+
+  if(grepl('bt', names(x))) {
+    bt <- x['bt']
+  }
+
+  if(grepl('vh', names(x))) {
+    vh <- x['vh']
+  }
+
 	times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
 	V.original <- sigma.sq * times.original
 
@@ -860,32 +801,29 @@ GetMeansModified <- function(x, phy, flow, actual.params) {
 }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
+CalculateLikelihood <- function(x, data, phy, flow, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
 	badval<-(0.5)*.Machine$double.xmax
-  VerifyActualParams(actual.params)
-  actual.params <- actual.params[actual.params] # only want the true values
-#  x <- ConvertExpm1(x)
-	bt <- 1
-	vh <- 0
-	sigma.sq <- x[1]
-	mu <- x[2]
+  bt <- 1
+  vh <- 0
+  sigma.sq <-x['sigma.sq']
+  mu <- x['mu']
   SE <- 0
-  likelihood.penalty <- 0
-  if(is.null(measurement.error)) {
-	   SE <- x[length(x)]
-   }
-	bt.location <- which(names(actual.params)=="bt")
-	if(length(bt.location)==1) {
-		bt<-x[bt.location]
-	}
-	vh.location <- which(names(actual.params)=="vh")
-	if(length(vh.location)==1) {
-		vh<-x[vh.location]
-	}
+
+  if(grepl('SE', names(x))) {
+    SE <- x['SE']
+  }
+
+  if(grepl('bt', names(x))) {
+    bt <- x['bt']
+  }
+
+  if(grepl('vh', names(x))) {
+    vh <- x['vh']
+  }
   if(any(x<lower.b) | any(x>upper.b)) {
     return(badval)
   }
-	V.modified <- GetVModified(x, phy, flow, actual.params, measurement.error=measurement.error)
+	V.modified <- GetVModified(x, phy, flow, measurement.error=measurement.error)
   if(do.Brissette.correction) {
     V.modified <- BrissetteEtAlCorrection(V.modified)
     if(is.null(V.modified)) {
@@ -916,7 +854,7 @@ CalculateLikelihood <- function(x, data, phy, flow, actual.params, precision=2, 
       return(badval)
     }
   }
-	means.modified <- GetMeansModified(x, phy, flow, actual.params)
+	means.modified <- GetMeansModified(x, phy, flow)
 	if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
     	return(badval)
 	}
@@ -1101,10 +1039,12 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 	return(results)
 }
 
-GenerateRandomValues <- function(data, free.parameters, lower, upper) {
-  new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))[which(free.parameters)]
+GenerateRandomValues <- function(data, parameters, lower, upper) {
+  new.vals <- c(-Inf, Inf)
   while(any(new.vals < lower) | any(new.vals>upper)) {
-    new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))[which(free.parameters)]
+    new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))
+    names(new.vals) <- GenerateParamLabels()
+    new.vals <- new.vals[names(parameters)]
   }
   return(new.vals)
 }
@@ -1160,7 +1100,7 @@ GetAncestor <- function(phy, node) {
 
 AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(1,2)) {
   if(is.null(names(params))) {
-    names(params) <- c("bt", "vh", "sigma.sq", "mu", "SE")
+    names(params) <- GenerateParamLabels()
   }
   taxa.to.try.deleting <- phy$tip.label
   taxa.to.try.deleting <- taxa.to.try.deleting[!(taxa.to.try.deleting %in% flow$recipient)]
@@ -1175,7 +1115,7 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
   combos.to.delete <- utils::combn(taxa.to.try.deleting,m.vector[current.m.index])
   placeholder.params <- rep(TRUE, 5)
   names(placeholder.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, actual.params=placeholder.params, measurement.error=0))) {
+  while(!IsPositiveDefinite(GetVModified(params, phy.pruned, flow, measurement.error=0))) {
     #print(current.index)
     #print(paste0("Dropping ", paste(combos.to.delete[,current.index], collapse=" ")))
     phy.pruned <- ape::drop.tip(phy, combos.to.delete[,current.index])
@@ -1381,11 +1321,7 @@ AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
 }
 
 
-
-#		names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-#GetMeansModified <- function(x, phy, flow, actual.params) {
-#params must be named vector
-SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
+SimulateTipData <- function(phy, flow, params, measurement.error, suffix="_DUPLICATE") {
 #	flow.clades <- LumpIntoClades(phy, flow)
 #	recipients <- c()
 #	for (i in sequence(dim(flow.clades)[1])) {
@@ -1407,9 +1343,12 @@ SimulateTipData <- function(phy, flow, params, suffix="_DUPLICATE") {
 		focal.tips.bt <- focal.tips + log(params['bt'])
 		tip.mean <- focal.gamma*focal.tips.bt[2] + (1-focal.gamma) * focal.tips.bt[1]
 		tip.final <- rnorm(1, mean=tip.mean, sd=sqrt(params['vh']))
-		tips[hybrid.name.root]<-tip.final
+		tips[hybrid.name.root[i]]<-tip.final
 	}
 	tips<-tips[!grepl(suffix, names(tips))]
+  if(!is.null(measurement.error)) {
+    tips <- tips+measurement.error
+  }
 	return(tips)
 }
 
@@ -1565,4 +1504,8 @@ VerifyActualParams <- function(x) {
   if(class(x)!="logical" | is.null(names(x))) {
     stop("This requires a free.params or actual.params argument that is a boolean vector with names")
   }
+}
+
+GenerateParamLabels <- function() {
+  return(c("sigma.sq", "mu", "bt", "vh", "SE"))
 }

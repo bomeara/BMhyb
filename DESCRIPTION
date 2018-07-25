@@ -1,11 +1,10 @@
 Package: BMhyb
-Version: 2.0.0
+Version: 2.0.1
 Date: 2018-07-25
 Type: Package
 Title: PCM for Hybridization
 Author: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu> and Brian C. O'Meara
     <omeara.brian@gmail.com>
-Authors@R: c(person("Dwueng-Chwuan", "Jhwueng", role = c("aut", "cre"), email = "djhwueng@umail.iu.edu"), person("Brian", "C", "O'Meara", role = c("aut", "cre"), email = "omeara.brian@gmail.com"))
 Maintainer: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu>
 Imports:
     corpcor,

@@ -1,23 +1,15 @@
 test_that("ConditionBadCichlid", {
   utils::data("cichlid")
-  free.parameters<-rep(TRUE, 5)
-  names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-  x <- c(6, mean(cichlid$data)) #terrible values
-  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=cichlid$data, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
+  parameters.to.try <- c(sigma.sq=6, mu=mean(cichlid$data)) #terrible values
+  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=parameters.to.try , data=cichlid$data, phy=cichlid$phy, flow=cichlid$flow, allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
   #V.modified <- GetVModified(x=x, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], measurement.error=NULL)
 #  matrix.condition <- kappa(V.modified, exact=TRUE) high
 })
 
 test_that("ConditionBadNicotiana", {
   utils::data("nicotiana")
-  free.parameters<-rep(TRUE, 5)
-  names(free.parameters) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  free.parameters[which(names(free.parameters)=="bt")]<-FALSE
-  free.parameters[which(names(free.parameters)=="vh")]<-FALSE
-  x <- c(6, mean(nicotiana$data)) #terrible values
-  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=x, data=nicotiana$data, phy=nicotiana$phy, flow=nicotiana$flow, actual.params=free.parameters[which(free.parameters)], allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
+  parameters.to.try <- c(sigma.sq=6, mu=mean(nicotiana$data)) #terrible values
+  expect_warning(calculate.likelihood.result <- CalculateLikelihood(x=parameters.to.try, data=nicotiana$data, phy=nicotiana$phy, flow=nicotiana$flow, allow.extrapolation=FALSE, do.kappa.check=TRUE, measurement.error=0))
   #V.modified <- GetVModified(x=x, phy=cichlid$phy, flow=cichlid$flow, actual.params=free.parameters[which(free.parameters)], measurement.error=NULL)
 #  matrix.condition <- kappa(V.modified, exact=TRUE) high
 })
@@ -53,11 +45,7 @@ test_that("Issue 13 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.params<-rep(TRUE, 5)
-  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.params[which(names(actual.params)=="bt")]<-FALSE
-  actual.params[which(names(actual.params)=="vh")]<-FALSE
-  vcv_BMhyb <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
+  vcv_BMhyb <- GetVModified(x, network$phy, network$flow, measurement.error=0)
   expect_equal(vcv_BMhyb, structure(c(0.65, 0.7, 0.15, 0.7, 1, 0, 0.15, 0, 1), .Dim = c(3L,
 + 3L), .Dimnames = list(c("R", "Y", "X"), c("R", "Y", "X")))) #from Issue 13
 })
@@ -80,12 +68,7 @@ test_that("Issue 14 is solved", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, SE = 0)
-  actual.params<-rep(TRUE, 5)
-  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.params[which(names(actual.params)=="bt")]<-FALSE
-  actual.params[which(names(actual.params)=="vh")]<-FALSE
-  actual.params[which(names(actual.params)=="SE")]<-FALSE
-  expect_equal(GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0), structure(c(0.85, 0.55, 0.15, 0.55, 0.85, 0.15, 0.15, 0.15, 1
+  expect_equal(GetVModified(x, network$phy, network$flow, measurement.error=0), structure(c(0.85, 0.55, 0.15, 0.55, 0.85, 0.15, 0.15, 0.15, 1
 ), .Dim = c(3L, 3L), .Dimnames = list(c("R", "Y", "X"), c("R",
 "Y", "X"))))
 })
@@ -108,15 +91,12 @@ test_that("VH matters", {
 
   sigma2 = 1
   x <- c(sigma.sq = sigma2, mu = 0, vh=0, SE=0)
-  actual.params<-rep(TRUE, 5)
-  names(actual.params) <- c("sigma.sq", "mu", "bt", "vh", "SE")
-  actual.params[which(names(actual.params)=="bt")]<-FALSE
-  actual.params[which(names(actual.params)=="SE")]<-FALSE
 
-  V0 <- GetVModified(x, network$phy, network$flow, actual.params, measurement.error=0)
+
+  V0 <- GetVModified(x, network$phy, network$flow, measurement.error=0)
   vh.add = 3
   y <- c(sigma.sq = sigma2, mu = 0, vh=vh.add,SE = 0)
-  V1 <- GetVModified(y, network$phy, network$flow, actual.params, measurement.error=0)
+  V1 <- GetVModified(y, network$phy, network$flow, measurement.error=0)
   expect_equal(V1[1,1]-vh.add, V0[1,1])
   expect_equal(V1[3,3], V0[3,3])
 })
