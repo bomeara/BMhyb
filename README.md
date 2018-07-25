@@ -3,6 +3,16 @@
 
 # BMhyb
 
+[![Build
+Status](https://travis-ci.org/bomeara/BMhyb.svg)](https://travis-ci.org/bomeara/BMhyb)
+[![codecov](https://codecov.io/gh/bomeara/BMhyb/branch/master/graph/badge.svg)](https://codecov.io/gh/bomeara/BMhyb)
+[![Github Open
+Issues](https://img.shields.io/github/issues-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues)
+[![Github Closed
+Issues](https://img.shields.io/github/issues-closed-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues?q=is%3Aissue+is%3Aclosed)
+<img class="badge" src="https://www.r-pkg.org/badges/version/BMhyb">
+<img class="badge" src="http://cranlogs.r-pkg.org/badges/grand-total/BMhyb">
+
 While we often think of evolution as happening on a bifurcating
 evolutionary tree, in reality gene flow between distinct lineages is
 common. Until recently, there was little one could do about it. Our
@@ -390,6 +400,10 @@ Nicotiana\_arentsii
 `BMhyb` expects flow data.frames to be in the first format (one line per
 species) but you can write it in the second format (note the different
 column names) and convert it using the `UnlumpIntoTaxa()` function.
+
+Only some hybrid networks can be analyzed using this framework.
+Basically, each lineage must come from no more than one hybridization
+event.
 
 Besides the univariate trait data, another kind of data that can be
 useful is what is commonly called “measurement error.” This could mean

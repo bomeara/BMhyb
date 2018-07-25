@@ -25,9 +25,7 @@ Imports:
     DEoptim
 Suggests: testthat
 Description: The BMhyb package analyzes the phenotypic evolution of species
-    of hybrid origin on a phylogenetic network. This package can detect the hybrid
-    vigor effect, a burst of variation at formation, and the relative portion of
-    heritability from its parents. Parameters are estimated by maximum likelihood.
+    of hybrid origin on a phylogenetic network. This package can detect a burst of variation at formation of a hybrid as well as a bias in typical hybrid values. Parameters are estimated by maximum likelihood, as well as returning regular Brownian motion parameters such as the rate of evolution and the root state.
     Users need to enter a comparative data set, a phylogeny, and information on gene
     flow leading to hybrids.
 License: GPL (>=2)

@@ -2,6 +2,7 @@
 output: github_document
 ---
 
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 ```{r, echo = FALSE}
@@ -15,6 +16,9 @@ library(kableExtra)
 ```
 
 # BMhyb
+
+[![Build Status](https://travis-ci.org/bomeara/BMhyb.svg)](https://travis-ci.org/bomeara/BMhyb) [![codecov](https://codecov.io/gh/bomeara/BMhyb/branch/master/graph/badge.svg)](https://codecov.io/gh/bomeara/BMhyb) [![Github Open Issues](https://img.shields.io/github/issues-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues) [![Github Closed Issues](https://img.shields.io/github/issues-closed-raw/bomeara/BMhyb.svg)](https://github.com/bomeara/BMhyb/issues?q=is%3Aissue+is%3Aclosed) <img class="badge" src="https://www.r-pkg.org/badges/version/BMhyb"> <img class="badge" src="http://cranlogs.r-pkg.org/badges/grand-total/BMhyb">
+
 
 While we often think of evolution as happening on a bifurcating evolutionary tree, in reality gene flow between distinct lineages is common. Until recently, there was little one could do about it. Our BMhyb package allows for fitting models of evolution to phylogenetic networks (also see [Bastide et al. 2018](https://doi.org/10.1093/sysbio/syy033) for a similar approach, which is implemented in the Julia package [PhyloNetworks](https://github.com/crsl4/PhyloNetworks.jl)). We have several models implemented that are restrictions of a general model. In the most general case, we assume Brownian motion of a trait on a phylogenetic network. Sometimes, lineages come together to form hybrids. We typically assume the hybrids receive equal input from both parents, but this can be altered. At the hybridization event, several things can happen: there could be increased variation (due to transgressive segregation, as in sunflowers) and/or there can be a shift in mean (as in ligers and tigons).
 
@@ -48,6 +52,8 @@ kable(LumpIntoClades(phy=nicotiana$phy, flow=nicotiana$flow))
 ```
 
 `BMhyb` expects flow data.frames to be in the first format (one line per species) but you can write it in the second format (note the different column names) and convert it using the `UnlumpIntoTaxa()` function.
+
+Only some hybrid networks can be analyzed using this framework. Basically, each lineage must come from no more than one hybridization event. 
 
 Besides the univariate trait data, another kind of data that can be useful is what is commonly called "measurement error." This could mean actual measurement error: my ruler has markings every millimeter, so I have trouble figuring out if this beetle is 10.2 or 10.3 mm long. But it basically stands for all the variation that is present within a species. Brownian motion and related models are basically fitting data to a multivariate normal distribution. Covariances between species [under basic models] come from evolution on the same branches; variation of a tip value comes from both evolution along branches (Brownian motion "wiggling") and other sources of variation that don't stem from that evolutionary process: imprecision in the measurement, but also intraspecific variation (the processes model the "average" value for a species, but we know that intraspecific variation can be substantial and important) and other sources of noise. Most comparative methods are done assuming this uncertainty is zero: a single individual perfectly represents the mean value for its species. This forces the model to deal with any actual variation by forcing it to have happened on evolutionary branches, increasing the inferred rate of evolution (and also making the process look more like an Ornstein-Uhlenbeck one, assuming the true process is Brownian motion). By default, `BMhyb` instead tries to estimate this measurement error, though this is hard to do well. Better is inputing actual uncertainty from estimates in the data: this could be done by measuring multiple individuals in some or all species or even approaches as crude as saying that one expects 10% uncertainty on each trait value. 
 
