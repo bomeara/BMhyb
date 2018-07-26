@@ -1509,3 +1509,364 @@ VerifyActualParams <- function(x) {
 GenerateParamLabels <- function() {
   return(c("sigma.sq", "mu", "bt", "vh", "SE"))
 }
+
+
+# New attempt to do network
+
+# get enewick using ape, make an evonet object. Call it phy.net. For igraph object, call phy.i
+
+ConvertEvonetToIgraphWithNodeNumbers <- function(phy.graph) {
+  #phy.i <- ape::as.igraph(phy.graph)
+  phy.graph$tip.label <- sequence(ape::Ntip(phy.graph)) #converting to ape node numbers
+  phy.graph$node.label <- seq(from=(1+ape::Ntip(phy.graph)), to=ape::Ntip(phy.graph)+ape::Nnode(phy.graph), by=1)
+  return(igraph::as.igraph(phy.graph))
+}
+
+GetAllPathTopologies <- function(phy.graph) {
+  phy.i <- ConvertEvonetToIgraphWithNodeNumbers(phy.graph)
+  root <- ape::Ntip(phy.graph)+1
+  all.paths <- list(rep(NA, ape::Ntip(phy.graph)))
+  for (taxon in sequence(ape::Ntip(phy.graph))) {
+    all.paths[[taxon]]<-  igraph::all_simple_paths(phy.i, from=root, to=taxon)
+  }
+  return(all.paths) #one element per taxon; each element is itself a list of multiple possible paths from the root to that taxon
+}
+
+ComputeAllEdges <- function(phy.graph, gamma=0.5) {
+  normal.edges <- data.frame(cbind(edge.from=phy.graph$edge[,1], edge.to=phy.graph$edge[,2], length=phy.graph$edge.length, flow.prob=1, type="normal"), stringsAsFactors=FALSE)
+  for (edge.index in sequence(nrow(normal.edges))) {
+    normal.edges$flow.prob[edge.index] <- 1/length(which(normal.edges$edge.from == normal.edges$edge.from[edge.index])) #so can deal with nodes with outdegree of 1, 3+, etc.
+  }
+  all.edges <- normal.edges
+  if(nrow(phy.graph$reticulation)>0) {
+    hybrid.edges <- data.frame(cbind(edge.from=phy.graph$reticulation[,1], edge.to=phy.graph$reticulation[,2], length=0, flow.prob=gamma, type="hybrid"), stringsAsFactors=FALSE)
+    all.edges <- rbind(normal.edges, hybrid.edges)
+  }
+  return(all.edges)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Stuff below is from aborted attempt to use network. Trying again.
+
+PlotPhyGraph <- function(phy.graph) {
+  # TODO: get brlen, suppress internal node names
+  plot(phy.graph, layout = layout_as_tree, vertex.size=5)
+}
+
+ConvertPhyWithFlowIntoMultiphy <- function(phy, flow) {
+  phy.graph <- as.igraph(multiphy[[1]], directed=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+  return(phy.graph)
+}
+
+AddNodeLabels <- function(phy) {
+  nodes <- seq(from=ape::Ntip(phy)+1, length.out=ape::Nnode(phy))
+  for (node.index in sequence(length(nodes))) {
+    phy$node.label[node.index] <- paste0("InternalNode_",paste(sort(ape::extract.clade(phy, nodes[node.index])$tip.label), collapse="_"))
+  }
+  return(phy)
+}
+
+MergeTreesIntoPhyGraph<- function(multiphy) {
+  stop("This function is not good. It creates too many input edges to non-hybrid nodes")
+  phy.graph <- as.igraph(AddNodeLabels(multiphy[[1]]), directed=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "length", value=multiphy[[1]]$edge.length)
+  phy.graph <- set_edge_attr(phy.graph, "weight", value=1)
+  if(length(multiphy)>1) {
+    for (i in 2:length(multiphy)) {
+      phy.graph2 <- as.igraph(AddNodeLabels(multiphy[[i]]), directed=TRUE)
+      phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
+      phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
+
+      phy.graph <- phy.graph  %u% phy.graph2
+    }
+  }
+  edge.properties <- data.frame(edge_attr(phy.graph))
+  all.weights <- edge.properties[,grepl("weight", colnames(edge.properties))]
+  sum.weights <- rowSums(all.weights, na.rm=TRUE)
+  phy.graph <- set_edge_attr(phy.graph, "overall_weight", value=sum.weights)
+  return(phy.graph)
+}
+
+ExhaustiveV <- function(x, phylogenies, phylogeny.weights, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+  bt <- 1
+	vh <- 0
+	sigma.sq <- x[1]
+	mu <- x[2]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+  }
+	bt.location <- which(names(actual.params)=="bt")
+	if(length(bt.location)==1) {
+		bt<-x[bt.location]
+	}
+	vh.location <- which(names(actual.params)=="vh")
+	if(length(vh.location)==1) {
+		vh<-x[vh.location]
+	}
+
+  all.V.matrices <- sigma.sq*lapply(phylogenies, ape::vcv)
+  V.matrix <- 0*all.V.matrices[[1]]
+  mean.vector <- rep(0, length(igraph::V(phy.graph)))
+  for (tree.rep in sequence(length(phylogenies))) {
+    for (i in sequence(nrow(V.matrix))) {
+      row.taxon <- rownames(V.matrix)[i]
+      for(j in sequence(ncol(V.matrix))) {
+        col.taxon <- colnames(V.matrix)[j]
+        V.matrix[i,j] <- V.matrix[i,j] + (phylogeny.weights[tree.rep]^2)*all.V.matrices[[tree.rep]][row.taxon, col.taxon]
+      }
+    }
+  }
+}
+
+GetVandMFromIgraph <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+  bt <- 1
+	vh <- 0
+	sigma.sq <- x[1]
+	mu <- x[2]
+  SE <- 0
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+  }
+	bt.location <- which(names(actual.params)=="bt")
+	if(length(bt.location)==1) {
+		bt<-x[bt.location]
+	}
+	vh.location <- which(names(actual.params)=="vh")
+	if(length(vh.location)==1) {
+		vh<-x[vh.location]
+	}
+
+  V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
+  mean.vector <- rep(0, length(igraph::V(phy.graph)))
+  postorder.traversal <- igraph::dfs(phy.graph, names(V(phy.graph))[which.max(nchar(names(V(phy.graph))))])$order
+
+  rownames(V.matrix) <- names(postorder.traversal)
+  colnames(V.matrix) <- names(postorder.traversal)
+  names(mean.vector) <- names(postorder.traversal)
+  parents <- igraph::adjacent_vertices(phy.graph, names(postorder.traversal), mode="in")
+  all.attribute.names <- names(igraph::get.edge.attribute(phy.graph))
+  matching.attribute.names <- all.attribute.names[grepl("length_",all.attribute.names )]
+  all.lengths <- matrix(nrow=length(matching.attribute.names), ncol=length(igraph::E(phy.graph)))
+
+  matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
+
+  all.weights <- matrix(0, nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
+  for (length.index in sequence(length(matching.attribute.names))) {
+    all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
+  }
+
+  for (weight.index in sequence(length(matching.weight.names))) {
+    all.weights[weight.index,] <- get.edge.attribute(phy.graph, name=matching.weight.names[weight.index])
+  }
+
+  all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
+  all.weights[is.na(all.weights)] <- 0
+  all.lengths[is.na(all.lengths)] <- 0
+
+
+  # Algorithm from Bastide et al., Syst Biol. 2018 in press
+  for (focal.index in sequence(length(names(postorder.traversal)))) {
+    if(focal.index==1) {
+      mean.vector[1] <- mu
+    } else {
+      if(length(parents[[focal.index]])==1) { #tree node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.node <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+        focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
+        if(any(is.na(V.matrix))) {
+          print("841")
+          stop()
+        }
+        V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
+        mean.vector[focal.node] <- mean.vector[parent.node]
+        if(any(is.na(V.matrix))) {
+          print("847")
+          stop()
+        }
+      } else { #hybrid node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.nodes <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- 0
+          for (parent.index in sequence(length(parent.nodes))) {
+            focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
+            if(any(is.na(V.matrix))) {
+              print("860")
+              stop()
+            }
+          }
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+
+        #now for Vii
+        V.matrix[focal.node, focal.node] <- 0
+        focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
+
+        for (parent.index in sequence(length(parent.nodes))) {
+          focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
+          if(any(is.na(V.matrix))) {
+            print("876")
+            stop()
+          }
+        }
+
+        if(length(parent.nodes)>2) {
+          stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
+        }
+        V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
+        mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
+        if(any(is.na(V.matrix))) {
+          print("886")
+          stop()
+        }
+      }
+    }
+
+  }
+  if(drop.internal) {
+    elements.to.keep <- !grepl("Node_", names(mean.vector))
+    mean.vector <- mean.vector[elements.to.keep]
+    elements.to.keep <- !grepl("Node_", rownames(V.matrix))
+    V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
+  }
+  diag(V.matrix) <- diag(V.matrix) + SE^2
+  return(list(V.modified=V.matrix, means.modified=mean.vector))
+}
+
+ExpandEvonet <- function(phy.graph) {
+  phy.graph <- reorder(phy.graph, "cladewise")
+  phy.graph$edge.network <- rbind(phy.graph$edge, phy.graph$reticulation)
+  reticulation.lengths <- rep(NA, nrow(phy.graph$reticulation))
+  for (i in sequence(nrow(phy.graph$reticulation))) {
+    reticulation.lengths[i] <- abs(phytools::nodeheight(phy.graph, phy.graph$reticulation[i,1])-phytools::nodeheight(phy.graph, phy.graph$reticulation[i,2]))
+  }
+  phy.graph$edge.length.network <- c(phy.graph$edge.length, reticulation.lengths)
+  return(phy.graph)
+}
+
+GetVandMFromExpandedEvonet <- function(x, phy.graph, actual.params, measurement.error=NULL, drop.internal=TRUE) {
+  bt <- 1
+	vh <- 0
+	sigma.sq <- x[1]
+	mu <- x[2]
+  SE <- 0
+  if(!("edge.length.network" %in% names(phy.graph))) {
+    phy.graph <- ExpandEvonet(phy.graph)
+  }
+  if(is.null(measurement.error)) {
+	   SE <- x[length(x)]
+  }
+	bt.location <- which(names(actual.params)=="bt")
+	if(length(bt.location)==1) {
+		bt<-x[bt.location]
+	}
+	vh.location <- which(names(actual.params)=="vh")
+	if(length(vh.location)==1) {
+		vh<-x[vh.location]
+	}
+  N.all.nodes <- ape::Nnode(phy.graph)+ape::Ntip(phy.graph)
+  V.matrix <- matrix(0, nrow=N.all.nodes, ncol=N.all.nodes)
+  mean.vector <- rep(0, N.all.nodes)
+  rownames(V.matrix) <- colnames(V.matrix) <- names(mean.vector) <- sequence(N.all.nodes)
+
+##################
+# Start adding here. Go up the tree using the $edge.network, top to bottom, using $edge.length.network for edge lengths
+
+  # Algorithm from Bastide et al., Syst Biol. 2018 in press
+  for (focal.index in sequence(length(names(postorder.traversal)))) {
+    if(focal.index==1) {
+      mean.vector[1] <- mu
+    } else {
+      if(length(parents[[focal.index]])==1) { #tree node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.node <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- V.matrix[parent.node, other.node]
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+        focal.edge <- get.edge.ids(phy.graph, c(parent.node, focal.node))
+        if(any(is.na(V.matrix))) {
+          print("841")
+          stop()
+        }
+        V.matrix[focal.node, focal.node] <- V.matrix[parent.node, parent.node] + sigma.sq * weighted.mean(all.lengths[,focal.edge], all.weights[,focal.edge], na.rm=TRUE)
+        mean.vector[focal.node] <- mean.vector[parent.node]
+        if(any(is.na(V.matrix))) {
+          print("847")
+          stop()
+        }
+      } else { #hybrid node
+        focal.node <- names(postorder.traversal)[focal.index]
+        parent.nodes <- names(parents[[focal.index]])
+        for (other.node.index in sequence(focal.index-1)) { #Bastide et al. eq 3
+          other.node <- names(postorder.traversal)[other.node.index]
+          V.matrix[focal.node, other.node] <- 0
+          for (parent.index in sequence(length(parent.nodes))) {
+            focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+            V.matrix[focal.node, other.node] <- V.matrix[focal.node, other.node] + sum(0, all.weights[parent.index, focal.edge] * V.matrix[parent.nodes[parent.index], other.node], na.rm=TRUE)
+            if(any(is.na(V.matrix))) {
+              print("860")
+              stop()
+            }
+          }
+          V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
+        }
+
+        #now for Vii
+        V.matrix[focal.node, focal.node] <- 0
+        focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
+
+        for (parent.index in sequence(length(parent.nodes))) {
+          focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
+          V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
+          if(any(is.na(V.matrix))) {
+            print("876")
+            stop()
+          }
+        }
+
+        if(length(parent.nodes)>2) {
+          stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
+        }
+        V.matrix[focal.node, focal.node] <- sum(vh, V.matrix[focal.node, focal.node], 2*all.weights[1, focal.edge]*all.weights[2, focal.edge]*V.matrix[parent.nodes[1], parent.nodes[2]], na.rm=TRUE)
+        mean.vector[focal.node] <- sum(log(bt),  mean.vector[parent.nodes[1]]*all.weights[1, focal.edge], mean.vector[parent.nodes[2]]*all.weights[2, focal.edge], na.rm=TRUE)
+        if(any(is.na(V.matrix))) {
+          print("886")
+          stop()
+        }
+      }
+    }
+
+  }
+  if(drop.internal) {
+    elements.to.keep <- !grepl("Node_", names(mean.vector))
+    mean.vector <- mean.vector[elements.to.keep]
+    elements.to.keep <- !grepl("Node_", rownames(V.matrix))
+    V.matrix <- V.matrix[elements.to.keep,elements.to.keep]
+  }
+  diag(V.matrix) <- diag(V.matrix) + SE^2
+  return(list(V.modified=V.matrix, means.modified=mean.vector))
+}
