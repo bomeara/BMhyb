@@ -1525,32 +1525,122 @@ ConvertEvonetToIgraphWithNodeNumbers <- function(phy.graph) {
 GetAllPathTopologies <- function(phy.graph) {
   phy.i <- ConvertEvonetToIgraphWithNodeNumbers(phy.graph)
   root <- ape::Ntip(phy.graph)+1
-  all.paths <- list(rep(NA, ape::Ntip(phy.graph)))
+  #all.paths <- list(rep(NA, ape::Ntip(phy.graph)))
+  all.paths <- data.frame()
   for (taxon in sequence(ape::Ntip(phy.graph))) {
-    all.paths[[taxon]]<-  igraph::all_simple_paths(phy.i, from=root, to=taxon)
+    simple.paths <-  igraph::all_simple_paths(phy.i, from=root, to=taxon)
+    local.paths <- unlist(lapply(lapply(simple.paths, as.numeric), paste, collapse="_"))
+    local.df <- data.frame(final.taxon=taxon, paths=local.paths, stringsAsFactors=FALSE)
+    all.paths <- rbind(all.paths, local.df)
   }
+
   return(all.paths) #one element per taxon; each element is itself a list of multiple possible paths from the root to that taxon
 }
 
 ComputeAllEdges <- function(phy.graph, gamma=0.5) {
-  normal.edges <- data.frame(cbind(edge.from=phy.graph$edge[,1], edge.to=phy.graph$edge[,2], length=phy.graph$edge.length, flow.prob=1, type="normal"), stringsAsFactors=FALSE)
+  normal.edges <- data.frame(node.from=phy.graph$edge[,1], node.to=phy.graph$edge[,2], length=phy.graph$edge.length, flow.prob=1, type="normal", stringsAsFactors=FALSE)
   for (edge.index in sequence(nrow(normal.edges))) {
-    normal.edges$flow.prob[edge.index] <- 1/length(which(normal.edges$edge.from == normal.edges$edge.from[edge.index])) #so can deal with nodes with outdegree of 1, 3+, etc.
+    normal.edges$flow.prob[edge.index] <- 1/length(which(normal.edges$node.from == normal.edges$node.from[edge.index])) #so can deal with nodes with outdegree of 1, 3+, etc.
   }
   all.edges <- normal.edges
   if(nrow(phy.graph$reticulation)>0) {
-    hybrid.edges <- data.frame(cbind(edge.from=phy.graph$reticulation[,1], edge.to=phy.graph$reticulation[,2], length=0, flow.prob=gamma, type="hybrid"), stringsAsFactors=FALSE)
+    hybrid.edges <- data.frame(node.from=phy.graph$reticulation[,1], node.to=phy.graph$reticulation[,2], length=0, flow.prob=gamma, type="hybridflow", stringsAsFactors=FALSE)
     all.edges <- rbind(normal.edges, hybrid.edges)
   }
   return(all.edges)
 }
 
+GetHybridNodes <- function(phy.graph, gamma=0.5) {
+  all.edges <- ComputeAllEdges(phy.graph, gamma)
+  immediate.hybrids <- subset(all.edges, all.edges$type=="hybridflow")$node.to
+  hybrid.descendants <- c()
+  for (i in sequence(length(immediate.hybrids))) {
+    hybrid.descendants <- append(hybrid.descendants, phytools::getDescendants(phy.graph, node=immediate.hybrids[i]))
+  }
+  hybrid.descendants <- unique(hybrid.descendants)
+  return(list(hybrid.descendants=hybrid.descendants, immediate.hybrids=as.numeric(immediate.hybrids)))
+}
 
+ScaleAllEdges <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+  all.edges <- ComputeAllEdges(phy.graph, gamma)
+  all.edges$length <- all.edges$length*sigma.sq
+  immediates <- GetHybridNodes(phy.graph, gamma)$immediate.hybrids
+  for (immediate.node.index in sequence(length(immediates))) {
+    all.edges[which(all.edges$node.from==immediates[immediate.node.index]),]$length <- all.edges[which(all.edges$node.from==immediates[immediate.node.index]),]$length + vh
+  }
+  for (terminal.taxon in sequence(ape::Ntip(phy.graph))) { # b/c with ape, terminal taxa are 1:Ntip
+    all.edges[which(all.edges$node.to==terminal.taxon),]$length <- all.edges[which(all.edges$node.to==terminal.taxon),]$length + SE
+  }
+  #TODO: add measurement error
+  if(measurement.error != 0) {
+    stop("ADD MEASUREMENT ERROR TO THE CODE")
+  }
+  return(all.edges)
+}
 
+GetProbabilityOfIndividualPath <- function(path, all.edges) {
+  path<-strsplit(path, "_")[[1]]
+  total.prob <- 1
+  for (node.start in sequence(length(path)-1)) {
+    total.prob <- total.prob * subset(all.edges, all.edges$node.from==path[node.start] & all.edges$node.to==path[node.start+1])$flow.prob
+  }
+  return(total.prob)
+}
 
+GetProbabilityOfAllPaths <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+  all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  all.paths <- GetAllPathTopologies(phy.graph)
+  all.paths$probabilities <- sapply(all.paths$paths,GetProbabilityOfIndividualPath, all.edges=all.edges)
+  all.paths$normalized.probabilities <- NA
+  for (taxon in sequence(length(unique(all.paths$final.taxon)))) {
+    matching.rows <- which(all.paths$final.taxon==taxon)
+    all.paths$normalized.probabilities[matching.rows] <-   all.paths$probabilities[matching.rows] / sum(all.paths$probabilities[matching.rows])
+  }
+  return(all.paths)
+}
 
+ComputePathPairs <- function(path) {
+  path<-strsplit(path, "_")[[1]]
+  path.pairs <- data.frame()
+  for (node.start in sequence(length(path)-1)) {
+    path.pairs <- rbind(path.pairs, data.frame(node.from=path[node.start], node.to=path[node.start+1], node.fromto = paste(path[c(node.start, node.start+1)], collapse="_"), stringsAsFactors=FALSE))
+  }
+  return(path.pairs)
+}
 
+ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+  all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  all.paths <- GetProbabilityOfAllPaths(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  VCV <- matrix(0, nrow=ape::Ntip(phy.graph), ncol=ape::Ntip(phy.graph))
+  rownames(VCV) <- phy.graph$tip.label
+  colnames(VCV) <- phy.graph$tip.label
+  for (row.index in sequence(nrow(VCV))) {
+    for (col.index in seq(from=row.index, to=ncol(VCV), by=1)) {
+      paths.left <- subset(all.paths, all.paths$final.taxon==row.index)
+      paths.top <- subset(all.paths, all.paths$final.taxon==col.index)
+      value <- 0
+      for(left.path.index in sequence(nrow(paths.left))) {
+        for(top.path.index in sequence(nrow(paths.top))) {
+          this.path.left <- ComputePathPairs(paths.left$paths[left.path.index])
+          weight.left <- paths.left$normalized.probabilities[left.path.index]
+          this.path.top <- ComputePathPairs(paths.top$paths[top.path.index])
+          weight.top <- paths.top$normalized.probabilities[top.path.index]
+          matches <- this.path.left[this.path.left$node.fromto %in% this.path.top$node.fromto,]
+          for (match.index in sequence(nrow(matches))) {
+            value <- value + (weight.left * weight.top) * subset(all.edges, all.edges$node.from==matches$node.from[match.index] & all.edges$node.to==matches$node.to[match.index])$length
+          }
+        }
+      }
+      VCV[row.index, col.index] <- value
+    }
+  }
+  VCV[lower.tri(VCV)] <- VCV[upper.tri(VCV)]
+  return(VCV)
+}
 
+ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+#  TO DO HERE
+}
 
 
 
