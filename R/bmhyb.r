@@ -1191,6 +1191,96 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
   return(phy.pruned)
 }
 
+SimulateNetwork.new <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
+	done = FALSE
+	used.recipients <- c()
+	available.recipient.ids <- sequence(ntax.nonhybrid + ntax.hybrid)
+	flow <- data.frame()
+	phy<-NA
+	phy <-  sim.bd.taxa.age(n=ntax.nonhybrid+ntax.hybrid, numbsim=1, lambda=birth, mu=death, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
+  phy.graph <- evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
+  phy.graph$reticulation <- phy.graph$reticulation[-1,]
+
+  #now use phytools::bind.tip() to add a taxon to the tree for receiving and donating gene flow (contemporaneously if all.ghost=FALSE). Will then delete this tip but keep the internal node (unless we want a ghost lineage).
+
+
+
+
+
+
+	if(origin.type=="clade" && ntax.hybrid==1) {
+		warning("For ntax.hybrid = 1 and clade sampling, this will do individual sampling instead (which is equivalent in this case)")
+		origin.type<-"individual"
+	}
+	if(origin.type=="clade") {
+		while(is.na(GetClade(phy, ntax.hybrid))) { #not all trees of a given size have a clade of a given size, so may need to resimulate it
+			phy <-  sim.bd.taxa.age(n=ntax.nonhybrid+ntax.hybrid, numbsim=1, lambda=birth, mu=0.5, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
+		}
+	}
+	while(!done) {
+		donors <- c()
+		recipients <- c()
+		recipient.ids <- c()
+		focal.node <- c()
+		if (origin.type=="clade") {
+			focal.node <- GetClade(phy, ntax.hybrid)
+			if(is.na(focal.node)) {
+				done=FALSE
+				break()
+			}
+			recipients <- phy$tip.label[getDescendants(phy, node=focal.node)]
+			recipients <- recipients[!is.na(recipients)] #since we want just the tips
+			recipient.ids <- which(phy$tip.label %in% recipients)
+			used.recipients <- append(used.recipients, recipients)
+		} else {
+			focal.node<-sample(available.recipient.ids, 1, replace=FALSE)
+			recipient.ids <- focal.node
+			recipients <- phy$tip.label[focal.node]
+			used.recipients <- append(used.recipients, recipients)
+		}
+		available.recipient.ids <- available.recipient.ids[!available.recipient.ids %in% recipient.ids]
+		longest.from.root <- nodeheight(phy, node=focal.node)
+		shortest.from.root <- nodeheight(phy, node=GetAncestor(phy, focal.node))
+		all.heights <- nodeHeights(phy)
+		#idea here: take a recipient clade. The gene flow must happen on its stem edge, which starts at shortest.from.root and goes up to longest.from.root. Gene flow can't go back in time
+		qualifying.lower <- which(all.heights[,1]<longest.from.root) #if this is false, gene flow goes back in time
+		qualifying.upper <- sequence(dim(all.heights)[1]) #in general, gene flow can go forward in time via ghost lineages
+		if(!allow.ghost) {
+			qualifying.upper <- which(all.heights[,2]>shortest.from.root) #if no ghost lineages, then there must be temporal overlap between the donor and recipient lineages. So the tipward end of the donor edge must be later than the rootward end of the recipient edge
+		}
+		qualifying.upper <- qualifying.upper[which(phy$edge[qualifying.upper,2]!=focal.node)] #let's not hybridize with ourselves
+		qualifying.all <- qualifying.upper[qualifying.upper %in% qualifying.lower]
+		if(length(qualifying.all)==0) {
+			break()
+		}
+		donor.edge <- sample(qualifying.all, 1)
+		donors <- phy$tip.label[getDescendants(phy, phy$edge[donor.edge,2])]
+		donors <- donors[!is.na(donors)] #getDescendants includes all descendant nodes, including internal ones. We just want the terminal taxa
+		time.in <- runif(1, min=max(all.heights[donor.edge,1],shortest.from.root), max=longest.from.root)
+		time.out <- runif(1, min=all.heights[donor.edge,1], max=min(time.in, all.heights[donor.edge,2]))
+		if (!allow.ghost) {
+			time.in <- runif(1, min=max(shortest.from.root, all.heights[donor.edge,1]), max=min(longest.from.root, all.heights[donor.edge,2])) #if no ghost lineages, must move from the overlapping interval
+			time.out <- time.in
+		}
+		pairs <- expand.grid(donors, recipients)
+		for (pairs.index in sequence(dim(pairs)[1])) {
+			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], gamma=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))
+		}
+		if(length(used.recipients)==ntax.hybrid) {
+			done=TRUE
+		}
+    if(length(CheckFlow(phy, flow)$problem.taxa)>0) {
+      done=FALSE
+    }
+	}
+	flow$donor <- as.character(flow$donor)
+	flow$recipient <- as.character(flow$recipient)
+	flow$gamma <- as.numeric(as.character(flow$gamma))
+	flow$time.from.root.donor <-as.numeric(as.character(flow$time.from.root.donor))
+	flow$time.from.root.recipient <-as.numeric(as.character(flow$time.from.root.recipient))
+	return(list(phy=phy, flow=flow))
+}
+
 #allow.ghost allows ghost lineage: something that persists for awhile, hybridizes, goes extinct. Otherwise, hybridization events must between coeval edges with extant descendants
 SimulateNetwork <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
 	done = FALSE
@@ -1746,10 +1836,18 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     V.modified <- new.mat
   }
 
-  traits <- traits[match(names(means.modified), names(traits))]
-  if(length(traits)!=length(means.modified)) {
-    stop("Mismatch between names of taxa in data vector and on phy")
+  traits <- traits[match(names(means.modified), names(traits))] #reorder so traits in same order as VCV and means
+
+  prune.taxa <- names(means.modified)[!names(means.modified)%in%names(traits)] # We might not have trait data for all tips. This is especially true if we want forward in time hybridization events, which are really a lineage branching off, living for a while, then moving genes to another lineage and then going extinct (or at least unsampled). We can allow a tree like that with just no trait values for the ghost taxon.
+
+  if(nrow(V.modified) - length(prune.taxa) < 3) {
+    stop(paste("You have pruned ", paste(prune.taxa, collapse=", "), " from your tree because they did not match taxa in your traits vector (where some of the names are ", paste(names(traits), collapse=", "), ") and this leaves too few taxa to do an analysis"))
   }
+  if(length(prune.taxa)>0) {
+    V.modified <- V.modified[-which(rownames(V.modified) %in% prune.taxa), -which(colnames(V.modified) %in% prune.taxa)]
+    means.modified <- means.modified[-which(names(means.modified) %in% prune.taxa)]
+  }
+
   NegLogML <- NULL
   try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
   if(is.null(NegLogML)) {
@@ -1768,8 +1866,21 @@ BMhyb.new <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu"
 
   interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
   interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
-  return(list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out))
+  result.object <- list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out, phy.graph=phy.graph, traits=traits)
+  class(result.object) <- "BMhybResult"
+  return(result.object)
+}
 
+plot.BMhybResult <- function(x) {
+  x$par <- x$best[1:(length(x$best)-3)]
+  par(mfcol=c(1, length(x$par)))
+  all.results <- rbind(x$good.region, x$bad.region)
+  for(parameter in sequence(length(x$par))) {
+    plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10))
+    points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
+    points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
+    points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+  }
 }
 
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
