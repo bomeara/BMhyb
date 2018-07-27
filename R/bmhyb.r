@@ -1191,94 +1191,114 @@ AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(
   return(phy.pruned)
 }
 
-SimulateNetwork.new <- function(ntax.nonhybrid=100, ntax.hybrid=10, flow.proportion=0.5, origin.type=c("clade", "individual"), birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE) {
+AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, terminal.length=0) {
+  new.phy.graph <- phy.graph
+  new.tip.number <- ape::Ntip(phy.graph) + 1 #need to then offset everything else
+  new.internal.node.number <- ape::Nnode(phy.graph) + ape::Ntip(phy.graph) + 2
+  new.phy.graph$edge[which(new.phy.graph$edge>ape::Ntip(phy.graph))] <- 1 + new.phy.graph$edge[which(new.phy.graph$edge>ape::Ntip(phy.graph))]
+  edge.to.break <- which(phy.graph$edge[,2]==below.node)
+  parent.node <- phy.graph$edge[edge.to.break,1]
+  original.edge.length <- phy.graph$edge.length[edge.to.break]
+  if(depth.below > original.edge.length) {
+    stop("Node is added below the beginning of the edge (depth.below too large)")
+  }
+
+  #delete original edge
+  new.phy.graph$edge <- new.phy.graph$edge[-edge.to.break,]
+  new.phy.graph$edge.length <- new.phy.graph$edge.length[-edge.to.break]
+
+  #add lower edge
+  new.phy.graph$edge <- rbind(new.phy.graph$edge, c(parent.node, new.internal.node.number))
+  new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- original.edge.length - depth.below
+
+  #add upper edge
+  new.phy.graph$edge <- rbind(new.phy.graph$edge, c(new.internal.node.number, below.node))
+  new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- depth.below
+
+  #add the new taxon
+  new.phy.graph$edge <- rbind(new.phy.graph$edge, c(new.internal.node.number, new.tip.number))
+  new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- terminal.length
+  new.phy.graph$tip.label <- c(new.phy.graph$tip.label,tip.label)
+
+  new.phy.graph$Nnode <- 1 + new.phy.graph$Nnode
+
+  #no need to update the reticulation object because we're not renumber nodes, unlike ape in general
+
+  return(new.phy.graph)
+}
+
+RenumberPhygraph <- function(phy.graph) {
+  old.nodes <- c(phy.graph$edge)
+  new.nodes <- c(TreeSearch::Renumber(ape::as.phylo(phy.graph))$edge)
+  old2new <- data.frame(old=unlist(old.nodes), new=unlist(new.nodes))
+  old2new <- unique(old2new)
+  new.phy.graph <- phy.graph
+  for (i in sequence(nrow(old2new))) {
+    new.phy.graph$edge[which(phy.graph$edge==old2new[i,1])] <- old2new[i,2]
+    new.phy.graph$reticulation[which(phy.graph$reticulation==old2new[i,1])] <- old2new[i,2]
+  }
+  #now to fix tip labels
+  for (i in sequence(ape::Ntip(phy.graph))) {
+    new.phy.graph$tip.label[i] <- phy.graph$tip.label[old2new[which(old2new[,2]==i),1]]
+  }
+  return(new.phy.graph)
+}
+
+SimulateNetwork.new <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE, phy=NULL) {
 	done = FALSE
-	used.recipients <- c()
-	available.recipient.ids <- sequence(ntax.nonhybrid + ntax.hybrid)
-	flow <- data.frame()
-	phy<-NA
-	phy <-  sim.bd.taxa.age(n=ntax.nonhybrid+ntax.hybrid, numbsim=1, lambda=birth, mu=death, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
-  phy.graph <- evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
-  phy.graph$reticulation <- phy.graph$reticulation[-1,]
+  if(is.null(phy)) {
+  	phy <-  TreeSim::sim.bd.taxa.age(n=ntax, numbsim=1, lambda=birth, mu=death, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
+    phy.graph <- ape::evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
+    phy.graph$reticulation <- phy.graph$reticulation[-1,]
+  }
+
+
 
   #now use phytools::bind.tip() to add a taxon to the tree for receiving and donating gene flow (contemporaneously if all.ghost=FALSE). Will then delete this tip but keep the internal node (unless we want a ghost lineage).
 
-
-
-
-
-
-	if(origin.type=="clade" && ntax.hybrid==1) {
-		warning("For ntax.hybrid = 1 and clade sampling, this will do individual sampling instead (which is equivalent in this case)")
-		origin.type<-"individual"
-	}
-	if(origin.type=="clade") {
-		while(is.na(GetClade(phy, ntax.hybrid))) { #not all trees of a given size have a clade of a given size, so may need to resimulate it
-			phy <-  sim.bd.taxa.age(n=ntax.nonhybrid+ntax.hybrid, numbsim=1, lambda=birth, mu=0.5, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
-		}
-	}
-	while(!done) {
-		donors <- c()
-		recipients <- c()
-		recipient.ids <- c()
-		focal.node <- c()
-		if (origin.type=="clade") {
-			focal.node <- GetClade(phy, ntax.hybrid)
-			if(is.na(focal.node)) {
-				done=FALSE
-				break()
-			}
-			recipients <- phy$tip.label[getDescendants(phy, node=focal.node)]
-			recipients <- recipients[!is.na(recipients)] #since we want just the tips
-			recipient.ids <- which(phy$tip.label %in% recipients)
-			used.recipients <- append(used.recipients, recipients)
-		} else {
-			focal.node<-sample(available.recipient.ids, 1, replace=FALSE)
-			recipient.ids <- focal.node
-			recipients <- phy$tip.label[focal.node]
-			used.recipients <- append(used.recipients, recipients)
-		}
-		available.recipient.ids <- available.recipient.ids[!available.recipient.ids %in% recipient.ids]
-		longest.from.root <- nodeheight(phy, node=focal.node)
-		shortest.from.root <- nodeheight(phy, node=GetAncestor(phy, focal.node))
-		all.heights <- nodeHeights(phy)
-		#idea here: take a recipient clade. The gene flow must happen on its stem edge, which starts at shortest.from.root and goes up to longest.from.root. Gene flow can't go back in time
-		qualifying.lower <- which(all.heights[,1]<longest.from.root) #if this is false, gene flow goes back in time
-		qualifying.upper <- sequence(dim(all.heights)[1]) #in general, gene flow can go forward in time via ghost lineages
-		if(!allow.ghost) {
-			qualifying.upper <- which(all.heights[,2]>shortest.from.root) #if no ghost lineages, then there must be temporal overlap between the donor and recipient lineages. So the tipward end of the donor edge must be later than the rootward end of the recipient edge
-		}
-		qualifying.upper <- qualifying.upper[which(phy$edge[qualifying.upper,2]!=focal.node)] #let's not hybridize with ourselves
-		qualifying.all <- qualifying.upper[qualifying.upper %in% qualifying.lower]
-		if(length(qualifying.all)==0) {
-			break()
-		}
-		donor.edge <- sample(qualifying.all, 1)
-		donors <- phy$tip.label[getDescendants(phy, phy$edge[donor.edge,2])]
-		donors <- donors[!is.na(donors)] #getDescendants includes all descendant nodes, including internal ones. We just want the terminal taxa
-		time.in <- runif(1, min=max(all.heights[donor.edge,1],shortest.from.root), max=longest.from.root)
-		time.out <- runif(1, min=all.heights[donor.edge,1], max=min(time.in, all.heights[donor.edge,2]))
-		if (!allow.ghost) {
-			time.in <- runif(1, min=max(shortest.from.root, all.heights[donor.edge,1]), max=min(longest.from.root, all.heights[donor.edge,2])) #if no ghost lineages, must move from the overlapping interval
-			time.out <- time.in
-		}
-		pairs <- expand.grid(donors, recipients)
-		for (pairs.index in sequence(dim(pairs)[1])) {
-			flow <- rbind(flow, data.frame(donor=pairs[pairs.index,1], recipient=pairs[pairs.index,2], gamma=flow.proportion, time.from.root.donor=time.out, time.from.root.recipient=time.in, stringsAsFactors=FALSE))
-		}
-		if(length(used.recipients)==ntax.hybrid) {
-			done=TRUE
-		}
-    if(length(CheckFlow(phy, flow)$problem.taxa)>0) {
-      done=FALSE
+  while(!done) {
+    donor.height.from.root <- runif(1, 0, max(ape::branching.times(phy.graph)))
+    recipient.height.from.root <- donor.height.from.root
+    if(allow.ghost) {
+      recipient.height.from.root <- runif(1, donor.height.from.root, max(ape::branching.times(phy.graph)))
     }
-	}
-	flow$donor <- as.character(flow$donor)
-	flow$recipient <- as.character(flow$recipient)
-	flow$gamma <- as.numeric(as.character(flow$gamma))
-	flow$time.from.root.donor <-as.numeric(as.character(flow$time.from.root.donor))
-	flow$time.from.root.recipient <-as.numeric(as.character(flow$time.from.root.recipient))
-	return(list(phy=phy, flow=flow))
+    heightnode <- function(node, phy) {
+      return(phytools::nodeheight(phy, node))
+    }
+    GetEdgeLengthByNodeNumber <- function(node, phy) {
+      final.length <- phy$edge.length[which(phy$edge[,2]==node)]
+      if(length(final.length)==0) { # we're at the root, with no root.edge
+        final.length <- 0
+      }
+      return(final.length)
+    }
+    heights <- sapply(sequence(ape::Nnode(phy.graph) + ape::Ntip(phy.graph)), heightnode, phy=phy.graph) # does not line up with edge matrix or edge lengths, remember
+    lengths <- sapply(sequence(ape::Nnode(phy.graph) + ape::Ntip(phy.graph)), GetEdgeLengthByNodeNumber, phy=phy.graph)
+    subtending.node.heights <- heights - lengths
+    eligible.starts.donors <- which(subtending.node.heights<donor.height.from.root)
+    eligible.ends.donors <- which(heights>donor.height.from.root)
+    eligible.donors <- intersect(eligible.starts.donors, eligible.ends.donors)
+    eligible.starts.recipients <- which(subtending.node.heights<recipient.height.from.root)
+    eligible.ends.recipients <- which(heights>recipient.height.from.root)
+    eligible.recipients <- intersect(eligible.starts.recipients, eligible.ends.recipients)
+    recipient.node <- 0
+    donor.node <- 0
+    while(recipient.node == donor.node) {
+      recipient.node <- sample(eligible.recipients, 1)
+      donor.node <- sample(eligible.donors, 1)
+    }
+
+    new.donor <- ape::Ntip(phy.graph) + 1
+    new.recipient <- new.donor + 2 # since we add the donor, plus the node connecting it
+    phy.graph <- AddNodeToPhygraph(below.node=donor.node, depth.below=heights[donor.node] - donor.height.from.root,  phy.graph=phy.graph, tip.label=paste0("donor_", nrow(phy.graph$reticulation)+1), terminal.length=recipient.height.from.root - donor.height.from.root)
+    phy.graph <- AddNodeToPhygraph(below.node=recipient.node, depth.below=heights[recipient.node] - recipient.height.from.root,  phy.graph=phy.graph, tip.label=paste0("recipient_", nrow(phy.graph$reticulation)+1), terminal.length=0)
+    phy.graph$reticulation <- rbind(phy.graph$reticulation, c(new.donor, new.recipient))
+    if(nrow(phy.graph$reticulation)==nhybridizations) {
+      done=TRUE
+    }
+  }
+  #return(RenumberPhygraph(phy.graph))
+  return(phy.graph)
 }
 
 #allow.ghost allows ghost lineage: something that persists for awhile, hybridizes, goes extinct. Otherwise, hybridization events must between coeval edges with extant descendants
