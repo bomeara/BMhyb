@@ -1,7 +1,15 @@
 
+ComputeAICc<-function(n,k,LogLik){
+  if((n-k-1) <=0 ) {
+    return(NA)
+  }
+  return(2*n*k/(n-k-1)+2*LogLik)
+}
+
 AICc<-function(n,k,LogLik){
   return(2*n*k/(n-k-1)+2*LogLik)
 }
+
 
 AkaikeWeight<-function(Delta.AICc.Array){
   return(exp(-Delta.AICc.Array/2) /sum(exp(-Delta.AICc.Array/2) ))
@@ -1039,6 +1047,55 @@ AdaptiveConfidenceIntervalSampling <- function(par, fn, lower=-Inf, upper=Inf, d
 	return(results)
 }
 
+ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.points=5000, verbose=TRUE, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, confidence.points=5000, likelihood.precision=0.01, restart.mode=FALSE, ...) {
+	starting<-fn(parameters=par, traits=traits, ...)
+  lower <- c(sigma.sq=0, mu=min(c(10*min(traits), .1*min(traits))), bt=-10, vh=0,SE=0)[names(par)] #this is why we pass traits explicitly
+  upper <- c(sigma.sq=10, mu=max(c(10*max(traits), .1*max(traits))), bt=10, vh=10,SE=10)[names(par)]
+  for (i in seq_along(par)) {
+    lower[i] <- min(lower[i], par[i])
+    upper[i] <- max(upper[i], par[i])
+  }
+	min.multipliers <- rep(1, length(par))
+	max.multipliers <- rep(1, length(par))
+	results<-data.frame(data.frame(matrix(nrow=confidence.points+1, ncol=1+length(par))))
+  names(results) <- c("negloglik", names(par))
+	results[1,]<-(c(starting, par))
+	for (i in sequence(confidence.points)) {
+		sim.points<-NA
+		while(is.na(sim.points[1]) | !is.numeric(sim.points[1])) {
+			sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
+		}
+		results[i+1,] <- c(fn(sim.points, traits=traits, ...), sim.points)
+    if(i>5 & restart.mode) {
+      if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
+        results <- results[sequence(i+1),] #stop here and restart
+        return(results)
+      }
+    }
+		if (i%%20==0) {
+			for (j in sequence(length(par))) {
+				returned.range <- range(results[which((results[,1]-min(results[,1], na.rm=TRUE))<desired.delta), j+1], na.rm=TRUE)
+				total.range <- range(results[,j+1], na.rm=TRUE)
+				width.ratio <- diff(returned.range)/diff(total.range)
+				if(is.na(width.ratio)) {
+					width.ratio=1
+				}
+				if(width.ratio > 0.5) { #we are not sampling widely enough
+					min.multipliers[j] <- min.multipliers[j] * 0.9
+					max.multipliers[j] <- max.multipliers[j] * 1.1 #expand the range
+				} else {
+					min.multipliers[j] <- 1
+					max.multipliers[j] <- 1
+				}
+			}
+		}
+		if (verbose && i%%100==0) {
+			print(paste(i, "of", confidence.points, "done"))
+		}
+	}
+	return(results)
+}
+
 GenerateRandomValues <- function(data, parameters, lower, upper) {
   new.vals <- c(-Inf, Inf)
   while(any(new.vals < lower) | any(new.vals>upper)) {
@@ -1078,6 +1135,7 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
 	if(tries>max.tries) {
 		return(NA)
 	}
+  names(new.vals) <- names(par)
 	return(new.vals)
 }
 
@@ -1639,13 +1697,138 @@ ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measuremen
 }
 
 ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
-#  TO DO HERE
+  means.vector <- rep(mu, ape::Ntip(phy.graph))
+  hybrids <- GetHybridNodes(phy.graph, gamma) #hybrid.descendants=hybrid.descendants, immediate.hybrids
+  hybrids <- unique(c(hybrids$hybrid.descendants, hybrids$immediate.hybrids))
+  hybrids <- hybrids[which(hybrids<=ape::Ntip(phy.graph))]
+  means.vector[hybrids] <- means.vector[hybrids] + log(bt)
+  names(means.vector) <- phy.graph$tip.label
+  return(means.vector)
 }
 
+ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+  badval<-(0.5)*.Machine$double.xmax
+  sigma.sq=1
+  mu=0
+  bt=1
+  vh=0
+  SE=0
+  for(i in seq_along(parameters)){
+     assign(names(parameters)[i],parameters[i])
+  }
+  means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
 
+  if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
+      return(badval)
+  }
+  likelihood.penalty <- 0
+  if(do.Brissette.correction) {
+    V.modified <- BrissetteEtAlCorrection(V.modified)
+    if(is.null(V.modified)) {
+      return(badval)
+    }
+  }
 
+  if(do.Higham.correction & !IsPositiveDefinite(V.modified)) {
+    new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE, posd.tol = 1e-16, eig.tol = 1e-16, conv.tol = 1e-16)$mat)
+    if(any(new.mat!=V.modified)) {
+      warning("Had to do Higham (2002) correction for not positive definite matrix")
+      likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
+    }
+    V.modified <- new.mat
+  }
 
+  if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
+    warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
+    new.mat <- AlterMatrixUsingDE(V.modified)
+    likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
+    V.modified <- new.mat
+  }
 
+  traits <- traits[match(names(means.modified), names(traits))]
+  if(length(traits)!=length(means.modified)) {
+    stop("Mismatch between names of taxa in data vector and on phy")
+  }
+  NegLogML <- NULL
+  try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
+  if(is.null(NegLogML)) {
+    NegLogML <- badval
+  }
+  return(NegLogML[1])
+}
+
+BMhyb.new <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE) {
+
+  best.results <- OptimizeThoroughly(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, max.steps=max.steps)
+
+  local.df <- data.frame(t(best.results$par), AICc=ComputeAICc(n=ape::Ntip(phy.graph),k=length(best.results$par), LogLik=best.results$value),  NegLogLik=best.results$value, K=length(best.results$par))
+
+  interval.results <- ComputeConfidenceIntervals(best.results$par, fn=ComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points, allow.restart=allow.restart, best.lnl = best.results$value, likelihood.precision=likelihood.precision, restart.mode=TRUE, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
+
+  interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
+  interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
+  return(list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out))
+
+}
+
+OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
+  simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
+  starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
+  starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(branching.times(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+  starting.values <- starting.values[free.parameter.names]
+  best.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+  attempts <- 1
+  step.count <- 1
+  while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
+    if(verbose) {
+      print(paste0("Initial search had a convergence code of ", best.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", best.run$value))
+      print("Parameter estimates were")
+      print(best.run$par)
+    }
+    new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+    names(new.starting.values) <- names(starting.values)
+    best.run <- optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+    attempts <- attempts+1
+  }
+  if(verbose) {
+    results.vector<-c(step.count, best.run$value, best.run$par)
+    names(results.vector) <- c("step","negloglik", names(best.run$par))
+    print(results.vector)
+  }
+
+  #this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
+
+  times.without.improvement <- 0
+  starting.values <- best.run$par
+  while(times.without.improvement<max.steps) {
+    times.without.improvement <- times.without.improvement+1
+    step.count <- step.count + 1
+    new.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+    new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+    names(new.starting.values) <- names(starting.values)
+    starting.values <- new.starting.values
+    if(new.run$value<best.run$value) {
+      if(best.run$value - new.run$value > likelihood.precision) {
+        times.without.improvement <- 0
+        if(verbose) {
+          print("New improvement found, resetting step counter")
+        }
+      } else {
+        if(verbose) {
+          print("New improvement found, but slight; taking the best value, but not resetting the step counter")
+        }
+      }
+      best.run <- new.run
+    }
+    if(verbose) {
+      results.vector<-c(step.count, best.run$value, best.run$par)
+      names(results.vector) <- c("step","negloglik", names(best.run$par))
+      print(results.vector)
+    }
+  }
+  return(best.run)
+}
 
 ## Stuff below is from aborted attempt to use network. Trying again.
 
