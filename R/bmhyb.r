@@ -1200,7 +1200,7 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
     parent.node <- new.phy.graph$edge[edge.to.break,1]
     new.below.node <- new.phy.graph$edge[edge.to.break,2]
     original.edge.length <- phy.graph$edge.length[edge.to.break]
-    if(depth.below > original.edge.length) {
+    if(round(depth.below,4) > round(original.edge.length,4)) {
         stop("Node is added below the beginning of the edge (depth.below too large)")
     }
 
@@ -1299,7 +1299,7 @@ ConvertPhyAndFlowToPhygraph <- function(phy, flow) {
   flow.aggregate <- LumpIntoClades(phy, flow)
   phy.graph <- CreateHybridlessEvonet(phy)
   for (i in sequence(nrow(flow.aggregate))) {
-    phy.graph <- AddHybridization(phy.graph, from.clade=strsplit(flow.aggregate$donor.clades[i])[[1]], to.clade=strsplit(flow.aggregate$recipient.clades[i])[[1]], time.from.root=flow.aggregate$time.from.root.donor[i], ghost.length=flow.aggregate$time.from.root.recipient[i] - flow.aggregate$time.from.root.donor[i])
+    phy.graph <- AddHybridization(phy.graph, from.clade=strsplit(flow.aggregate$donor.clades[i], ",")[[1]], to.clade=strsplit(flow.aggregate$recipient.clades[i], ",")[[1]],  time.from.root=flow.aggregate$time.from.root.donor[i], ghost.length=flow.aggregate$time.from.root.recipient[i] - flow.aggregate$time.from.root.donor[i])
   }
   attr(phy.graph, "order")<- NULL
   phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))

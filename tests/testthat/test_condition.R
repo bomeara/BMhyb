@@ -1,3 +1,9 @@
+test_that("Can convert from old style to new", {
+  utils::data("nicotiana")
+  p <- BMhyb:::ConvertPhyAndFlowToPhygraph(nicotiana$phy, nicotiana$flow)
+  plot(p)
+})
+
 # test_that("ConditionBadCichlid", {
 #   utils::data("cichlid")
 #   parameters.to.try <- c(sigma.sq=6, mu=mean(cichlid$data)) #terrible values
