@@ -88,7 +88,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #         phy <- AdjustForDet(phy)
 #     }
 #     all.sims<-list()
-#     
+#
 #     starting.from.geiger<-NA
 #     #starting.values <- NA
 #     if(is.null(starting.values)) {
@@ -108,11 +108,11 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #             } else {
 #                 geiger.SE <- measurement.error
 #                 names(geiger.SE) <- phy$tip.label
-#                 
+#
 #             }
 #             starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
 #             starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(vcv(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
-#             
+#
 #         } else {
 #             starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
 #             starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  0.01*starting.from.geiger$sigsq*max(vcv(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
@@ -154,7 +154,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #             if(!is.null(measurement.error)) {
 #                 starting.values <- starting.values[-which(names(starting.values=="SE"))]
 #             }
-#             
+#
 #             if(is.null(preset.starting.parameters)) {
 #                 preset.starting.parameters <- starting.values
 #             }
@@ -180,18 +180,18 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                     best.run<-optim(par=GenerateRandomValues(data, preset.starting.parameters, lower.bounds[names(preset.starting.parameters)], upper.bounds[names(preset.starting.parameters)]), fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
 #                 }
 #                 #best.run$par <- ConvertExpm1(best.run$par)
-#                 
+#
 #             }
-#             
-#             
-#             
+#
+#
+#
 #             if(verbose) {
 #                 results.vector<-c(step.count, best.run$value, best.run$par)
 #                 names(results.vector) <- c("step","negloglik", names(best.run$par))
 #                 print(results.vector)
 #             }
 #             #this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
-#             
+#
 #             times.without.improvement <- 0
 #             while(times.without.improvement<10) {
 #                 times.without.improvement <- times.without.improvement+1
@@ -212,12 +212,12 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                         new.run<-optim(par=GenerateRandomValues(data, preset.starting.parameters, lower.bounds[names(preset.starting.parameters)], upper.bounds[names(preset.starting.parameters)]),  fn=CalculateLikelihood, method=opt.method, hessian=FALSE, data=data, phy=phy, flow=flow, precision=precision, allow.extrapolation=allow.extrapolation, measurement.error=measurement.error, do.kappa.check=do.kappa.check, number.of.proportions=number.of.proportions, lower.b=lower.bounds[names(preset.starting.parameters)], upper.b=upper.bounds[names(preset.starting.parameters)], badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction)
 #                     }
 #                     #  new.run$par <- ConvertExpm1(new.run$par)
-#                     
+#
 #                 }
-#                 
+#
 #                 #print("new.run best.run")
 #                 #print(c(new.run$value, best.run$value))
-#                 
+#
 #                 if(new.run$value<best.run$value) {
 #                     if(best.run$value - new.run$value > likelihood.precision) {
 #                         times.without.improvement <- 0
@@ -291,7 +291,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                 }
 #                 free.index=0
 #                 for(parameter in sequence(length(GenerateParamLabels()))) {
-#                     
+#
 #                     if(grepl(GenerateParamLabels()[parameter], names(preset.starting.parameters))) { #is estimated
 #                         free.index <- free.index + 1
 #                         ci.vector[1+2*(parameter-1)] <- min(interval.results.in[,free.index+1])
@@ -404,11 +404,11 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #             } else {
 #                 geiger.SE <- measurement.error
 #                 names(geiger.SE) <- phy$tip.label
-#                 
+#
 #             }
 #             starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
 #             starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(vcv(phy)), mean(measurement.error)) #sigma.sq, mu, beta, vh, SE
-#             
+#
 #         } else {
 #             starting.from.geiger<-fitContinuous(phy.geiger.friendly, data, model="BM", SE=geiger.SE, ncores=1)$opt
 #             starting.values <- c(starting.from.geiger$sigsq, starting.from.geiger$z0, 1,  starting.from.geiger$sigsq*max(vcv(phy)), starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
@@ -432,8 +432,8 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #         preset.starting.parameters = NULL
 #         while(do.run) {
 #             do.run = FALSE
-#             
-#             
+#
+#
 #             step.count <- 0
 #             if(verbose) {
 #                 print(paste("Starting model", models[model.index], "of", length(models), "models"))
@@ -452,7 +452,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #             if(!is.null(measurement.error)) {
 #                 starting.values <- starting.values[-which(names(starting.values=="SE"))]
 #             }
-#             
+#
 #             starting.mins <- c(0, min(data)-(max(data)-min(data)), 0, 0, 0)
 #             for(i in sequence(length(starting.mins))) {
 #                 starting.mins[i] <- max(starting.mins[i], lower.bounds[i])
@@ -468,13 +468,13 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                 names(ci.vector)[1+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"lower", sep=".")
 #                 names(ci.vector)[2+2*(parameter-1)] <- paste(GenerateParamLabels()[parameter],"upper", sep=".")
 #             }
-#             
+#
 #             # if(badval.if.not.positive.definite) {
 #             #   if(!IsPositiveDefinite(GetVModified(preset.starting.parameters, phy, flow, actual.params= free.parameters))) {
 #             #     stop("It appears your network is in a part of parameter space where calculating likelihood is numerically impossible under a multivariate normal. The best hope is probably removing taxa.")
 #             #   }
 #             # }
-#             
+#
 #             if(model==1) {
 #                 starting.mins["bt"] <- 1
 #                 starting.maxes["bt"] <- 1
@@ -493,15 +493,15 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                 starting.mins["SE"] <- 0
 #                 starting.maxes["SE"] <- 0
 #             }
-#             
-#             
+#
+#
 #             grid.of.points <- lhs::randomLHS(n=n.points, k=length(starting.mins))
 #             for(parameter.index in sequence(ncol(grid.of.points))) {
 #                 grid.of.points[,parameter.index] <- starting.mins[parameter.index] + grid.of.points[,parameter.index] * (starting.maxes[parameter.index] - starting.mins[parameter.index])
 #             }
 #             colnames(grid.of.points) <- names(starting.parameters)
 #             likelihoods <- rep(NA, n.points)
-#             
+#
 #             for (rep.index in sequence(n.points)) {
 #                 local.likelihood <- try(CalculateLikelihood(as.numeric(grid.of.points[rep.index,]), data=data, phy=phy, flow=flow, measurement.error=measurement.error, badval.if.not.positive.definite=badval.if.not.positive.definite, do.Brissette.correction=do.Brissette.correction, do.Higham.correction=do.Higham.correction, do.DE.correction=do.DE.correction))
 #                 if(!is.numeric(local.likelihood)) {
@@ -512,20 +512,20 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #                     print(paste0("Now done ", rep.index, " of ", n.points, " to analyze (", round(100*rep.index/n.points, 4), "% done)"))
 #                 }
 #             }
-#             
+#
 #             best.one <- which.min(likelihoods)[1]
 #             best.params <- grid.of.points[best.one,]
 #             best.likelihood <- min(likelihoods, na.rm=TRUE)
-#             
-#             
+#
+#
 #             results.vector.full <- c(NA, NA, 1, 0, 0)
 #             names(results.vector.full) <- GenerateParamLabels()
 #             for (i in sequence(length(best.params))) {
 #                 results.vector.full[which(names(results.vector.full)==names(best.params)[i])] <- best.params[i]
 #             }
-#             
+#
 #         }
-#         
+#
 #         if(get.se) {
 #             if(verbose) {
 #                 print("Now doing simulation to estimate parameter uncertainty")
@@ -549,7 +549,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #             interval.results <- interval.results[is.finite(interval.results[,1]),]
 #             interval.results.in <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))<=2),]
 #             interval.results.out <- interval.results[which(interval.results[,1]-min(as.numeric(interval.results[,1]))>2),]
-#             
+#
 #             for(parameter in sequence(ncol(interval.results)-1)) {
 #                 parameter.name <- names(interval.results)[parameter+1]
 #                 ci.vector[paste0(parameter.name, ".upper")] <- max(interval.results.in[,parameter+1], na.rm=TRUE)
@@ -582,8 +582,8 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #         local.df <- data.frame(matrix(c(models[model.index], results.vector.full, AICc(Ntip(phy),k=length(starting.parameters), best.likelihood), best.likelihood, length(starting.parameters), ci.vector), nrow=1), stringsAsFactors=FALSE)
 #         local.df <- apply(local.df, 2, unlist)
 #         names(local.df) <- c("Model", names(results.vector.full), "AICc", "NegLogL", "K", names(ci.vector))
-#         
-#         
+#
+#
 #         if(do.Higham.correction) {
 #             param.estimates <- unlist(results.vector.full)
 #             names(param.estimates) <- names(preset.starting.parameters)
@@ -596,7 +596,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #         all.points$K <- length(starting.parameters)
 #         results.summary <- rbind(results.summary, data.frame(t(local.df), stringsAsFactors=FALSE))
 #         all.sims <- rbind(all.sims, all.points)
-#         
+#
 #     }
 #     results.summary <- cbind(results.summary, deltaAICc=as.numeric(results.summary$AICc)-min(as.numeric(results.summary$AICc)))
 #     results.summary<-cbind(results.summary, AkaikeWeight = AkaikeWeight(results.summary$deltaAICc))
@@ -608,7 +608,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #     }
 #     return(results.summary)
 # }
-# 
+#
 # PlotAICRegion <- function(sims, show.finite.only=TRUE, true.params=NULL, ...) {
 #     pairs.of.params <- utils::combn(colnames(sims)[1:5],2)
 #     sims.to.plot <- sims
@@ -655,7 +655,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #     }
 #     return(phy)
 # }
-# 
+#
 # IsPositiveDefinite <- function(V.modified) {
 #     eigenvalues <- eigen(V.modified)$values
 #     if(is.complex(eigenvalues)) {
@@ -697,20 +697,20 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #     sigma.sq <-x['sigma.sq']
 #     mu <- x['mu']
 #     SE <- 0
-#     
+#
 #     if(grepl('SE', names(x))) {
 #         SE <- x['SE']
 #     }
-#     
+#
 #     if(grepl('bt', names(x))) {
 #         bt <- x['bt']
 #     }
-#     
+#
 #     if(grepl('vh', names(x))) {
 #         vh <- x['vh']
 #     }
-#     
-#     
+#
+#
 #     flow <- flow[order(flow$time.from.root.donor),]
 #     crossing.flows <- any(!((order(flow$time.from.root.donor) == order(flow$time.from.root.recipient))))
 #     times.original<-vcv.phylo(phy,model="Brownian")
@@ -730,7 +730,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #             V.modified[recipient.index,donor.index] <- gamma*sub.flow$time.from.root.donor*sigma.sq
 #             V.modified[donor.index,recipient.index] <- V.modified[recipient.index,donor.index]
 #             V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*sub.flow$time.from.root.recipient) + (gamma^2 + (1- gamma)^2) * (sub.flow$time.from.root.recipient)*sigma.sq + 2*gamma*(1-gamma)*V.original[recipient.index, donor.index] + vh
-#             
+#
 #         }else{ # one donor to several recipients
 #             #print(table.donor[table.index])
 #             gamma <- sub.flow$gamma[1]
@@ -743,7 +743,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #                 V.modified[donor.index,recipient.index] <- V.modified[recipient.index,donor.index]
 #                 V.modified[recipient.index, recipient.index] <- (V.original[recipient.index, recipient.index] -  sigma.sq*sub.flow$time.from.root.recipient[donor.catch.right.recipient]) + (gamma^2 + (1- gamma)^2) * (sub.flow$time.from.root.recipient[donor.catch.right.recipient])*sigma.sq + 2*gamma*(1-gamma)*V.original[recipient.index, donor.index] + vh
 #             }
-#             
+#
 #             for(index.1 in 1:dim(sub.flow)[1]){
 #                 recipient.index.1 <- recipient.index.set[index.1]
 #                 for(index.2 in 1:dim(sub.flow)[1]){
@@ -755,7 +755,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #             }#end flow.Index.1
 #         }#end of else
 #     }#end of for table.index
-#     
+#
 #     if(is.null(measurement.error)){
 #         diag(V.modified)<-diag(V.modified)+ SE^2
 #     }else{
@@ -771,26 +771,26 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #     sigma.sq <-x['sigma.sq']
 #     mu <- x['mu']
 #     SE <- 0
-#     
+#
 #     if(grepl('SE', names(x))) {
 #         SE <- x['SE']
 #     }
-#     
+#
 #     if(grepl('bt', names(x))) {
 #         bt <- x['bt']
 #     }
-#     
+#
 #     if(grepl('vh', names(x))) {
 #         vh <- x['vh']
 #     }
-#     
+#
 #     times.original <-vcv.phylo(phy, model="Brownian") #is the initial one based on the tree alone, so just time
 #     V.original <- sigma.sq * times.original
-#     
+#
 #     means.original <- rep(mu, Ntip(phy))
 #     names(means.original) <- rownames(V.original)
 #     means.modified <- means.original
-#     
+#
 #     means.original <- rep(mu, Ntip(phy))
 #     names(means.original) <- rownames(V.original)
 #     means.modified <- means.original
@@ -816,15 +816,15 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #     sigma.sq <-x['sigma.sq']
 #     mu <- x['mu']
 #     SE <- 0
-#     
+#
 #     if(grepl('SE', names(x))) {
 #         SE <- x['SE']
 #     }
-#     
+#
 #     if(grepl('bt', names(x))) {
 #         bt <- x['bt']
 #     }
-#     
+#
 #     if(grepl('vh', names(x))) {
 #         vh <- x['vh']
 #     }
@@ -906,7 +906,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #     #print(kappa(V.modified, exact=TRUE))
 #     #print("log(condition)")
 #     #print(log(kappa(V.modified, exact=TRUE)))
-#     
+#
 #     #pretty<-c(NegLogML, log(matrix.condition))
 #     #names(pretty) <- c("NegLogL", "log(matrix.condition")
 #     #print(pretty)
@@ -950,7 +950,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #         } else {
 #             NegLogML <- NegLogML.4
 #         }
-#         
+#
 #         #plot(proportions, lnl.vector)
 #         #lines(proportions, predict(smooth.spline(x=proportions, y=lnl.vector, w=1/kappa.vector, df=4), data.frame(proportions))$y[,1])
 #         #plot(c(0, proportions), c(NegLogML, lnl.vector), type="n")
@@ -964,11 +964,11 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #                 warning("VCV matrix was ill-conditioned at some points in parameter space; treated the likelihood at these points as a bad value rather than estimating it. If you think the MLE is in this region, you could try allow.extrapolation=TRUE")
 #             }
 #         }
-#         
+#
 #         #print(paste("Did interpolation, got ", NegLogML))
 #     }
-#     
-#     
+#
+#
 #     #print("datadiff")
 #     #print(quantile(data-means.modified))
 #     #print("middle")
@@ -986,9 +986,9 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 #     #if(NegLogML< (0)) {
 #     #	NegLogML <- badval #since something seems off.
 #     #}
-#     
+#
 #     return(NegLogML[1])
-#     
+#
 # }
 
 ConvertLog1P <- function(x) {
@@ -1123,7 +1123,7 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
             examined.max[i]<-max(0.001, examined.max[i])
             new.vals.bounds <- sort(c(max(lower[i], 0.9*examined.min[i]), min(upper[i], 1.1*examined.max[i])), decreasing=FALSE)
             new.vals[i]<-runif(1, min=ifelse(is.finite(new.vals.bounds[1]),new.vals.bounds[1], 0.000001) , max=ifelse(is.finite(new.vals.bounds[2]), new.vals.bounds[2], 10000))
-            
+
             if(new.vals[i]<lower[i]) {
                 pass=FALSE
             }
@@ -1203,28 +1203,28 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
     if(depth.below > original.edge.length) {
         stop("Node is added below the beginning of the edge (depth.below too large)")
     }
-    
+
     #delete original edge
     new.phy.graph$edge <- new.phy.graph$edge[-edge.to.break,]
     new.phy.graph$edge.length <- new.phy.graph$edge.length[-edge.to.break]
-    
+
     #add lower edge
     new.phy.graph$edge <- rbind(new.phy.graph$edge, c(parent.node, new.internal.node.number))
     new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- original.edge.length - depth.below
-    
+
     #add upper edge
     new.phy.graph$edge <- rbind(new.phy.graph$edge, c(new.internal.node.number, new.below.node))
     new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- depth.below
-    
+
     #add the new taxon
     new.phy.graph$edge <- rbind(new.phy.graph$edge, c(new.internal.node.number, new.tip.number))
     new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- terminal.length
     new.phy.graph$tip.label <- c(new.phy.graph$tip.label,tip.label)
-    
+
     new.phy.graph$Nnode <- 1 + new.phy.graph$Nnode
-    
+
     #no need to update the reticulation object because we're not renumber nodes, unlike ape in general
-    
+
     return(new.phy.graph)
 }
 
@@ -1255,11 +1255,11 @@ RemoveZeroTerminalsPhygraph <- function(phy.graph) {
             new.phy.graph$tip.label <- new.phy.graph$tip.label[-terminal.nodes[terminal.index]] #delete from tips
             new.phy.graph$edge.length <- new.phy.graph$edge.length[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index])] # and from brlen
             new.phy.graph$edge <- new.phy.graph$edge[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index]),] #delete from edges
-            
+
             #renumber
             new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] - 1
             new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] - 1
-            
+
             terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] <- terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] - 1
         }
     }
@@ -1270,30 +1270,52 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="pruning",index.only=TRUE) #doing this b/c if just do default cladewise ape doesn't actually reorder
     phy.graph$edge <- phy.graph$edge[new.order,]
     phy.graph$edge.length <- phy.graph$edge[new.order]
-    
+
     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="post",index.only=TRUE)
     phy.graph$edge <- phy.graph$edge[new.order,]
     phy.graph$edge.length <- phy.graph$edge[new.order]
-    
+
     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order=order,index.only=TRUE)
     phy.graph$edge <- phy.graph$edge[new.order,]
     phy.graph$edge.length <- phy.graph$edge[new.order]
-    
+
     return(phy.graph)
 }
 
-SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE, phy.graph=NULL, limit.to.one.per.interval=TRUE) {
+#' Simulate a phylogenetic network
+#'
+#' This uses a birth death process (TreeSim::sim.bd.taxa.age) to make a tree, then randomly adds hybridization events. The events are placed uniformly with time (not with numbers of taxa). If you use the phy.graph argument, you can pass in an existing phylogenetic network and it will add hybridization events to that; if you use a phy argument, it will add hybridization events to that. Note that currently there is no checking for multiple events between the same two branches. While hybridization events happen between taxa alive at the same instant of time, it is possible that the donor taxon later goes extinct with no descendants (other than the taxa of hybrid origin). These are basically ghost lineages, and this process (which then looks like gene flow going forward in time) is permitted if allow.ghost is TRUE.
+#'
+#' @param ntax How many surviving taxa to have on the tree (extinct taxa are pruned, with the exception of donors if allow.ghost=TRUE)
+#' @param nhybridizations How many hybridization events to have
+#' @param birth Birth rate (instantaneous rate)
+#' @param death Extinction rate (instantaneous)
+#' @param sample.f What fraction of taxa alive at the present to sample (resulting in the final ntax)
+#' @param tree.height Root to tip height of the final tree
+#' @param allow.ghost Allow a hybridization events from an unsampled ancestor
+#' @param phy.graph If not NULL, uses this network and adds hybridizations to it to reach nhybridizations in total
+#' @param phy If not NULL, uses this tree to create hybridization events on
+#' @return A phy.graph object with hybridizations
+#' @export
+#'
+#' @examples
+#' p <- SimulateNetwork(ntax=10 ,nhybridizations=2)
+#' plot(p)
+SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, sample.f = 0.5, tree.height = 1, allow.ghost=FALSE, phy.graph=NULL, phy=NULL) {
     done = FALSE
-    if(is.null(phy.graph)) {
+    if(is.null(phy.graph) & is.null(phy)) {
         phy <-  TreeSim::sim.bd.taxa.age(n=ntax, numbsim=1, lambda=birth, mu=death, frac = sample.f, age=tree.height, mrca = TRUE)[[1]]
         phy.graph <- ape::evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
         phy.graph$reticulation <- phy.graph$reticulation[-1,]
+    } else if (!is.null(phy)) {
+        phy.graph <- ape::evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
+        phy.graph$reticulation <- phy.graph$reticulation[-1,]
     }
-    
-    
-    
+
+
+
     #now use phytools::bind.tip() to add a taxon to the tree for receiving and donating gene flow (contemporaneously if all.ghost=FALSE). Will then delete this tip but keep the internal node (unless we want a ghost lineage).
-    
+
     while(!done) {
         donor.height.from.root <- runif(1, 0, max(ape::vcv(phy.graph)))
         recipient.height.from.root <- donor.height.from.root
@@ -1329,7 +1351,7 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, b
             #   donor.node <- 0
             # }
         }
-        
+
         new.donor <- ape::Ntip(phy.graph) + 1
         new.recipient <- new.donor + 1
         phy.graph <- AddNodeToPhygraph(below.node=donor.node, depth.below=heights[donor.node] - donor.height.from.root,  phy.graph=phy.graph, tip.label=paste0("donor_", nrow(phy.graph$reticulation)+1), terminal.length=recipient.height.from.root - donor.height.from.root)
@@ -1445,7 +1467,7 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, b
 #         if	(names(getNode(phy4, xxyy$torder))[i] %in% flow$recipient) {
 #             label.colors[i]<-col.hybrid
 #         }
-#         
+#
 #     }
 #     text(x=rep(max(xxyy$xx), Ntip(phy)), y=xxyy$yy[which(edges(phy4)[xxyy$eorder,2] %in% sequence(Ntip(phy)))], names(getNode(phy4, xxyy$torder)), col=label.colors, pos=4, cex=cex)
 #     for (i in sequence(dim(flow)[1])) {
@@ -1485,11 +1507,11 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, b
 #         gamma.clades <-append(gamma.clades, flow.local$gamma[1])
 #         time.from.root.donor.clades <- append(time.from.root.donor.clades, flow.local$time.from.root.donor[1])
 #         time.from.root.recipient.clades <- append(time.from.root.recipient.clades, flow.local$time.from.root.recipient[1])
-#         
+#
 #     }
 #     return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
 # }
-# 
+#
 # UnlumpIntoTaxa <- function(lumped.flow) {
 #     flow <- data.frame()
 #     for (event.index in sequence(nrow(lumped.flow))) {
@@ -1521,9 +1543,9 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, b
 #             attachment.crown.node <- findMRCA(phy.merged, tips=donor.taxa, type=c("node"))
 #         }
 #         attachment.stem.node <- GetAncestor(phy.merged, attachment.crown.node)
-#         
+#
 #         pulled.clade$root.edge<-max(vcv(phy)) - max(vcv(pulled.clade)) - flow.clades$time.from.root.donor[i]
-#         
+#
 #         phy.merged <- bind.tree(phy.merged, pulled.clade, attachment.crown.node, position=phy.merged$edge.length[which(phy.merged$edge[,2]==attachment.crown.node)] - (flow.clades$time.from.root.donor[i]-nodeheight(phy.merged, attachment.stem.node)))
 #         if(length(taxa.to.retain)==1) {
 #             phy.merged <- drop.tip(phy.merged, paste("DUMMY", suffix, sep=""))
@@ -1531,7 +1553,7 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, flow.proportion=0.5, b
 #     }
 #     return(phy.merged)
 # }
-# 
+#
 
 # SimulateTipData <- function(phy, flow, params, measurement.error, suffix="_DUPLICATE") {
 #     #	flow.clades <- LumpIntoClades(phy, flow)
@@ -1593,13 +1615,13 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
             # }
             # }
             plot(x=x.range, y=y.range, xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], type="n", bty="n")
-            
+
             relevant.point.id <- chull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2])
             #polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=TRUE)
             #polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=FALSE)
             PlotConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "darkgray")
             PlotConvexHull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], "black")
-            
+
             #points(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], col="green", pch="X")
             #contour(interp(points.to.fit[,1], points.to.fit[,2], points.to.fit[,3]), xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], levels=c(1, 2, 5, 10))
             points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20, cex=2)
@@ -1698,12 +1720,12 @@ ConvertVectorToMatrix <- function(x) {
 #     }
 #     result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1), original=V.modified)
 #     #result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1, strategy=6, p=0.3), original=V.modified)
-#     
+#
 #     #result <- optim(par=starting.val.center, fn=PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), method="L-BFGS-B", original=V.modified)
-#     
+#
 #     #print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter, " smallest value is ", min(ConvertVectorToMatrix(result$optim$bestmem)), " status of being positive definite is ", IsPositiveDefinite(ConvertVectorToMatrix(result$optim$bestmem))))
 #     #print(V.modified[1:6,1:6])
-#     
+#
 #     #print(ConvertVectorToMatrix(result$par))
 #     #print(ConvertVectorToMatrix(result$optim$bestmem)[1:6,1:6])
 #     final.mat <- ConvertVectorToMatrix(result$optim$bestmem)
@@ -1727,6 +1749,20 @@ ConvertVectorToMatrix <- function(x) {
 
 # get enewick using ape, make an evonet object. Call it phy.net. For igraph object, call phy.i
 
+#' Convert an evonet object into igraph
+#'
+#' ape can already convert from evonet to igraph; the advantage of this function is that it uses the node ids from the evonet object for labels in igraph.
+#'
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @return An igraph network
+#'
+#' @examples
+#' phy <- ape::rcoal(5)
+#' phy.evo <- ape::evonet(phy, from=1, to=2)
+#' plot(phy.evo) # this is the ape plot
+#' phy.igraph <- ConvertEvonetToIgraphWithNodeNumbers(phy.evo)
+#' plot(phy.igraph)
+#' @export
 ConvertEvonetToIgraphWithNodeNumbers <- function(phy.graph) {
     #phy.i <- ape::as.igraph(phy.graph)
     phy.graph$tip.label <- sequence(ape::Ntip(phy.graph)) #converting to ape node numbers
@@ -1745,7 +1781,7 @@ GetAllPathTopologies <- function(phy.graph) {
         local.df <- data.frame(final.taxon=taxon, paths=local.paths, stringsAsFactors=FALSE)
         all.paths <- rbind(all.paths, local.df)
     }
-    
+
     return(all.paths) #one element per taxon; each element is itself a list of multiple possible paths from the root to that taxon
 }
 
@@ -1762,7 +1798,6 @@ ComputeAllEdges <- function(phy.graph, gamma=0.5) {
     return(all.edges)
 }
 
-# GET HOW MANY HYBRIDIZATIONS LEAD TO EACH SO WE CAN MODIFY BETA
 
 GetHybridNodes <- function(phy.graph, gamma=0.5) {
     all.edges <- ComputeAllEdges(phy.graph, gamma)
@@ -1861,7 +1896,7 @@ ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurem
     for(i in sequence(length(hybrids))) {
         means.vector[as.numeric(names(hybrids)[i])] <- means.vector[as.numeric(names(hybrids)[i])] + hybrids[i]*log(bt)
     }
-    
+
     names(means.vector) <- phy.graph$tip.label
     return(means.vector)
 }
@@ -1878,7 +1913,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     }
     means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
     V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
-    
+
     if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
         return(badval)
     }
@@ -1889,7 +1924,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
             return(badval)
         }
     }
-    
+
     if(do.Higham.correction & !IsPositiveDefinite(V.modified)) {
         new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE, posd.tol = 1e-16, eig.tol = 1e-16, conv.tol = 1e-16)$mat)
         if(any(new.mat!=V.modified)) {
@@ -1898,18 +1933,18 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
         }
         V.modified <- new.mat
     }
-    
+
     if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
         warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
         new.mat <- AlterMatrixUsingDE(V.modified)
         likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
         V.modified <- new.mat
     }
-    
+
     traits <- traits[match(names(means.modified), names(traits))] #reorder so traits in same order as VCV and means
-    
+
     prune.taxa <- names(means.modified)[!names(means.modified)%in%names(traits)] # We might not have trait data for all tips. This is especially true if we want forward in time hybridization events, which are really a lineage branching off, living for a while, then moving genes to another lineage and then going extinct (or at least unsampled). We can allow a tree like that with just no trait values for the ghost taxon.
-    
+
     if(nrow(V.modified) - length(prune.taxa) < 3) {
         stop(paste("You have pruned ", paste(prune.taxa, collapse=", "), " from your tree because they did not match taxa in your traits vector (where some of the names are ", paste(names(traits), collapse=", "), ") and this leaves too few taxa to do an analysis"))
     }
@@ -1917,7 +1952,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
         V.modified <- V.modified[-which(rownames(V.modified) %in% prune.taxa), -which(colnames(V.modified) %in% prune.taxa)]
         means.modified <- means.modified[-which(names(means.modified) %in% prune.taxa)]
     }
-    
+
     NegLogML <- NULL
     try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
     if(is.null(NegLogML)) {
@@ -1926,14 +1961,34 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     return(NegLogML[1])
 }
 
-BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE) {
-    
+#' Optimize model
+#'
+#' Fits a BMhyb model to your data
+#'
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
+#' @param free.parameter names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh
+#' @param confidence.points How many points to use to estimate parameter uncertainty
+#' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
+#' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
+#' @param do.Higham.correction Variance-covariance matrices for this model are sometimes poorly conditioned; this is a hack to reduce the impact of that
+#' @param do.Brissette.correction Applies method of Brissette et al. 2007 to also try to fix matrix condition
+#' @param verbose If TRUE, BMhyb will chat about its progress
+#' @param likelihood.precision When optimizing, how much of a lnL improvement is required to restart optimization between starts
+#' @param max.steps The number of restarts without improvement it will attempt
+#' @confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
+#' @allow.restart If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point
+#'
+#' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
+#' @export
+BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE) {
+
     best.results <- OptimizeThoroughly(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, max.steps=max.steps)
-    
+
     local.df <- data.frame(t(best.results$par), AICc=ComputeAICc(n=ape::Ntip(phy.graph),k=length(best.results$par), LogLik=best.results$value),  NegLogLik=best.results$value, K=length(best.results$par))
-    
+
     interval.results <- ComputeConfidenceIntervals(best.results$par, fn=ComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points, allow.restart=allow.restart, best.lnl = best.results$value, likelihood.precision=likelihood.precision, restart.mode=TRUE, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
-    
+
     interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
     interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
     result.object <- list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out, phy.graph=phy.graph, traits=traits)
@@ -1941,75 +1996,81 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
     return(result.object)
 }
 
-# plot.BMhybResult <- function(x) {
-#     x$par <- x$best[1:(length(x$best)-3)]
-#     par(mfcol=c(1, length(x$par)))
-#     all.results <- rbind(x$good.region, x$bad.region)
-#     for(parameter in sequence(length(x$par))) {
-#         plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10))
-#         points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
-#         points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
-#         points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
-#     }
-# }
-# 
-# OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
-#     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
-#     starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
-#     starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
-#     starting.values <- starting.values[free.parameter.names]
-#     best.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
-#     attempts <- 1
-#     step.count <- 1
-#     while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
-#         if(verbose) {
-#             print(paste0("Initial search had a convergence code of ", best.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", best.run$value))
-#             print("Parameter estimates were")
-#             print(best.run$par)
-#         }
-#         new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
-#         names(new.starting.values) <- names(starting.values)
-#         best.run <- optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
-#         attempts <- attempts+1
-#     }
-#     if(verbose) {
-#         results.vector<-c(step.count, best.run$value, best.run$par)
-#         names(results.vector) <- c("step","negloglik", names(best.run$par))
-#         print(results.vector)
-#     }
-#     
-#     #this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
-#     
-#     times.without.improvement <- 0
-#     starting.values <- best.run$par
-#     while(times.without.improvement<max.steps) {
-#         times.without.improvement <- times.without.improvement+1
-#         step.count <- step.count + 1
-#         new.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
-#         new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
-#         names(new.starting.values) <- names(starting.values)
-#         starting.values <- new.starting.values
-#         if(new.run$value<best.run$value) {
-#             if(best.run$value - new.run$value > likelihood.precision) {
-#                 times.without.improvement <- 0
-#                 if(verbose) {
-#                     print("New improvement found, resetting step counter")
-#                 }
-#             } else {
-#                 if(verbose) {
-#                     print("New improvement found, but slight; taking the best value, but not resetting the step counter")
-#                 }
-#             }
-#             best.run <- new.run
-#         }
-#         if(verbose) {
-#             results.vector<-c(step.count, best.run$value, best.run$par)
-#             names(results.vector) <- c("step","negloglik", names(best.run$par))
-#             print(results.vector)
-#         }
-#     }
-#     return(best.run)
-# }
+#' Plot BMhyb result
+#'
+#' Shows the plot of confidence regions with MLEs indicated (red dots)
+#'
+#' @param x A BMhyb object (result of a BMhyb() call)
+#' @export
+plot.BMhybResult <- function(x) {
+    x$par <- x$best[1:(length(x$best)-3)]
+    par(mfcol=c(1, length(x$par)))
+    all.results <- rbind(x$good.region, x$bad.region)
+    for(parameter in sequence(length(x$par))) {
+        plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10))
+        points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
+        points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
+        points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+    }
+}
+
+OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
+    simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
+    starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
+    starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+    starting.values <- starting.values[free.parameter.names]
+    best.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+    attempts <- 1
+    step.count <- 1
+    while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
+        if(verbose) {
+            print(paste0("Initial search had a convergence code of ", best.run$convergence, ", indicating it did not converge. See ?optim for what the code may mean. Starting again, likely near that point. Negative log likelihood was ", best.run$value))
+            print("Parameter estimates were")
+            print(best.run$par)
+        }
+        new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+        names(new.starting.values) <- names(starting.values)
+        best.run <- optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        attempts <- attempts+1
+    }
+    if(verbose) {
+        results.vector<-c(step.count, best.run$value, best.run$par)
+        names(results.vector) <- c("step","negloglik", names(best.run$par))
+        print(results.vector)
+    }
+
+    #this is to continue optimizing; we find that optim is too lenient about when it accepts convergence
+
+    times.without.improvement <- 0
+    starting.values <- best.run$par
+    while(times.without.improvement<max.steps) {
+        times.without.improvement <- times.without.improvement+1
+        step.count <- step.count + 1
+        new.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+        names(new.starting.values) <- names(starting.values)
+        starting.values <- new.starting.values
+        if(new.run$value<best.run$value) {
+            if(best.run$value - new.run$value > likelihood.precision) {
+                times.without.improvement <- 0
+                if(verbose) {
+                    print("New improvement found, resetting step counter")
+                }
+            } else {
+                if(verbose) {
+                    print("New improvement found, but slight; taking the best value, but not resetting the step counter")
+                }
+            }
+            best.run <- new.run
+        }
+        if(verbose) {
+            results.vector<-c(step.count, best.run$value, best.run$par)
+            names(results.vector) <- c("step","negloglik", names(best.run$par))
+            print(results.vector)
+        }
+    }
+    return(best.run)
+}
 
 ## Stuff below is from aborted attempt to use network. Trying again.
 
@@ -2043,7 +2104,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #             phy.graph2 <- as.igraph(AddNodeLabels(multiphy[[i]]), directed=TRUE)
 #             phy.graph2 <- set_edge_attr(phy.graph2, "length", value=multiphy[[i]]$edge.length)
 #             phy.graph2 <- set_edge_attr(phy.graph2, "weight", value=1)
-#             
+#
 #             phy.graph <- phy.graph  %u% phy.graph2
 #         }
 #     }
@@ -2071,7 +2132,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #     if(length(vh.location)==1) {
 #         vh<-x[vh.location]
 #     }
-#     
+#
 #     all.V.matrices <- sigma.sq*lapply(phylogenies, ape::vcv)
 #     V.matrix <- 0*all.V.matrices[[1]]
 #     mean.vector <- rep(0, length(igraph::V(phy.graph)))
@@ -2103,11 +2164,11 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #     if(length(vh.location)==1) {
 #         vh<-x[vh.location]
 #     }
-#     
+#
 #     V.matrix <- matrix(0, nrow=length(igraph::V(phy.graph)), ncol=length(igraph::V(phy.graph)))
 #     mean.vector <- rep(0, length(igraph::V(phy.graph)))
 #     postorder.traversal <- igraph::dfs(phy.graph, names(V(phy.graph))[which.max(nchar(names(V(phy.graph))))])$order
-#     
+#
 #     rownames(V.matrix) <- names(postorder.traversal)
 #     colnames(V.matrix) <- names(postorder.traversal)
 #     names(mean.vector) <- names(postorder.traversal)
@@ -2115,23 +2176,23 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #     all.attribute.names <- names(igraph::get.edge.attribute(phy.graph))
 #     matching.attribute.names <- all.attribute.names[grepl("length_",all.attribute.names )]
 #     all.lengths <- matrix(nrow=length(matching.attribute.names), ncol=length(igraph::E(phy.graph)))
-#     
+#
 #     matching.weight.names <- all.attribute.names[grepl("weight_",all.attribute.names )]
-#     
+#
 #     all.weights <- matrix(0, nrow=length(matching.weight.names), ncol=length(igraph::E(phy.graph)))
 #     for (length.index in sequence(length(matching.attribute.names))) {
 #         all.lengths[length.index,] <- get.edge.attribute(phy.graph, name=matching.attribute.names[length.index])
 #     }
-#     
+#
 #     for (weight.index in sequence(length(matching.weight.names))) {
 #         all.weights[weight.index,] <- get.edge.attribute(phy.graph, name=matching.weight.names[weight.index])
 #     }
-#     
+#
 #     all.weights <- sweep(all.weights,MARGIN=2,FUN="/",STATS=colSums(all.weights, na.rm=TRUE))
 #     all.weights[is.na(all.weights)] <- 0
 #     all.lengths[is.na(all.lengths)] <- 0
-#     
-#     
+#
+#
 #     # Algorithm from Bastide et al., Syst Biol. 2018 in press
 #     for (focal.index in sequence(length(names(postorder.traversal)))) {
 #         if(focal.index==1) {
@@ -2172,11 +2233,11 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                     }
 #                     V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
 #                 }
-#                 
+#
 #                 #now for Vii
 #                 V.matrix[focal.node, focal.node] <- 0
 #                 focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
-#                 
+#
 #                 for (parent.index in sequence(length(parent.nodes))) {
 #                     focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
 #                     V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
@@ -2185,7 +2246,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                         stop()
 #                     }
 #                 }
-#                 
+#
 #                 if(length(parent.nodes)>2) {
 #                     stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
 #                 }
@@ -2197,7 +2258,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                 }
 #             }
 #         }
-#         
+#
 #     }
 #     if(drop.internal) {
 #         elements.to.keep <- !grepl("Node_", names(mean.vector))
@@ -2208,7 +2269,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #     diag(V.matrix) <- diag(V.matrix) + SE^2
 #     return(list(V.modified=V.matrix, means.modified=mean.vector))
 # }
-# 
+#
 # ExpandEvonet <- function(phy.graph) {
 #     phy.graph <- reorder(phy.graph, "cladewise")
 #     phy.graph$edge.network <- rbind(phy.graph$edge, phy.graph$reticulation)
@@ -2244,10 +2305,10 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #     V.matrix <- matrix(0, nrow=N.all.nodes, ncol=N.all.nodes)
 #     mean.vector <- rep(0, N.all.nodes)
 #     rownames(V.matrix) <- colnames(V.matrix) <- names(mean.vector) <- sequence(N.all.nodes)
-#     
+#
 #     ##################
 #     # Start adding here. Go up the tree using the $edge.network, top to bottom, using $edge.length.network for edge lengths
-#     
+#
 #     # Algorithm from Bastide et al., Syst Biol. 2018 in press
 #     for (focal.index in sequence(length(names(postorder.traversal)))) {
 #         if(focal.index==1) {
@@ -2288,11 +2349,11 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                     }
 #                     V.matrix[other.node, focal.node] <- V.matrix[focal.node, other.node] #do the upper and lower tri
 #                 }
-#                 
+#
 #                 #now for Vii
 #                 V.matrix[focal.node, focal.node] <- 0
 #                 focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[1], focal.node))
-#                 
+#
 #                 for (parent.index in sequence(length(parent.nodes))) {
 #                     focal.edge <- get.edge.ids(phy.graph, c(parent.nodes[parent.index], focal.node))
 #                     V.matrix[focal.node, focal.node] <- V.matrix[focal.node, focal.node] + (all.weights[parent.index, focal.edge]^2) * (sum(0,V.matrix[parent.nodes[parent.index], parent.nodes[parent.index]], na.rm=TRUE) + sigma.sq * all.lengths[parent.index,focal.edge])
@@ -2301,7 +2362,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                         stop()
 #                     }
 #                 }
-#                 
+#
 #                 if(length(parent.nodes)>2) {
 #                     stop("This code, from Bastide et al. eq 4, only envisions two parents for a node")
 #                 }
@@ -2313,7 +2374,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #                 }
 #             }
 #         }
-#         
+#
 #     }
 #     if(drop.internal) {
 #         elements.to.keep <- !grepl("Node_", names(mean.vector))
