@@ -1295,6 +1295,17 @@ CreateHybridlessEvonet <- function(phy) {
   return(phy.graph)
 }
 
+ConvertPhyAndFlowToPhygraph <- function(phy, flow) {
+  flow.aggregate <- LumpIntoClades(phy, flow)
+  phy.graph <- CreateHybridlessEvonet(phy)
+  for (i in sequence(nrow(flow.aggregate))) {
+    phy.graph <- AddHybridization(phy.graph, from.clade=strsplit(flow.aggregate$donor.clades[i])[[1]], to.clade=strsplit(flow.aggregate$recipient.clades[i])[[1]], time.from.root=flow.aggregate$time.from.root.donor[i], ghost.length=flow.aggregate$time.from.root.recipient[i] - flow.aggregate$time.from.root.donor[i])
+  }
+  attr(phy.graph, "order")<- NULL
+  phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))
+  return(phy.graph)
+}
+
 #' Add hybrid events to a phy.graph
 #'
 #' Given an evonet object, and info on where the gene flow is from and to, and when this occurs, add a hybridization event. The edges things move from and to are specified by the list of descendant taxa of those edges (basically the edge is the subtending branch for the clade). You do not have to list all taxa, only those spanning the node at the end of the edge. You can enter a single taxon to have gene flow to or from a terminal branch. You also need to specify when the gene flow happens. This can be given as time from the root of the tree to when the event starts or time from the tip of the tree back to when the gene flow starts (but you must give one of these). If gene flow goes through an unsampled ghost intermediate, you can enter the length of time it spends there.
@@ -1307,7 +1318,7 @@ CreateHybridlessEvonet <- function(phy) {
 #' @param ghost.length How long the hybrid genes spend in an unsampled species before arriving in their recipient
 #' @return An evonet object with the new hybridization event
 #' @export
-AddHybridizations <- function(phy.graph, from.clade, to.clade, time.from.root=NULL, time.from.tip=NULL, ghost.length=0) {
+AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NULL, time.from.tip=NULL, ghost.length=0) {
   heightnode <- function(node, phy) {
       return(phytools::nodeheight(phy, node))
   }
@@ -1573,36 +1584,36 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
 #     }
 # }
 
-# LumpIntoClades <- function(phy, flow) {
-#     flow.string <- paste(flow$time.from.root.donor, flow$time.from.root.recipient, flow$gamma)
-#     flow.together <- cbind(flow.string=flow.string, flow)
-#     unique.flow.strings <- unique(flow.string)
-#     donor.clades <- c()
-#     recipient.clades <- c()
-#     gamma.clades <-c()
-#     time.from.root.donor.clades <- c()
-#     time.from.root.recipient.clades <- c()
-#     for (i in sequence(length(unique.flow.strings))) {
-#         flow.local <- flow.together[which(flow.together$flow.string == unique.flow.strings[i]), ]
-#         donor.clades <- append(donor.clades, paste(unique(flow.local$donor), collapse=","))
-#         recipient.clades <- append(recipient.clades, paste(unique(flow.local$recipient), collapse=","))
-#         gamma.clades <-append(gamma.clades, flow.local$gamma[1])
-#         time.from.root.donor.clades <- append(time.from.root.donor.clades, flow.local$time.from.root.donor[1])
-#         time.from.root.recipient.clades <- append(time.from.root.recipient.clades, flow.local$time.from.root.recipient[1])
-#
-#     }
-#     return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
-# }
-#
-# UnlumpIntoTaxa <- function(lumped.flow) {
-#     flow <- data.frame()
-#     for (event.index in sequence(nrow(lumped.flow))) {
-#         donor.taxa <- strsplit(lumped.flow$donor.clades[event.index], ",")[[1]]
-#         recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
-#         flow <- rbind(flow, expand.grid(donor=donor.taxa, recipient=recipient.taxa, gamma=lumped.flow$gamma[event.index], time.from.root.donor = lumped.flow$time.from.root.donor[event.index], time.from.root.recipient =  lumped.flow$time.from.root.recipient[event.index], event=event.index))
-#     }
-#     return(flow)
-# }
+LumpIntoClades <- function(phy, flow) {
+    flow.string <- paste(flow$time.from.root.donor, flow$time.from.root.recipient, flow$gamma)
+    flow.together <- cbind(flow.string=flow.string, flow)
+    unique.flow.strings <- unique(flow.string)
+    donor.clades <- c()
+    recipient.clades <- c()
+    gamma.clades <-c()
+    time.from.root.donor.clades <- c()
+    time.from.root.recipient.clades <- c()
+    for (i in sequence(length(unique.flow.strings))) {
+        flow.local <- flow.together[which(flow.together$flow.string == unique.flow.strings[i]), ]
+        donor.clades <- append(donor.clades, paste(unique(flow.local$donor), collapse=","))
+        recipient.clades <- append(recipient.clades, paste(unique(flow.local$recipient), collapse=","))
+        gamma.clades <-append(gamma.clades, flow.local$gamma[1])
+        time.from.root.donor.clades <- append(time.from.root.donor.clades, flow.local$time.from.root.donor[1])
+        time.from.root.recipient.clades <- append(time.from.root.recipient.clades, flow.local$time.from.root.recipient[1])
+
+    }
+    return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
+}
+
+UnlumpIntoTaxa <- function(lumped.flow) {
+    flow <- data.frame()
+    for (event.index in sequence(nrow(lumped.flow))) {
+        donor.taxa <- strsplit(lumped.flow$donor.clades[event.index], ",")[[1]]
+        recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
+        flow <- rbind(flow, expand.grid(donor=donor.taxa, recipient=recipient.taxa, gamma=lumped.flow$gamma[event.index], time.from.root.donor = lumped.flow$time.from.root.donor[event.index], time.from.root.recipient =  lumped.flow$time.from.root.recipient[event.index], event=event.index))
+    }
+    return(flow)
+}
 
 # AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
 #     flow.clades <- LumpIntoClades(phy, flow)
