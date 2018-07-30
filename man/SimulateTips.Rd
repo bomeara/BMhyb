@@ -32,5 +32,5 @@ For a given phylogenetic network generate tip data. Any values not specified use
 }
 \examples{
 network <- SimulateNetwork(ntax=5, nhybridizations=2)
-tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1)
+tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
 }

@@ -1282,6 +1282,65 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
     return(phy.graph)
 }
 
+#' Convert phylo object to evonet
+#'
+#' ape::evonet converts a phylo object to evonet, but requires having at least one hybridization event. This lets you convert to evonet without having a hybridization event.
+#'
+#' @param phy A phylo object (ape's basic tree format)
+#' @return An evonet object, suitable for passing as phy.graph into many of BMhyb's functions
+#' @export
+CreateHybridlessEvonet <- function(phy) {
+  phy.graph <- ape::evonet(phy, from=0, to=0) #0 is just a placeholder here; NA not allowed
+  phy.graph$reticulation <- phy.graph$reticulation[-1,]
+  return(phy.graph)
+}
+
+#' Add hybrid events to a phy.graph
+#'
+#' Given an evonet object, and info on where the gene flow is from and to, and when this occurs, add a hybridization event. The edges things move from and to are specified by the list of descendant taxa of those edges (basically the edge is the subtending branch for the clade). You do not have to list all taxa, only those spanning the node at the end of the edge. You can enter a single taxon to have gene flow to or from a terminal branch. You also need to specify when the gene flow happens. This can be given as time from the root of the tree to when the event starts or time from the tip of the tree back to when the gene flow starts (but you must give one of these). If gene flow goes through an unsampled ghost intermediate, you can enter the length of time it spends there.
+#'
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param from.clade A vector of names specifying taxa spanning the node descended from the focal edge for the start of the hybridization event
+#' @param to.clade A vector of names specifying taxa spanning the node descended from the focal edge for the start of the hybridization event
+#' @param time.from.root When the hybridization event starts, as measured from the root of the tree
+#' @param time.from.tip When the hybridization event starts, as measured from the tips of the tree (assumed to be coeval)
+#' @param ghost.length How long the hybrid genes spend in an unsampled species before arriving in their recipient
+#' @return An evonet object with the new hybridization event
+#' @export
+AddHybridizations <- function(phy.graph, from.clade, to.clade, time.from.root=NULL, time.from.tip=NULL, ghost.length=0) {
+  heightnode <- function(node, phy) {
+      return(phytools::nodeheight(phy, node))
+  }
+  heights <- sapply(sequence(ape::Nnode(phy.graph) + ape::Ntip(phy.graph)), heightnode, phy=phy.graph) # does not line up with edge matrix or edge lengths, remember
+  donor.node <- ape::getMRCA(phy.graph, from.clade) #returns NULL if only one taxon given
+  if(length(from.clade)==1) {
+    donor.node <- which(phy.graph$tip.label==from.clade)
+  }
+  recipient.node <- ape::getMRCA(phy.graph, to.clade)
+  if(length(to.clade)==1) {
+    recipient.node <- which(phy.graph$tip.label==to.clade)
+  }
+  donor.height.from.root <- NA
+  if(!is.null(time.from.root)) {
+    donor.height.from.root <- time.from.root
+  } else if (!is.null(time.from.tip)) {
+    donor.height.from.root <- max(ape::vcv(phy.graph)) - time.from.tip
+  } else {
+    stop("You must enter a time.from.root or a time.from.tip")
+  }
+  recipient.height.from.root <- donor.height.from.root + ghost.length
+  new.donor <- ape::Ntip(phy.graph) + 1
+  new.recipient <- new.donor + 1
+  phy.graph <- AddNodeToPhygraph(below.node=donor.node, depth.below=heights[donor.node] - donor.height.from.root,  phy.graph=phy.graph, tip.label=paste0("donor_", nrow(phy.graph$reticulation)+1), terminal.length=recipient.height.from.root - donor.height.from.root)
+  # if matching to internal node, have to renumber since its number was updated by earlier step
+  phy.graph <- AddNodeToPhygraph(below.node=ifelse(recipient.node >= (ape::Ntip(phy.graph)+1), recipient.node+1, recipient.node ), depth.below=heights[recipient.node] - recipient.height.from.root,  phy.graph=phy.graph, tip.label=paste0("recipient_", nrow(phy.graph$reticulation)+1), terminal.length=0)
+  phy.graph$reticulation <- rbind(phy.graph$reticulation, c(new.donor, new.recipient))
+  attr(phy.graph, "order")<- NULL
+  phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))
+  return(phy.graph)
+}
+
+
 #' Simulate trait data
 #'
 #' For a given phylogenetic network generate tip data. Any values not specified use default values
@@ -1297,7 +1356,7 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
 #' @export
 #' @examples
 #' network <- SimulateNetwork(ntax=5, nhybridizations=2)
-#' tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1)
+#' tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
 SimulateTips <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
   means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
   V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
@@ -1905,9 +1964,10 @@ ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measuremen
                 }
             }
             VCV[row.index, col.index] <- value
+            VCV[col.index, row.index] <- value
+
         }
     }
-    VCV[lower.tri(VCV)] <- VCV[upper.tri(VCV)]
     return(VCV)
 }
 
