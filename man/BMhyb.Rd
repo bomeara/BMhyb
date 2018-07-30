@@ -31,6 +31,10 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
 
 \item{max.steps}{The number of restarts without improvement it will attempt}
 
+\item{confidence.lnl}{For figuring out the confidence interval, how wide you want the confidence region to be in lnL space}
+
+\item{allow.restart}{If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point}
+
 \item{free.parameter}{names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh}
 }
 \value{

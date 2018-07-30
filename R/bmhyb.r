@@ -1282,6 +1282,29 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
     return(phy.graph)
 }
 
+#' Simulate trait data
+#'
+#' For a given phylogenetic network generate tip data. Any values not specified use default values
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param sigma.sq The Brownian motion wiggle rate
+#' @param mu The population mean (in the absence of hybridization)
+#' @param bt The beta value (multiplier on expected value for each hybridization event)
+#' @param vh The burst of variance that comes from a hybridization event
+#' @param SE Uniform uncertainty at the tips
+#' @param measurement.error Uncertainty at the tips, especially if it varies between species
+#' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
+#' @return A vector of trait values
+#' @export
+#' @examples
+#' network <- SimulateNetwork(ntax=5, nhybridizations=2)
+#' tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1)
+SimulateTips <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+  means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+  tips <- MASS::mvrnorm(1, mu=means.modified, Sigma=V.modified, tol=1e-100)
+  return(tips)
+}
+
 #' Simulate a phylogenetic network
 #'
 #' This uses a birth death process (TreeSim::sim.bd.taxa.age) to make a tree, then randomly adds hybridization events. The events are placed uniformly with time (not with numbers of taxa). If you use the phy.graph argument, you can pass in an existing phylogenetic network and it will add hybridization events to that; if you use a phy argument, it will add hybridization events to that. Note that currently there is no checking for multiple events between the same two branches. While hybridization events happen between taxa alive at the same instant of time, it is possible that the donor taxon later goes extinct with no descendants (other than the taxa of hybrid origin). These are basically ghost lineages, and this process (which then looks like gene flow going forward in time) is permitted if allow.ghost is TRUE.
@@ -1976,8 +1999,8 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @param verbose If TRUE, BMhyb will chat about its progress
 #' @param likelihood.precision When optimizing, how much of a lnL improvement is required to restart optimization between starts
 #' @param max.steps The number of restarts without improvement it will attempt
-#' @confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
-#' @allow.restart If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point
+#' @param confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
+#' @param allow.restart If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point
 #'
 #' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
 #' @export

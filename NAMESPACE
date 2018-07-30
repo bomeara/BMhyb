@@ -3,4 +3,5 @@
 export(BMhyb)
 export(ConvertEvonetToIgraphWithNodeNumbers)
 export(SimulateNetwork)
+export(SimulateTips)
 export(plot.BMhybResult)
