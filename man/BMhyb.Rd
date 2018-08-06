@@ -15,6 +15,8 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
 
 \item{traits}{A vector of trait values, with names equal to the names of taxa on the phylogeny}
 
+\item{free.parameter.names}{What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh}
+
 \item{confidence.points}{How many points to use to estimate parameter uncertainty}
 
 \item{measurement.error}{How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa}
@@ -34,8 +36,6 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
 \item{confidence.lnl}{For figuring out the confidence interval, how wide you want the confidence region to be in lnL space}
 
 \item{allow.restart}{If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point}
-
-\item{free.parameter}{names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh}
 }
 \value{
 Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).

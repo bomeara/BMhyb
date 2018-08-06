@@ -656,14 +656,14 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #     return(phy)
 # }
 #
-# IsPositiveDefinite <- function(V.modified) {
-#     eigenvalues <- eigen(V.modified)$values
-#     if(is.complex(eigenvalues)) {
-#         return(FALSE)
-#     } else {
-#         return(min(eigenvalues)>0)
-#     }
-# }
+IsPositiveDefinite <- function(V.modified) {
+    eigenvalues <- eigen(V.modified)$values
+    if(is.complex(eigenvalues)) {
+        return(FALSE)
+    } else {
+        return(min(eigenvalues)>0)
+    }
+}
 
 BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempts=10) {
     V.corrected <- V.modified
@@ -1099,7 +1099,7 @@ ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.poi
 GenerateRandomValues <- function(data, parameters, lower, upper) {
     new.vals <- c(-Inf, Inf)
     while(any(new.vals < lower) | any(new.vals>upper)) {
-        new.vals <- c(rexp(1,10), runif(1, min=min(data), max=max(data)), rexp(1,1), rexp(1,10), rexp(1,10))
+        new.vals <- c(stats::rexp(1,10), stats::runif(1, min=min(data), max=max(data)), stats::rexp(1,1), stats::rexp(1,10), stats::rexp(1,10))
         names(new.vals) <- GenerateParamLabels()
         new.vals <- new.vals[names(parameters)]
     }
@@ -1122,7 +1122,7 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
         for(i in sequence(length(par))) {
             examined.max[i]<-max(0.001, examined.max[i])
             new.vals.bounds <- sort(c(max(lower[i], 0.9*examined.min[i]), min(upper[i], 1.1*examined.max[i])), decreasing=FALSE)
-            new.vals[i]<-runif(1, min=ifelse(is.finite(new.vals.bounds[1]),new.vals.bounds[1], 0.000001) , max=ifelse(is.finite(new.vals.bounds[2]), new.vals.bounds[2], 10000))
+            new.vals[i]<-stats::runif(1, min=ifelse(is.finite(new.vals.bounds[1]),new.vals.bounds[1], 0.000001) , max=ifelse(is.finite(new.vals.bounds[2]), new.vals.bounds[2], 10000))
 
             if(new.vals[i]<lower[i]) {
                 pass=FALSE
@@ -1141,14 +1141,14 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
 
 GetClade <- function(phy, clade.size) {
     nodes <- phy$edge[,1]
-    subtrees <- lapply(nodes, extract.clade, phy=phy)
-    counts <- sapply(subtrees, Ntip)
+    subtrees <- lapply(nodes, ape::extract.clade, phy=phy)
+    counts <- sapply(subtrees, ape::Ntip)
     matches<-subtrees[which(counts==clade.size)]
     if(length(matches)==0) {
         return(NA)
     }
     lucky <- matches[sample.int(length(matches),1)][[1]]
-    return(findMRCA(phy, tips=lucky$tip.label, type="node"))
+    return(phytools::findMRCA(phy, tips=lucky$tip.label, type="node"))
 }
 
 GetAncestor <- function(phy, node) {
@@ -1195,6 +1195,7 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
     new.phy.graph <- phy.graph
     new.tip.number <- ape::Ntip(phy.graph) + 1 #need to then offset everything else
     new.internal.node.number <- ape::Nnode(phy.graph) + ape::Ntip(phy.graph) + 2
+    new.phy.graph$reticulation[which(new.phy.graph$reticulation>ape::Ntip(phy.graph))] <- 1 + new.phy.graph$reticulation[which(new.phy.graph$reticulation>ape::Ntip(phy.graph))]
     new.phy.graph$edge[which(new.phy.graph$edge>ape::Ntip(phy.graph))] <- 1 + new.phy.graph$edge[which(new.phy.graph$edge>ape::Ntip(phy.graph))]
     edge.to.break <- which(phy.graph$edge[,2]==below.node)
     parent.node <- new.phy.graph$edge[edge.to.break,1]
@@ -1223,7 +1224,7 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
 
     new.phy.graph$Nnode <- 1 + new.phy.graph$Nnode
 
-    #no need to update the reticulation object because we're not renumber nodes, unlike ape in general
+
 
     return(new.phy.graph)
 }
@@ -1410,10 +1411,10 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
     #now use phytools::bind.tip() to add a taxon to the tree for receiving and donating gene flow (contemporaneously if all.ghost=FALSE). Will then delete this tip but keep the internal node (unless we want a ghost lineage).
 
     while(!done) {
-        donor.height.from.root <- runif(1, 0, max(ape::vcv(phy.graph)))
+        donor.height.from.root <- stats::runif(1, 0, max(ape::vcv(phy.graph)))
         recipient.height.from.root <- donor.height.from.root
         if(allow.ghost) {
-            recipient.height.from.root <- runif(1, donor.height.from.root, max(ape::vcv(phy.graph)))
+            recipient.height.from.root <- stats::runif(1, donor.height.from.root, max(ape::vcv(phy.graph)))
         }
         heightnode <- function(node, phy) {
             return(phytools::nodeheight(phy, node))
@@ -1681,9 +1682,9 @@ UnlumpIntoTaxa <- function(lumped.flow) {
 
 #The following short function comes from Ken Takagi at  https://chitchatr.wordpress.com/2011/12/30/convex-hull-around-scatter-plot-in-r/
 PlotConvexHull<-function(xcoord, ycoord, lcolor){
-    hpts <- chull(x = xcoord, y = ycoord)
+    hpts <- grDevices::chull(x = xcoord, y = ycoord)
     hpts <- c(hpts, hpts[1])
-    lines(xcoord[hpts], ycoord[hpts], col = lcolor)
+    graphics::lines(xcoord[hpts], ycoord[hpts], col = lcolor)
 }
 
 ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
@@ -1698,8 +1699,8 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
             # points.to.fit <- data.frame()
             x.range <- range(sims.sub[which(sims.sub[,3]<10),1])
             y.range <- range(sims.sub[which(sims.sub[,3]<10),2])
-            x.grid <- quantile(sims.sub[,1], seq(from=0, to=1, length.out = floor(length(sims.sub[,1])/50)))
-            y.grid <- quantile(sims.sub[,2], seq(from=0, to=1, length.out = floor(length(sims.sub[,2])/50)))
+            x.grid <- stats::quantile(sims.sub[,1], seq(from=0, to=1, length.out = floor(length(sims.sub[,1])/50)))
+            y.grid <- stats::quantile(sims.sub[,2], seq(from=0, to=1, length.out = floor(length(sims.sub[,2])/50)))
             colnames(sims.sub)[1:2] <- c("x", "y")
             # for (x.index in sequence(length(x.grid)-1)) {
             # for (y.index in sequence(length(y.grid)-1)) {
@@ -1707,9 +1708,9 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
             # points.to.fit <- rbind(points.to.fit, relevant.points[which.max(relevant.points[,3]),])
             # }
             # }
-            plot(x=x.range, y=y.range, xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], type="n", bty="n")
+            graphics::plot(x=x.range, y=y.range, xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], type="n", bty="n")
 
-            relevant.point.id <- chull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2])
+            relevant.point.id <- grDevices::chull(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2])
             #polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=TRUE)
             #polygon(sims.sub[relevant.point.id,1], sims.sub[relevant.point.id, 2], col="gray", border=NA, fillOddEven=FALSE)
             PlotConvexHull(sims.sub[which(sims.sub[,3]<5),1], sims.sub[which(sims.sub[,3]<5),2], "darkgray")
@@ -1717,7 +1718,7 @@ ContourFromAdaptiveSampling<-function(sims, params.of.interest=NULL) {
 
             #points(sims.sub[which(sims.sub[,3]<2),1], sims.sub[which(sims.sub[,3]<2),2], col="green", pch="X")
             #contour(interp(points.to.fit[,1], points.to.fit[,2], points.to.fit[,3]), xlab=params.of.interest[param.1], ylab=params.of.interest[param.2], levels=c(1, 2, 5, 10))
-            points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20, cex=2)
+            graphics::points(sims.sub[which.min(sims.sub$neglnL),1], sims.sub[which.min(sims.sub$neglnL),2], col="red", pch=20, cex=2)
         }
     }
 }
@@ -1730,102 +1731,102 @@ ConvertVectorToMatrix <- function(x) {
     return(new.mat)
 }
 
-# PositiveDefiniteOptimizationFn <- function(x, original) {
-#     new.mat <- ConvertVectorToMatrix(x)
-#     distance <- as.numeric(dist(rbind(as.vector(new.mat), as.vector(original))))
-#     # new.mat.no.diag <- new.mat
-#     # diag(new.mat.no.diag) <- 0
-#     # original.no.diag <- original
-#     # diag(original.no.diag) <- 0
-#     # distance <- distance + 10 * as.numeric(dist(rbind(as.vector(new.mat.no.diag), as.vector(original.no.diag ))))
-#     if(min(new.mat)<0) {
-#         neg.values <- new.mat[which(new.mat<0)]
-#         distance <- distance * (1+abs(sum(neg.values)))
-#     }
-#     if(!IsPositiveDefinite(new.mat)) {
-#         distance <- distance * max(c(sum(new.mat), 10))
-#     }
-#     return(distance)
-# }
+PositiveDefiniteOptimizationFn <- function(x, original) {
+    new.mat <- ConvertVectorToMatrix(x)
+    distance <- as.numeric(stats::dist(rbind(as.vector(new.mat), as.vector(original))))
+    # new.mat.no.diag <- new.mat
+    # diag(new.mat.no.diag) <- 0
+    # original.no.diag <- original
+    # diag(original.no.diag) <- 0
+    # distance <- distance + 10 * as.numeric(dist(rbind(as.vector(new.mat.no.diag), as.vector(original.no.diag ))))
+    if(min(new.mat)<0) {
+        neg.values <- new.mat[which(new.mat<0)]
+        distance <- distance * (1+abs(sum(neg.values)))
+    }
+    if(!IsPositiveDefinite(new.mat)) {
+        distance <- distance * max(c(sum(new.mat), 10))
+    }
+    return(distance)
+}
 
 #From Ravi Varadhan, http://r.789695.n4.nabble.com/how-to-randomly-generate-a-n-by-n-positive-definite-matrix-in-R-td846858.html
-# GenerateRandomPositiveDefiniteMatrix <- function(n, ev = runif(n, 0, 10)) {
-#     Z <- matrix(ncol=n, rnorm(n^2))
-#     decomp <- qr(Z)
-#     Q <- qr.Q(decomp)
-#     R <- qr.R(decomp)
-#     d <- diag(R)
-#     ph <- d / abs(d)
-#     O <- Q %*% diag(ph)
-#     Z <- t(O) %*% diag(ev) %*% O
-#     return(Z)
-# }
+GenerateRandomPositiveDefiniteMatrix <- function(n, ev = stats::runif(n, 0, 10)) {
+    Z <- matrix(ncol=n, stats::rnorm(n^2))
+    decomp <- qr(Z)
+    Q <- qr.Q(decomp)
+    R <- qr.R(decomp)
+    d <- diag(R)
+    ph <- d / abs(d)
+    O <- Q %*% diag(ph)
+    Z <- t(O) %*% diag(ev) %*% O
+    return(Z)
+}
 
 
 # This is inspired by the work of
 #Mishra, Sudhanshu K. "The nearest correlation matrix problem: Solution by differential evolution method of global optimization." (2007)
 # https://mpra.ub.uni-muenchen.de/44809/9/MPRA_paper_44809.pdf
-# AlterMatrixUsingDE <- function(V.modified) {
-#     starting.val.center <- V.modified[upper.tri(V.modified, diag=TRUE)]
-#     #starting.val.matrix <- matrix(NA, nrow=max(40,round(5*sqrt(length(starting.val.center)))), ncol=length(starting.val.center))
-#     starting.val.matrix <- matrix(NA, nrow=40, ncol=length(starting.val.center))
-#     starting.val.matrix[1,] <- starting.val.center
-#     starting.means <- log(starting.val.center)
-#     starting.means[!is.finite(starting.means)] <- min(starting.means[is.finite(starting.means)])
-#     sd.vector <- seq(from=0.001, to=1, length.out=nrow(starting.val.matrix)) #to give some points close to original, some further away
-#     diag.matrix <- matrix(0, ncol(V.modified), nrow(V.modified))
-#     diag(diag.matrix) <- max(V.modified)
-#     starting.val.matrix[2,] <- diag.matrix[upper.tri(diag.matrix, diag=TRUE)] #something that will start positive definite
-#     diag.matrix.2 <- matrix(0, nrow=nrow(V.modified), ncol=ncol(V.modified))
-#     diag(diag.matrix.2) <- diag(V.modified)
-#     starting.val.matrix[3,] <- diag.matrix.2[upper.tri(diag.matrix.2, diag=TRUE)] #something that will start positive definite
-#     diag.matrix.3 <- V.modified
-#     diag(diag.matrix.3) <- mean(diag(V.modified))
-#     starting.val.matrix[4,] <- diag.matrix.3[upper.tri(diag.matrix.3, diag=TRUE)] #something that will start positive definite
-#     pos.def.candidate <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
-#     pos.def.eigen <- eigen(pos.def.candidate)$values
-#     has.neg <- function(x) {
-#         return(any(x<0))
-#     }
-#     negative.taxa <- unique(c(which(apply(pos.def.candidate, 1,has.neg)), which(apply(pos.def.candidate, 2, has.neg))))
-#     pos.def.values <- pos.def.candidate[upper.tri(pos.def.candidate, diag=TRUE)]
-#     pos.def.values.abs <- abs(pos.def.values)
-#     pos.def.values.zeroed <- pos.def.values
-#     pos.def.values.zeroed <- pos.def.values.zeroed[which(pos.def.values<0)] <- 0
-#     starting.val.matrix[5,] <- pos.def.values #start with a positive definite matrix (but might not meet the nonnegative constraint)
-#     starting.val.matrix[6,] <- pos.def.values.abs #start with a potentially positive definite matrix (but might not be, since we've converted neg to positive values)
-#     starting.val.matrix[7,] <- pos.def.values.zeroed #start with a potentially positive definite matrix (but might not be, since we've converted neg to zero)
-#     number.filled <- sum(!is.na(starting.val.matrix[,1]))
-#     for (i in (number.filled+1):(number.filled+10)) {
-#         local.mat <- GenerateRandomPositiveDefiniteMatrix(ncol(V.modified), ev=pos.def.eigen)
-#         starting.val.matrix[i,] <- local.mat[upper.tri(local.mat, diag=TRUE)]
-#     }
-#     number.filled <- sum(!is.na(starting.val.matrix[,1]))
-#     proportions <- seq(from=1, to=0, length.out=10)
-#     for(i in sequence(length(proportions))) {
-#         V.modified.by.proportions<-(1-proportions[i]) * V.modified + proportions[i] * diag(dim(V.modified)[1]) * diag(V.modified)
-#         starting.val.matrix[i,] <- V.modified.by.proportions[upper.tri(V.modified.by.proportions, diag=TRUE)]
-#     }
-#     number.filled <- sum(!is.na(starting.val.matrix[,1]))
-#     for (i in (number.filled+1):nrow(starting.val.matrix)) {
-#         #starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
-#         starting.val.matrix[i,] <- rlnorm(length(starting.val.center), meanlog=starting.means, sdlog=sd.vector[i])
-#     }
-#     result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1), original=V.modified)
-#     #result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1, strategy=6, p=0.3), original=V.modified)
-#
-#     #result <- optim(par=starting.val.center, fn=PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), method="L-BFGS-B", original=V.modified)
-#
-#     #print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter, " smallest value is ", min(ConvertVectorToMatrix(result$optim$bestmem)), " status of being positive definite is ", IsPositiveDefinite(ConvertVectorToMatrix(result$optim$bestmem))))
-#     #print(V.modified[1:6,1:6])
-#
-#     #print(ConvertVectorToMatrix(result$par))
-#     #print(ConvertVectorToMatrix(result$optim$bestmem)[1:6,1:6])
-#     final.mat <- ConvertVectorToMatrix(result$optim$bestmem)
-#     rownames(final.mat) <- rownames(V.modified)
-#     colnames(final.mat) <- colnames(V.modified)
-#     return(final.mat)
-# }
+AlterMatrixUsingDE <- function(V.modified) {
+    starting.val.center <- V.modified[upper.tri(V.modified, diag=TRUE)]
+    #starting.val.matrix <- matrix(NA, nrow=max(40,round(5*sqrt(length(starting.val.center)))), ncol=length(starting.val.center))
+    starting.val.matrix <- matrix(NA, nrow=40, ncol=length(starting.val.center))
+    starting.val.matrix[1,] <- starting.val.center
+    starting.means <- log(starting.val.center)
+    starting.means[!is.finite(starting.means)] <- min(starting.means[is.finite(starting.means)])
+    sd.vector <- seq(from=0.001, to=1, length.out=nrow(starting.val.matrix)) #to give some points close to original, some further away
+    diag.matrix <- matrix(0, ncol(V.modified), nrow(V.modified))
+    diag(diag.matrix) <- max(V.modified)
+    starting.val.matrix[2,] <- diag.matrix[upper.tri(diag.matrix, diag=TRUE)] #something that will start positive definite
+    diag.matrix.2 <- matrix(0, nrow=nrow(V.modified), ncol=ncol(V.modified))
+    diag(diag.matrix.2) <- diag(V.modified)
+    starting.val.matrix[3,] <- diag.matrix.2[upper.tri(diag.matrix.2, diag=TRUE)] #something that will start positive definite
+    diag.matrix.3 <- V.modified
+    diag(diag.matrix.3) <- mean(diag(V.modified))
+    starting.val.matrix[4,] <- diag.matrix.3[upper.tri(diag.matrix.3, diag=TRUE)] #something that will start positive definite
+    pos.def.candidate <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE)$mat)
+    pos.def.eigen <- eigen(pos.def.candidate)$values
+    has.neg <- function(x) {
+        return(any(x<0))
+    }
+    negative.taxa <- unique(c(which(apply(pos.def.candidate, 1,has.neg)), which(apply(pos.def.candidate, 2, has.neg))))
+    pos.def.values <- pos.def.candidate[upper.tri(pos.def.candidate, diag=TRUE)]
+    pos.def.values.abs <- abs(pos.def.values)
+    pos.def.values.zeroed <- pos.def.values
+    pos.def.values.zeroed <- pos.def.values.zeroed[which(pos.def.values<0)] <- 0
+    starting.val.matrix[5,] <- pos.def.values #start with a positive definite matrix (but might not meet the nonnegative constraint)
+    starting.val.matrix[6,] <- pos.def.values.abs #start with a potentially positive definite matrix (but might not be, since we've converted neg to positive values)
+    starting.val.matrix[7,] <- pos.def.values.zeroed #start with a potentially positive definite matrix (but might not be, since we've converted neg to zero)
+    number.filled <- sum(!is.na(starting.val.matrix[,1]))
+    for (i in (number.filled+1):(number.filled+10)) {
+        local.mat <- GenerateRandomPositiveDefiniteMatrix(ncol(V.modified), ev=pos.def.eigen)
+        starting.val.matrix[i,] <- local.mat[upper.tri(local.mat, diag=TRUE)]
+    }
+    number.filled <- sum(!is.na(starting.val.matrix[,1]))
+    proportions <- seq(from=1, to=0, length.out=10)
+    for(i in sequence(length(proportions))) {
+        V.modified.by.proportions<-(1-proportions[i]) * V.modified + proportions[i] * diag(dim(V.modified)[1]) * diag(V.modified)
+        starting.val.matrix[i,] <- V.modified.by.proportions[upper.tri(V.modified.by.proportions, diag=TRUE)]
+    }
+    number.filled <- sum(!is.na(starting.val.matrix[,1]))
+    for (i in (number.filled+1):nrow(starting.val.matrix)) {
+        #starting.val.matrix[i,] <- rexp(length(starting.val.center), rate=starting.rates)
+        starting.val.matrix[i,] <- stats::rlnorm(length(starting.val.center), meanlog=starting.means, sdlog=sd.vector[i])
+    }
+    result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1), original=V.modified)
+    #result <- DEoptim::DEoptim(PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), control=list(trace=FALSE, initialpop = starting.val.matrix, c=0.1, itermax=20, reltol=1e-1, strategy=6, p=0.3), original=V.modified)
+
+    #result <- optim(par=starting.val.center, fn=PositiveDefiniteOptimizationFn, lower=rep(0, sum(upper.tri(V.modified, diag=TRUE))), upper=rep(2*max(V.modified), sum(upper.tri(V.modified, diag=TRUE))), method="L-BFGS-B", original=V.modified)
+
+    #print(paste0("Bestval ",result$optim$bestval, " number of function evals ", result$optim$nfeval, " number of iterations ", result$optim$iter, " smallest value is ", min(ConvertVectorToMatrix(result$optim$bestmem)), " status of being positive definite is ", IsPositiveDefinite(ConvertVectorToMatrix(result$optim$bestmem))))
+    #print(V.modified[1:6,1:6])
+
+    #print(ConvertVectorToMatrix(result$par))
+    #print(ConvertVectorToMatrix(result$optim$bestmem)[1:6,1:6])
+    final.mat <- ConvertVectorToMatrix(result$optim$bestmem)
+    rownames(final.mat) <- rownames(V.modified)
+    colnames(final.mat) <- colnames(V.modified)
+    return(final.mat)
+}
 
 # VerifyActualParams <- function(x) {
 #     if(class(x)!="logical" | is.null(names(x))) {
@@ -1833,9 +1834,9 @@ ConvertVectorToMatrix <- function(x) {
 #     }
 # }
 
-# GenerateParamLabels <- function() {
-#     return(c("sigma.sq", "mu", "bt", "vh", "SE"))
-# }
+GenerateParamLabels <- function() {
+    return(c("sigma.sq", "mu", "bt", "vh", "SE"))
+}
 
 
 # New attempt to do network
@@ -1860,8 +1861,11 @@ ConvertEvonetToIgraphWithNodeNumbers <- function(phy.graph) {
     #phy.i <- ape::as.igraph(phy.graph)
     phy.graph$tip.label <- sequence(ape::Ntip(phy.graph)) #converting to ape node numbers
     phy.graph$node.label <- seq(from=(1+ape::Ntip(phy.graph)), to=ape::Ntip(phy.graph)+ape::Nnode(phy.graph), by=1)
-    return(igraph::as.igraph(phy.graph))
+    return(ape::as.igraph.evonet(phy.graph))
 }
+
+
+
 
 GetAllPathTopologies <- function(phy.graph) {
     phy.i <- ConvertEvonetToIgraphWithNodeNumbers(phy.graph)
@@ -2024,7 +2028,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
         new.mat <- as.matrix(Matrix::nearPD(V.modified, corr=FALSE, posd.tol = 1e-16, eig.tol = 1e-16, conv.tol = 1e-16)$mat)
         if(any(new.mat!=V.modified)) {
             warning("Had to do Higham (2002) correction for not positive definite matrix")
-            likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
+            likelihood.penalty <- 10+stats::dist(rbind(c(new.mat), c(V.modified)))
         }
         V.modified <- new.mat
     }
@@ -2032,7 +2036,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     if(do.DE.correction & !IsPositiveDefinite(V.modified)) {
         warning("Have to modify variance covariance matrix to make it positive definite, so results are approximate and the analysis will be slow.")
         new.mat <- AlterMatrixUsingDE(V.modified)
-        likelihood.penalty <- 10+dist(rbind(c(new.mat), c(V.modified)))
+        likelihood.penalty <- 10+stats::dist(rbind(c(new.mat), c(V.modified)))
         V.modified <- new.mat
     }
 
@@ -2049,7 +2053,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     }
 
     NegLogML <- NULL
-    try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
+    try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%corpcor::pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
     if(is.null(NegLogML)) {
         NegLogML <- badval
     }
@@ -2062,7 +2066,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
-#' @param free.parameter names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh
+#' @param free.parameter.names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh
 #' @param confidence.points How many points to use to estimate parameter uncertainty
 #' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
 #' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
@@ -2096,25 +2100,27 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #' Shows the plot of confidence regions with MLEs indicated (red dots)
 #'
 #' @param x A BMhyb object (result of a BMhyb() call)
+#' @param ... Other arguments to pass to plot
 #' @export
-plot.BMhybResult <- function(x) {
+#' @rawNamespace S3method(plot, BMhybResult)
+plot.BMhybResult <- function(x,...) {
     x$par <- x$best[1:(length(x$best)-3)]
-    par(mfcol=c(1, length(x$par)))
+    graphics::par(mfcol=c(1, length(x$par)))
     all.results <- rbind(x$good.region, x$bad.region)
     for(parameter in sequence(length(x$par))) {
-        plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10))
-        points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
-        points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
-        points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+        graphics::plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10),...)
+        graphics::points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
+        graphics::points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
+        graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
     }
 }
 
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
     starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
-    starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+    starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     starting.values <- starting.values[free.parameter.names]
-    best.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+    best.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
     attempts <- 1
     step.count <- 1
     while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
@@ -2123,9 +2129,9 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
             print("Parameter estimates were")
             print(best.run$par)
         }
-        new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+        new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
-        best.run <- optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        best.run <- stats::optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
         attempts <- attempts+1
     }
     if(verbose) {
@@ -2141,8 +2147,8 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
     while(times.without.improvement<max.steps) {
         times.without.improvement <- times.without.improvement+1
         step.count <- step.count + 1
-        new.run <- optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
-        new.starting.values <- runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
+        new.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
         starting.values <- new.starting.values
         if(new.run$value<best.run$value) {

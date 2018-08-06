@@ -4,10 +4,12 @@
 \alias{plot.BMhybResult}
 \title{Plot BMhyb result}
 \usage{
-plot.BMhybResult(x)
+\method{plot}{BMhybResult}(x, ...)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}
+
+\item{...}{Other arguments to pass to plot}
 }
 \description{
 Shows the plot of confidence regions with MLEs indicated (red dots)

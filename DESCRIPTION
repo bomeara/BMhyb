@@ -1,6 +1,6 @@
 Package: BMhyb
-Version: 2.0.1
-Date: 2018-07-25
+Version: 2.0.2
+Date: 2018-08-06
 Type: Package
 Title: PCM for Hybridization
 Author: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu> and Brian C. O'Meara
@@ -12,17 +12,19 @@ Imports:
     geiger,
     ape,
     TreeSim,
-    phytools,
     phylobase,
     mvtnorm,
-    grDevices,
-    graphics,
     methods,
-    stats,
     lhs,
     viridis,
     Matrix,
-    DEoptim
+    DEoptim,
+    igraph,
+    MASS,
+    grDevices,
+    graphics,
+    stats,
+    phytools
 Suggests: testthat
 Description: The BMhyb package analyzes the phenotypic evolution of species
     of hybrid origin on a phylogenetic network. This package can detect a burst of variation at formation of a hybrid as well as a bias in typical hybrid values. Parameters are estimated by maximum likelihood, as well as returning regular Brownian motion parameters such as the rate of evolution and the root state.
