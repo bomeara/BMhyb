@@ -1880,12 +1880,13 @@ GetAllPathTopologies <- function(phy.graph) {
 
 ComputeAllEdges <- function(phy.graph, gamma=0.5) {
     normal.edges <- data.frame(node.from=phy.graph$edge[,1], node.to=phy.graph$edge[,2], length=phy.graph$edge.length, flow.prob=1, type="normal", stringsAsFactors=FALSE)
-    for (edge.index in sequence(nrow(normal.edges))) {
-        normal.edges$flow.prob[edge.index] <- 1/length(which(normal.edges$node.from == normal.edges$node.from[edge.index])) #so can deal with nodes with outdegree of 1, 3+, etc.
-    }
+    #we actually don't need this: flow.prob is prob of a gene being passed on from that node. For regular speciation nodes, it's 1
+  #  for (edge.index in sequence(nrow(normal.edges))) {
+        #normal.edges$flow.prob[edge.index] <- 1/length(which(normal.edges$node.from == normal.edges$node.from[edge.index])) #so can deal with nodes with outdegree of 1, 3+, etc.
+  #  }
     all.edges <- normal.edges
     if(nrow(phy.graph$reticulation)>0) {
-        hybrid.edges <- data.frame(node.from=phy.graph$reticulation[,1], node.to=phy.graph$reticulation[,2], length=0, flow.prob=gamma, type="hybridflow", stringsAsFactors=FALSE)
+        hybrid.edges <- data.frame(node.from=phy.graph$reticulation[,1], node.to=phy.graph$reticulation[,2], length=0, flow.prob=2*gamma, type="hybridflow", stringsAsFactors=FALSE) # 2 x gamma here so that it balances with other paths
         all.edges <- rbind(normal.edges, hybrid.edges)
     }
     return(all.edges)

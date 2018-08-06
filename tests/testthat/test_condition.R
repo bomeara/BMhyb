@@ -4,6 +4,70 @@ test_that("Can convert from old style to new", {
   plot(p)
 })
 
+
+test_that("Issue 13 resolved", {
+  create_paper_network <- function(gamma, t1, t2, t3){
+    phy <- read.tree(text = paste0("((R:", t3, ",Y:", t3, "):", t1 + t2, ",X:", t1 + t2 + t3, ");"))
+    network <- list(phy = phy,
+                    flow = data.frame(donor = "X",
+                                      recipient = "R",
+                                      gamma = gamma,
+                                      time.from.root.donor = t1,
+                                      time.from.root.recipient = t1 + t2))
+    network$flow$donor <- as.character(network$flow$donor)
+    network$flow$recipient <- as.character(network$flow$recipient)
+    return(network)
+  }
+  gamma <- 0.5
+  t1 <- 0.3; t2 <- 0.4; t3 <- 0.3; # unit height
+  network <- create_paper_network(gamma, t1, t2, t3)
+  phy.graph<-BMhyb:::ConvertPhyAndFlowToPhygraph(phy=network$phy,flow=network$flow)
+  VCV <- BMhyb:::ComputeVCV(phy.graph)
+  expect_equal(VCV['X', 'R'], 0.15)
+  expect_equal(VCV['Y', 'R'], 0.35)
+  expect_equal(VCV['R', 'Y'], 0.35)
+})
+
+test_that("Issue 14 resolved", {
+  t1 <- 0.3; t2 <- 0.4; t3 <- 0.3;
+  phy <- ape::read.tree(text = paste0("((R:", t3, ",Y:", t3, "):", t1 + t2, ",X:", t1 + t2 + t3, ");"))
+  ## Network
+  don_recp <- expand.grid(c("X"), c("Y", "R"))
+  network <- list(phy = phy,
+                  flow = data.frame(donor = don_recp[,1],
+                                    recipient = don_recp[,2],
+                                    gamma = rep(gamma, 2),
+                                    time.from.root.donor = rep(t1, 2),
+                                    time.from.root.recipient = rep(t1, 2)))
+  network$flow$donor <- as.character(network$flow$donor)
+  network$flow$recipient <- as.character(network$flow$recipient)
+  phy.graph<-BMhyb:::ConvertPhyAndFlowToPhygraph(phy=network$phy,flow=network$flow)
+  VCV <- BMhyb:::ComputeVCV(phy.graph)
+  expect_equal(VCV['R', 'Y'], 0.55)
+  expect_equal(VCV['R', 'R'], 0.85)
+})
+
+test_that("Issue 15 resolved", {
+  gamma1 <- 0.5; gamma2 <- 0.5;
+  t1 <- 0.2; t2 <- 0.2; t3 <- 0.2; t4 <- 0.2; t5 <- 0.2;
+  phy <- read.tree(text = paste0("(((R:",t4+t5,",Y:",t4+t5,"):",t3,",X:",t3+t4+t5,"):",t1+t2,",Z:",t1+t2+t3+t4+t5,");"))
+  plot(phy)
+  ## Network
+  don_recp <- rbind(expand.grid(c("Z"), c("Y", "R", "X")),
+                    expand.grid(c("X"), c("R")))
+  network <- list(phy = phy,
+                  flow = data.frame(donor = don_recp[,1],
+                                    recipient = don_recp[,2],
+                                    gamma = c(rep(gamma1, 3), gamma2),
+                                    time.from.root.donor = c(rep(t1, 3), t1+t2+t3+t4),
+                                    time.from.root.recipient = c(rep(t1, 3), t1+t2+t3+t4)))
+  network$flow$donor <- as.character(network$flow$donor)
+  network$flow$recipient <- as.character(network$flow$recipient)
+  phy.graph<-BMhyb:::ConvertPhyAndFlowToPhygraph(phy=network$phy,flow=network$flow)
+  VCV <- BMhyb:::ComputeVCV(phy.graph)
+  expect_equal(VCV['R', 'R'], 0.7)
+})
+
 # test_that("ConditionBadCichlid", {
 #   utils::data("cichlid")
 #   parameters.to.try <- c(sigma.sq=6, mu=mean(cichlid$data)) #terrible values
