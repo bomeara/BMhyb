@@ -1,22 +1,3 @@
-#' Nicotiana dataset
-#'
-#' A dataset containing a phylogenetic network and trait data for Nicotiana species
-#'
-#' The tree and data come from
-#'
-#' Chase M.W., Knapp S., Cox A.V., Clarkson J.J., Butsko Y., Joseph J., Savolainen V., and  Parokonny A.S. 2003. Molecular systematics, GISH and the origin of hybrid taxa in Nicotiana(Solanaceae). Annals of Botany 92: 107-127.
-#'
-#' Clarkson J.J., Lim K.Y., Kovarik A., Chase M.W., Knapp S. and Leitch A.R. 2005. Long-term genome diploidization I allopolyploid Nicotiana section Repandae(Solanaceae). New Phytologist 168:241-252.
-#'
-#' Komori T., Myers P.N., Yamada S., Kubo T., and Imaseki H. 2000. Comparative study of the Nicotiana species with respect to water deficit tolerance during early growth. Euphytica 116:121-130.
-#'
-#' @format A list with two items:
-#' \describe{
-#'   \item{phy.graph}{the phylogenetic network in ape::evonet format}
-#'   \item{traits}{a vector of trait data}
-#' }
-
-
 ComputeAICc<-function(n,k,LogLik){
     if((n-k-1) <=0 ) {
         return(NA)
@@ -1603,6 +1584,8 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
 #     }
 # }
 
+
+
 LumpIntoClades <- function(phy, flow) {
     flow.string <- paste(flow$time.from.root.donor, flow$time.from.root.recipient, flow$gamma)
     flow.together <- cbind(flow.string=flow.string, flow)
@@ -2134,6 +2117,20 @@ plot.BMhybResult <- function(x,...) {
         graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
     }
 }
+
+#' Plot evonet object
+#'
+#' ape's reorder.evonet function can case C crashes if the edge numbering is not in the manner ape expects (even if obvious requirements like terminal nodes being 1:Ntip and root node being Ntip+1 are met). Instead, we use igraph plotting.
+#' @param x An evonet object
+#' @param ... Other arguments to pass to plot
+#' @export
+#' @rawNamespace S3method(plot, evonet)
+plot.evonet <- function(x, ...) {
+#  phy.igraph <- BMhyb:::ConvertEvonetToIgraphWithNodeNumbers(x)
+  phy.igraph <- ape::as.igraph.evonet(x)
+  plot(phy.igraph, size=0, shape="none", color=NA, frame.color=NA, vertex.size=0, vertex.color=NA, arrow.size=0.01, arrow.width=0.0, edge.arrow.size=0.1, ...)
+}
+
 
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
