@@ -1,3 +1,21 @@
+#' Nicotiana dataset
+#'
+#' A dataset containing a phylogenetic network and trait data for Nicotiana species
+#'
+#' The tree and data come from
+#'
+#' Chase M.W., Knapp S., Cox A.V., Clarkson J.J., Butsko Y., Joseph J., Savolainen V., and  Parokonny A.S. 2003. Molecular systematics, GISH and the origin of hybrid taxa in Nicotiana(Solanaceae). Annals of Botany 92: 107-127.
+#'
+#' Clarkson J.J., Lim K.Y., Kovarik A., Chase M.W., Knapp S. and Leitch A.R. 2005. Long-term genome diploidization I allopolyploid Nicotiana section Repandae(Solanaceae). New Phytologist 168:241-252.
+#'
+#' Komori T., Myers P.N., Yamada S., Kubo T., and Imaseki H. 2000. Comparative study of the Nicotiana species with respect to water deficit tolerance during early growth. Euphytica 116:121-130.
+#'
+#' @format A list with two items:
+#' \describe{
+#'   \item{phy.graph}{the phylogenetic network in ape::evonet format}
+#'   \item{traits}{a vector of trait data}
+#' }
+
 
 ComputeAICc<-function(n,k,LogLik){
     if((n-k-1) <=0 ) {
@@ -2062,7 +2080,9 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 
 #' Optimize model
 #'
-#' Fits a BMhyb model to your data
+#' Fits a BMhyb model to your data.
+#'
+#' This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
 #'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny

@@ -41,5 +41,8 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
 Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
 }
 \description{
-Fits a BMhyb model to your data
+Fits a BMhyb model to your data.
+}
+\details{
+This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
 }
