@@ -2125,10 +2125,11 @@ plot.BMhybResult <- function(x,...) {
 #' @param ... Other arguments to pass to plot
 #' @export
 #' @rawNamespace S3method(plot, evonet)
-plot.evonet <- function(x, ...) {
+plot.evonet <- function(x, size=0, shape="none", color=NA, frame.color=NA, vertex.size=0, vertex.color=NA, arrow.size=0.01, arrow.width=0.0, edge.arrow.size=0.1, ...) {
 #  phy.igraph <- BMhyb:::ConvertEvonetToIgraphWithNodeNumbers(x)
+  x$node.label <- seq(from=(1+ape::Ntip(x)), to=ape::Ntip(x)+ape::Nnode(x), by=1)
   phy.igraph <- ape::as.igraph.evonet(x)
-  plot(phy.igraph, size=0, shape="none", color=NA, frame.color=NA, vertex.size=0, vertex.color=NA, arrow.size=0.01, arrow.width=0.0, edge.arrow.size=0.1, ...)
+  plot(phy.igraph, size=size, shape=shape, color=color, frame.color=frame.color, vertex.size=vertex.size, vertex.color=vertex.color, arrow.size=arrow.size, arrow.width=arrow.width, edge.arrow.size=edge.arrow.size, ...)
 }
 
 
