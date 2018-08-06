@@ -4,7 +4,7 @@
 \alias{plot.BMhybResult}
 \title{Plot BMhyb result}
 \usage{
-plot.BMhybResult(x, ...)
+\method{plot}{BMhybResult}(x, ...)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}
