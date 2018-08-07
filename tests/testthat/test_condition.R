@@ -4,6 +4,19 @@
 #   plot(p)
 # })
 
+test_that("Basic run can go") {
+  utils::data("cichlid")
+  traits.only <- cichlid$traits_and_SE$trait
+  names(traits.only) <- rownames(cichlid$traits_and_SE)
+  result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
+  #TODO add test
+}
+
+test_that("VCV well formed") {
+  utils::data("cichlid")
+  VCV <- ComputeVCV(cichlid$phy.graph)
+  expect_gte(kappa(VCV), 1)
+}
 
 test_that("Issue 13 resolved", {
   create_paper_network <- function(gamma, t1, t2, t3){

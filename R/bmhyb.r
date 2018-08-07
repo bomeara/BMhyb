@@ -1221,7 +1221,10 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
     new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- terminal.length
     new.phy.graph$tip.label <- c(new.phy.graph$tip.label,tip.label)
 
-    new.phy.graph$Nnode <- as.integer(max(phy.graph$edge[,1]-ape::Ntip(phy.graph)))
+    new.phy.graph$Nnode <- 1 + new.phy.graph$Nnode
+
+
+
     return(new.phy.graph)
 }
 
@@ -1239,9 +1242,13 @@ RenumberPhygraph <- function(phy.graph) {
         new.phy.graph$edge[which(phy.graph$edge==old2new$old[i])] <- old2new$new[i]
         new.phy.graph$reticulation[which(phy.graph$reticulation==old2new$old[i])] <- old2new$new[i]
     }
-    new.phy.graph$edge <- matrix(as.integer(new.phy.graph$edge), ncol=2)
-    new.phy.graph$Nnode <- as.integer(max(new.phy.graph$edge[,1]-ape::Ntip(new.phy.graph)))
     return(new.phy.graph)
+}
+
+PruneDonorsRecipientsFromVCV <- function(VCV) {
+  VCV <- VCV[!grepl("donor_", rownames(VCV)), !grepl("donor_", colnames(VCV))]
+  VCV <- VCV[!grepl("recipient_", rownames(VCV)), !grepl("recipient_", colnames(VCV))]
+  return(VCV)
 }
 
 RemoveZeroTerminalsPhygraph <- function(phy.graph) {
@@ -1262,8 +1269,6 @@ RemoveZeroTerminalsPhygraph <- function(phy.graph) {
             terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] <- terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] - 1
         }
     }
-    new.phy.graph$edge <- matrix(as.integer(new.phy.graph$edge), ncol=2)
-    new.phy.graph$Nnode <- as.integer(max(new.phy.graph$edge[,1]-ape::Ntip(new.phy.graph)))
     return(new.phy.graph)
 }
 
@@ -1279,8 +1284,7 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order=order,index.only=TRUE)
     phy.graph$edge <- phy.graph$edge[new.order,]
     phy.graph$edge.length <- phy.graph$edge[new.order]
-    phy.graph$edge <- matrix(as.integer(phy.graph$edge), ncol=2)
-    phy.graph$Nnode <- as.integer(max(phy.graph$edge[,1]-ape::Ntip(phy.graph)))
+
     return(phy.graph)
 }
 
@@ -1304,7 +1308,7 @@ ConvertPhyAndFlowToPhygraph <- function(phy, flow) {
     phy.graph <- AddHybridization(phy.graph, from.clade=strsplit(flow.aggregate$donor.clades[i], ",")[[1]], to.clade=strsplit(flow.aggregate$recipient.clades[i], ",")[[1]],  time.from.root=flow.aggregate$time.from.root.donor[i], ghost.length=flow.aggregate$time.from.root.recipient[i] - flow.aggregate$time.from.root.donor[i])
   }
   attr(phy.graph, "order")<- NULL
-  phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))
+  phy.graph <- RenumberPhygraph(phy.graph)
   return(phy.graph)
 }
 
@@ -1349,7 +1353,9 @@ AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NUL
   phy.graph <- AddNodeToPhygraph(below.node=ifelse(recipient.node >= (ape::Ntip(phy.graph)+1), recipient.node+1, recipient.node ), depth.below=heights[recipient.node] - recipient.height.from.root,  phy.graph=phy.graph, tip.label=paste0("recipient_", nrow(phy.graph$reticulation)+1), terminal.length=0)
   phy.graph$reticulation <- rbind(phy.graph$reticulation, c(new.donor, new.recipient))
   attr(phy.graph, "order")<- NULL
-  phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))
+  phy.graph <- RenumberPhygraph(phy.graph)
+  phy.graph$edge <- matrix(as.integer(phy.graph$edge), ncol=2)
+  phy.graph$Nnode <- as.integer(max(phy.graph$edge[,1]-ape::Ntip(phy.graph)))
   return(phy.graph)
 }
 
@@ -1458,7 +1464,7 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
         }
     }
     attr(phy.graph, "order")<- NULL
-    phy.graph <- RemoveZeroTerminalsPhygraph(RenumberPhygraph(phy.graph))
+    phy.graph <- RenumberPhygraph(phy.graph)
     return(phy.graph)
 }
 
@@ -1982,8 +1988,7 @@ GetProbabilityOfIndividualPath <- function(path, all.edges) {
     return(total.prob)
 }
 
-GetProbabilityOfAllPaths <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
-    all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+GetProbabilityOfAllPaths <- function(phy.graph, all.edges) {
     all.paths <- GetAllPathTopologies(phy.graph)
     all.paths$probabilities <- sapply(all.paths$paths,GetProbabilityOfIndividualPath, all.edges=all.edges)
     all.paths$normalized.probabilities <- NA
@@ -1994,18 +1999,24 @@ GetProbabilityOfAllPaths <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE
     return(all.paths)
 }
 
-ComputePathPairs <- function(path) {
+ComputePathPairs2 <- function(path) {
     path<-strsplit(path, "_")[[1]]
-    path.pairs <- data.frame()
-    for (node.start in sequence(length(path)-1)) {
-        path.pairs <- rbind(path.pairs, data.frame(node.from=path[node.start], node.to=path[node.start+1], node.fromto = paste(path[c(node.start, node.start+1)], collapse="_"), stringsAsFactors=FALSE))
+    GetPair <- function(node.start, path) {
+      return(c(node.from=path[node.start], node.to=path[node.start+1], node.fromto = paste(path[c(node.start, node.start+1)], collapse="_")))
     }
-    return(path.pairs)
+    result <- sapply(sequence(length(path)-1), GetPair, path=path)
+    #path.pairs <- data.frame()
+    # for (node.start in sequence(length(path)-1)) {
+    #     path.pairs <- rbind(path.pairs, data.frame(node.from=path[node.start], node.to=path[node.start+1], node.fromto = paste(path[c(node.start, node.start+1)], collapse="_"), stringsAsFactors=FALSE))
+    # }
+    # return(path.pairs)
+    #return(data.frame(node.from=as.numeric(result[1,]), node.to=as.numeric(result[2,]), node.fromto=as.character(result[3,]), stringsAsFactors=FALSE))
+    return(t(result))
 }
 
 ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
     all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
-    all.paths <- GetProbabilityOfAllPaths(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+    all.paths <- GetProbabilityOfAllPaths(phy.graph=phy.graph, all.edges=all.edges)
     VCV <- matrix(0, nrow=ape::Ntip(phy.graph), ncol=ape::Ntip(phy.graph))
     rownames(VCV) <- phy.graph$tip.label
     colnames(VCV) <- phy.graph$tip.label
@@ -2020,9 +2031,10 @@ ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measuremen
                     weight.left <- paths.left$normalized.probabilities[left.path.index]
                     this.path.top <- ComputePathPairs(paths.top$paths[top.path.index])
                     weight.top <- paths.top$normalized.probabilities[top.path.index]
-                    matches <- this.path.left[this.path.left$node.fromto %in% this.path.top$node.fromto,]
+                    #matches <- this.path.left[this.path.left$node.fromto %in% this.path.top$node.fromto,]
+                    matches <- this.path.left[this.path.left[,'node.fromto'] %in% this.path.top[,'node.fromto'],]
                     for (match.index in sequence(nrow(matches))) {
-                        value <- value + (weight.left * weight.top) * subset(all.edges, all.edges$node.from==matches$node.from[match.index] & all.edges$node.to==matches$node.to[match.index])$length
+                        value <- value + (weight.left * weight.top) * subset(all.edges, all.edges$node.from==matches[match.index, 'node.from'] & all.edges$node.to==matches[match.index, 'node.to'])$length
                     }
                 }
             }
@@ -2088,6 +2100,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     }
 
     traits <- traits[match(names(means.modified), names(traits))] #reorder so traits in same order as VCV and means
+    traits <- traits[!is.na(names(traits))]
 
     prune.taxa <- names(means.modified)[!names(means.modified)%in%names(traits)] # We might not have trait data for all tips. This is especially true if we want forward in time hybridization events, which are really a lineage branching off, living for a while, then moving genes to another lineage and then going extinct (or at least unsampled). We can allow a tree like that with just no trait values for the ghost taxon.
 
@@ -2100,7 +2113,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     }
 
     NegLogML <- NULL
-    try(NegLogML <- ((ape::Ntip(phy.graph)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%corpcor::pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
+    try(NegLogML <- ((ncol(V.modified)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%corpcor::pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
     if(is.null(NegLogML)) {
         NegLogML <- badval
     }
@@ -2126,12 +2139,15 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @param max.steps The number of restarts without improvement it will attempt
 #' @param confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
 #' @param allow.restart If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point
+#' @param control List of options to pass to optim. ?optim for help.
 #'
 #' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
 #' @export
-BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE) {
-
-    best.results <- OptimizeThoroughly(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, max.steps=max.steps)
+BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE, control=list(reltol=1e-3)) {
+    if(verbose) {
+      print("Now starting analysis")
+    }
+    best.results <- OptimizeThoroughly(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, max.steps=max.steps, verbose=verbose, control=control)
 
     local.df <- data.frame(t(best.results$par), AICc=ComputeAICc(n=ape::Ntip(phy.graph),k=length(best.results$par), LogLik=best.results$value),  NegLogLik=best.results$value, K=length(best.results$par))
 
@@ -2179,12 +2195,16 @@ plot.BMhybResult <- function(x,...) {
 # }
 
 
-OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
+OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, control=list()) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
     starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
     starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     starting.values <- starting.values[free.parameter.names]
-    best.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+    if(verbose) {
+      print("Starting with initial values")
+      print(starting.values)
+    }
+    best.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
     attempts <- 1
     step.count <- 1
     while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
@@ -2195,7 +2215,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
         }
         new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
-        best.run <- stats::optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        best.run <- stats::optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
         attempts <- attempts+1
     }
     if(verbose) {
@@ -2211,7 +2231,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
     while(times.without.improvement<max.steps) {
         times.without.improvement <- times.without.improvement+1
         step.count <- step.count + 1
-        new.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction)
+        new.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
         new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
         starting.values <- new.starting.values

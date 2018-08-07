@@ -4,8 +4,8 @@
 \alias{SimulateNetwork}
 \title{Simulate a phylogenetic network}
 \usage{
-SimulateNetwork(ntax = 100, nhybridizations = 10, birth = 1, death = 1,
-  sample.f = 0.5, tree.height = 1, allow.ghost = FALSE,
+SimulateNetwork(ntax = 100, nhybridizations = 10, birth = 1,
+  death = 1, sample.f = 0.5, tree.height = 1, allow.ghost = FALSE,
   phy.graph = NULL, phy = NULL)
 }
 \arguments{

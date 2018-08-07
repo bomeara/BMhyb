@@ -4,11 +4,12 @@
 \alias{BMhyb}
 \title{Optimize model}
 \usage{
-BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
-  confidence.points = 5000, measurement.error = 0, gamma = 0.5,
-  do.Higham.correction = TRUE, do.Brissette.correction = FALSE,
-  verbose = TRUE, likelihood.precision = 0.01, max.steps = 10,
-  confidence.lnl = 2, allow.restart = TRUE)
+BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu",
+  "SE"), confidence.points = 5000, measurement.error = 0,
+  gamma = 0.5, do.Higham.correction = TRUE,
+  do.Brissette.correction = FALSE, verbose = TRUE,
+  likelihood.precision = 0.01, max.steps = 10, confidence.lnl = 2,
+  allow.restart = TRUE, control = list(reltol = 0.001))
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
@@ -36,6 +37,8 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE"),
 \item{confidence.lnl}{For figuring out the confidence interval, how wide you want the confidence region to be in lnL space}
 
 \item{allow.restart}{If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point}
+
+\item{control}{List of options to pass to optim. ?optim for help.}
 }
 \value{
 Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
