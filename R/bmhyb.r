@@ -1046,7 +1046,7 @@ ConvertExpm1 <- function(x) {
 #     return(results)
 # }
 
-ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.points=5000, verbose=TRUE, do.kappa.check=FALSE, allow.restart=TRUE,  best.lnl = -Inf, confidence.points=5000, likelihood.precision=0.01, restart.mode=FALSE, ...) {
+ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.points=5000, verbose=TRUE, do.kappa.check=FALSE,  best.lnl = -Inf, confidence.points=5000, likelihood.precision=0.01, ...) {
     starting<-fn(parameters=par, traits=traits, ...)
     lower <- c(sigma.sq=0, mu=min(c(10*min(traits), .1*min(traits))), bt=-10, vh=0,SE=0)[names(par)] #this is why we pass traits explicitly
     upper <- c(sigma.sq=10, mu=max(c(10*max(traits), .1*max(traits))), bt=10, vh=10,SE=10)[names(par)]
@@ -1065,12 +1065,12 @@ ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.poi
             sim.points<-GenerateValues(par, lower, upper, examined.max=max.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, max, na.rm=TRUE), examined.min=min.multipliers*apply(results[which(results[,1]-min(results[,1], na.rm=TRUE)<=desired.delta),-1], 2, min, na.rm=TRUE))
         }
         results[i+1,] <- c(fn(sim.points, traits=traits, ...), sim.points)
-        if(i>5 & restart.mode) {
-            if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
-                results <- results[sequence(i+1),] #stop here and restart
-                return(results)
-            }
-        }
+        # if(i>5 & restart.mode) {
+        #     if((best.lnl - min(results[,1], na.rm=TRUE) > likelihood.precision ) & allow.restart) {
+        #         results <- results[sequence(i+1),] #stop here and restart
+        #         return(results)
+        #     }
+        # }
         if (i%%20==0) {
             for (j in sequence(length(par))) {
                 returned.range <- range(results[which((results[,1]-min(results[,1], na.rm=TRUE))<desired.delta), j+1], na.rm=TRUE)
@@ -1314,7 +1314,7 @@ ConvertPhyAndFlowToPhygraph <- function(phy, flow) {
 
 #' Add hybrid events to a phy.graph
 #'
-#' Given an evonet object, and info on where the gene flow is from and to, and when this occurs, add a hybridization event. The edges things move from and to are specified by the list of descendant taxa of those edges (basically the edge is the subtending branch for the clade). You do not have to list all taxa, only those spanning the node at the end of the edge. You can enter a single taxon to have gene flow to or from a terminal branch. You also need to specify when the gene flow happens. This can be given as time from the root of the tree to when the event starts or time from the tip of the tree back to when the gene flow starts (but you must give one of these). If gene flow goes through an unsampled ghost intermediate, you can enter the length of time it spends there.
+#' Given an evonet object, and info on where the gene flow is from and to, and when this occurs, add a hybridization event. The edges things move from and to are specified by the list of descendant taxa of those edges (basically the edge is the subtending branch for the clade). You do not have to list all taxa, only those spanning the node at the end of the edge. You can enter a single taxon to have gene flow to or from a terminal branch. You also ideally will specify when the gene flow happens. This can be given as time from the root of the tree to when the event starts or time from the tip of the tree back to when the gene flow starts (but you must give one of these). If gene flow goes through an unsampled ghost intermediate, you can enter the length of time it spends there. If you do not specify any of these, flow is assumed to directly from the source to the recipient, with the time set at the start of the recent of the two branches (i.e., if flow goes from taxon A to taxon D, if D is younger the flow is assumed to happen partway up the terminal branch of A to directly connect to the start of D.
 #'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param from.clade A vector of names specifying taxa spanning the node descended from the focal edge for the start of the hybridization event
@@ -1343,7 +1343,7 @@ AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NUL
   } else if (!is.null(time.from.tip)) {
     donor.height.from.root <- max(ape::vcv(phy.graph)) - time.from.tip
   } else {
-    stop("You must enter a time.from.root or a time.from.tip")
+    donor.height.from.root <- max(c(heights[donor.node], heights[recipient.node]))
   }
   recipient.height.from.root <- donor.height.from.root + ghost.length
   new.donor <- ape::Ntip(phy.graph) + 1
@@ -1999,7 +1999,7 @@ GetProbabilityOfAllPaths <- function(phy.graph, all.edges) {
     return(all.paths)
 }
 
-ComputePathPairs2 <- function(path) {
+ComputePathPairs <- function(path) {
     path<-strsplit(path, "_")[[1]]
     GetPair <- function(node.start, path) {
       return(c(node.from=path[node.start], node.to=path[node.start+1], node.fromto = paste(path[c(node.start, node.start+1)], collapse="_")))
@@ -2138,12 +2138,18 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @param likelihood.precision When optimizing, how much of a lnL improvement is required to restart optimization between starts
 #' @param max.steps The number of restarts without improvement it will attempt
 #' @param confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
-#' @param allow.restart If the confidence interval evaluation finds a better solution than the optimizer, should we restart from that point
 #' @param control List of options to pass to optim. ?optim for help.
 #'
 #' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
+#'
+#' @examples
+#' utils::data("cichlid")
+#' traits.only <- cichlid$traits_and_SE$trait
+#' names(traits.only) <- rownames(cichlid$traits_and_SE)
+#' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
+
 #' @export
-BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, allow.restart=TRUE, control=list(reltol=1e-3)) {
+BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
     if(verbose) {
       print("Now starting analysis")
     }
@@ -2151,7 +2157,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 
     local.df <- data.frame(t(best.results$par), AICc=ComputeAICc(n=ape::Ntip(phy.graph),k=length(best.results$par), LogLik=best.results$value),  NegLogLik=best.results$value, K=length(best.results$par))
 
-    interval.results <- ComputeConfidenceIntervals(best.results$par, fn=ComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points, allow.restart=allow.restart, best.lnl = best.results$value, likelihood.precision=likelihood.precision, restart.mode=TRUE, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
+    interval.results <- ComputeConfidenceIntervals(best.results$par, fn=ComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points,  best.lnl = best.results$value, likelihood.precision=likelihood.precision,  measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
 
     interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
     interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
