@@ -1221,10 +1221,7 @@ AddNodeToPhygraph <- function(below.node, depth.below,  phy.graph, tip.label, te
     new.phy.graph$edge.length[1+length(new.phy.graph$edge.length)] <- terminal.length
     new.phy.graph$tip.label <- c(new.phy.graph$tip.label,tip.label)
 
-    new.phy.graph$Nnode <- 1 + new.phy.graph$Nnode
-
-
-
+    new.phy.graph$Nnode <- as.integer(max(phy.graph$edge[,1]-ape::Ntip(phy.graph)))
     return(new.phy.graph)
 }
 
@@ -1242,6 +1239,8 @@ RenumberPhygraph <- function(phy.graph) {
         new.phy.graph$edge[which(phy.graph$edge==old2new$old[i])] <- old2new$new[i]
         new.phy.graph$reticulation[which(phy.graph$reticulation==old2new$old[i])] <- old2new$new[i]
     }
+    new.phy.graph$edge <- matrix(as.integer(new.phy.graph$edge), ncol=2)
+    new.phy.graph$Nnode <- as.integer(max(new.phy.graph$edge[,1]-ape::Ntip(new.phy.graph)))
     return(new.phy.graph)
 }
 
@@ -1263,6 +1262,8 @@ RemoveZeroTerminalsPhygraph <- function(phy.graph) {
             terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] <- terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] - 1
         }
     }
+    new.phy.graph$edge <- matrix(as.integer(new.phy.graph$edge), ncol=2)
+    new.phy.graph$Nnode <- as.integer(max(new.phy.graph$edge[,1]-ape::Ntip(new.phy.graph)))
     return(new.phy.graph)
 }
 
@@ -1278,7 +1279,8 @@ ReorderPhygraph <- function(phy.graph, order="cladewise") {
     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order=order,index.only=TRUE)
     phy.graph$edge <- phy.graph$edge[new.order,]
     phy.graph$edge.length <- phy.graph$edge[new.order]
-
+    phy.graph$edge <- matrix(as.integer(phy.graph$edge), ncol=2)
+    phy.graph$Nnode <- as.integer(max(phy.graph$edge[,1]-ape::Ntip(phy.graph)))
     return(phy.graph)
 }
 
