@@ -2143,11 +2143,12 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
 #'
 #' @examples
+#' \dontrun{
 #' utils::data("cichlid")
 #' traits.only <- cichlid$traits_and_SE$trait
 #' names(traits.only) <- rownames(cichlid$traits_and_SE)
 #' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
-
+#' }
 #' @export
 BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
     if(verbose) {

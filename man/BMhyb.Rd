@@ -48,8 +48,10 @@ Fits a BMhyb model to your data.
 This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
 }
 \examples{
+\dontrun{
 utils::data("cichlid")
 traits.only <- cichlid$traits_and_SE$trait
 names(traits.only) <- rownames(cichlid$traits_and_SE)
 result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
+}
 }
