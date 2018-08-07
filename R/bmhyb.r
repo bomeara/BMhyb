@@ -1583,6 +1583,50 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
 #         #grid.arrows(x=c(flow$time.from.root[i],flow$time.from.root[i]), y=c(y0, y1))
 #     }
 # }
+#
+# PlotNetwork <- function(phy.graph, col.non="black", col.hybrid="red", col.donor="blue", name.padding=1.5, cex=1, xlab="", bty="n", head.length=0.2, edge.width=2, col.tree="darkgray", col.arrow="red", arrow.width=1, try.rotations=FALSE, ...) {
+#     #phy<-reorder(phy, "pruningwise")
+#     #if(try.rotations) {
+#     #    phy <- phytools::rotateNodes(phy, nodes="all")
+#     #}
+#     phy.graph$edge.length[phy.graph$edge.length<0] <- 0
+#     phy4 <- as(ape::as.phylo(phy.graph), "phylo4")
+#     xxyy <- phylobase::phyloXXYY(phy4)
+#     #plot(phy4)
+#     plot(x=c(min(xxyy$xx), name.padding*max(xxyy$xx)), y=range(xxyy$yy), type="n", xaxt="n", xlab=xlab, yaxt="n", ylab="", bty=bty, ...)
+#     arrows(x0=xxyy$segs$v0x, x1=xxyy$segs$v1x, y0=xxyy$segs$v0y, y1=xxyy$segs$v1y, length=0, lwd=edge.width, col=col.tree)
+#     arrows(x0=xxyy$segs$h0x, x1=xxyy$segs$h1x, y0=xxyy$segs$h0y, y1=xxyy$segs$h1y, length=0, lwd=edge.width, col=col.tree)
+#     label.colors <- rep(col.non, Ntip(phy))
+#     for (i in sequence(Ntip(phy))) {
+#         if	(names(getNode(phy4, xxyy$torder))[i] %in% flow$donor) {
+#             label.colors[i]<-col.donor
+#         }
+#         if	(names(getNode(phy4, xxyy$torder))[i] %in% flow$recipient) {
+#             label.colors[i]<-col.hybrid
+#         }
+#
+#     }
+#     text(x=rep(max(xxyy$xx), Ntip(phy)), y=xxyy$yy[which(edges(phy4)[xxyy$eorder,2] %in% sequence(Ntip(phy)))], names(getNode(phy4, xxyy$torder)), col=label.colors, pos=4, cex=cex)
+#     # for (i in sequence(dim(flow)[1])) {
+#     #     recipient.node <- getNode(phy4, flow$recipient[i])
+#     #     recipient.path <- c(recipient.node, ancestors(phy4, recipient.node))
+#     #     recipient.path.heights <- nodeHeight(phy4, recipient.path, from="root")
+#     #     valid.recipients <- recipient.path[which(recipient.path.heights > flow$time.from.root.recipient[i])]
+#     #     recipient <- valid.recipients[length(valid.recipients)] #do it from the earliest qualifying tipward node
+#     #     if(length(valid.recipients)>1 && length(which(recipient.path.heights==flow$time.from.root.recipient[i]))>0) { #the latter condition means we're moving to an existing node
+#     #         recipient <- valid.recipients[length(valid.recipients)-1]
+#     #     }
+#     #     y1 <- xxyy$yy[which(edges(phy4)[xxyy$eorder,2] == recipient)]
+#     #     donor.node <- getNode(phy4, flow$donor[i])
+#     #     donor.path <- c(donor.node, ancestors(phy4, donor.node))
+#     #     donor.path.heights <- nodeHeight(phy4, donor.path, from="root")
+#     #     valid.donors <- donor.path[which(donor.path.heights > flow$time.from.root.donor[i])]
+#     #     donor <- valid.donors[length(valid.donors)] #do it from the earliest qualifying tipward node
+#     #     y0 <- xxyy$yy[which(edges(phy4)[xxyy$eorder,2] == donor)]
+#     #     arrows(x0=flow$time.from.root.donor[i]/max(vcv(phy)), x1=flow$time.from.root.recipient[i]/max(vcv(phy)), y1=y1, y0=y0, col=col.arrow, lwd=arrow.width, length=head.length) #rescale since it goes from zero to 1 in height
+#     #     #grid.arrows(x=c(flow$time.from.root[i],flow$time.from.root[i]), y=c(y0, y1))
+#     # }
+# }
 
 
 
@@ -2118,19 +2162,19 @@ plot.BMhybResult <- function(x,...) {
     }
 }
 
-#' Plot evonet object
-#'
-#' ape's reorder.evonet function can case C crashes if the edge numbering is not in the manner ape expects (even if obvious requirements like terminal nodes being 1:Ntip and root node being Ntip+1 are met). Instead, we use igraph plotting.
-#' @param x An evonet object
-#' @param ... Other arguments to pass to plot
-#' @export
-#' @rawNamespace S3method(plot, evonet)
-plot.evonet <- function(x, size=0, shape="none", color=NA, frame.color=NA, vertex.size=0, vertex.color=NA, arrow.size=0.01, arrow.width=0.0, edge.arrow.size=0.1, ...) {
-#  phy.igraph <- BMhyb:::ConvertEvonetToIgraphWithNodeNumbers(x)
-  x$node.label <- seq(from=(1+ape::Ntip(x)), to=ape::Ntip(x)+ape::Nnode(x), by=1)
-  phy.igraph <- ape::as.igraph.evonet(x)
-  plot(phy.igraph, size=size, shape=shape, color=color, frame.color=frame.color, vertex.size=vertex.size, vertex.color=vertex.color, arrow.size=arrow.size, arrow.width=arrow.width, edge.arrow.size=edge.arrow.size, ...)
-}
+# #' Plot evonet object
+# #'
+# #' ape's reorder.evonet function can case C crashes if the edge numbering is not in the manner ape expects (even if obvious requirements like terminal nodes being 1:Ntip and root node being Ntip+1 are met). Instead, we use igraph plotting.
+# #' @param x An evonet object
+# #' @param ... Other arguments to pass to plot
+# #' @export
+# #' @rawNamespace S3method(plot, evonet)
+# plot.evonet <- function(x, size=0, shape="none", color=NA, frame.color=NA, vertex.size=0, vertex.color=NA, arrow.size=0.01, arrow.width=0.0, edge.arrow.size=0.1, ...) {
+# #  phy.igraph <- BMhyb:::ConvertEvonetToIgraphWithNodeNumbers(x)
+#   x$node.label <- seq(from=(1+ape::Ntip(x)), to=ape::Ntip(x)+ape::Nnode(x), by=1)
+#   phy.igraph <- ape::as.igraph.evonet(x)
+#   plot(phy.igraph, layout=igraph::layout_as_tree(phy.igraph, circular=TRUE), size=size, shape=shape, color=color, frame.color=frame.color, vertex.size=vertex.size, vertex.color=vertex.color, arrow.size=arrow.size, arrow.width=arrow.width, edge.arrow.size=edge.arrow.size, ...)
+# }
 
 
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10) {
