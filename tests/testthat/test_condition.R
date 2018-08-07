@@ -4,30 +4,30 @@
 #   plot(p)
 # })
 
-test_that("Basic run can go") {
+test_that("Basic run can go", {
   utils::data("cichlid")
   traits.only <- cichlid$traits_and_SE$trait # TODO change this when have new object
   names(traits.only) <- rownames(cichlid$traits_and_SE)
   result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only, confidence.points=100, max.steps=2, control=list(reltol=1e-1))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 10)
-}
+})
 
-test_that("Simulation works") {
+test_that("Simulation works", {
   network <- SimulateNetwork(ntax=5, nhybridizations=2)
   tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
   result <- BMhyb(phy.graph=network, traits=tips, confidence.points=100, max.steps=2,  control=list(reltol=1e-1))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 2)
   expect_equal(nrow(result$bad.region) + nrow(result$good.region), 100)
-}
+})
 
 
-test_that("VCV well formed") {
+test_that("VCV well formed", {
   utils::data("cichlid")
   VCV <- ComputeVCV(cichlid$phy.graph)
   expect_gte(kappa(VCV), 1)
-}
+})
 
 test_that("Issue 13 resolved", {
   create_paper_network <- function(gamma, t1, t2, t3){
