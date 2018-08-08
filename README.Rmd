@@ -33,7 +33,7 @@ devtools::install_github("bomeara/BMhyb")
 
 Input for the program is a phylogeny, trait data (currently just univariate), and a data.frame containing flow information. This tells the software where gene flow happened between lineages. This gene flow can appear to go forward in time due to flow to unsampled lineages before later hybridization, so one must specify both the time (height from root) of the start of the divergence of the hybridization event and the time at which the event completed (note, though, that it considers it as a single event, not ongoing gene flow through all this time). Here is a sample network for tobacco and relatives, after [Chase et al. 2003](https://doi.org/10.1093/aob/mcg087).
 
-```{r example, echo=FALSE, fig.height=12}
+```{r example, echo=FALSE}
 library(BMhyb)
 library(ape)
 data(nicotiana)

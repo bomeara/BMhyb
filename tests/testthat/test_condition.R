@@ -6,6 +6,7 @@
 
 test_that("Basic run can go", {
   utils::data("cichlid")
+  skip_on_travis()
   result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, confidence.points=100, max.steps=2, control=list(reltol=1e-1, trace=6))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 10)
