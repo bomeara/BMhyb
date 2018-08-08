@@ -1973,11 +1973,18 @@ ScaleAllEdges <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measure
         all.edges[which(all.edges$node.to==terminal.taxon),]$length <- all.edges[which(all.edges$node.to==terminal.taxon),]$length + SE
     }
     #TODO: add measurement error
-    if(length(measurement.error)!=1 | measurement.error[1]!=0) {
-      if(length(measurement.error)==1) {
-        all.edges[which(all.edges$node.to==terminal.taxon),]$length <- all.edges[which(all.edges$node.to==terminal.taxon),]$length + measurement.error
+    if(length(measurement.error)==1) {
+        all.edges[which(all.edges$node.to<=ape::Ntip(phy.graph)),]$length <- all.edges[which(all.edges$node.to<=ape::Ntip(phy.graph)),]$length + measurement.error
+    }
+    if(length(measurement.error)>1) {
+      if(is.null(names(measurement.error))) {
+        stop("measurement.error, if it is more than one value, must have names in the vector corresponding to names of the taxa. We do not assume the order of names is the same, so they must be done explicitly")
+      } else {
+        for(taxon.index in seq_along(measurement.error)) {
+          tip.id <- which(phy.graph$tip.label==names(measurement.error)[taxon.index])
+          all.edges[which(all.edges$node.to==tip.id),]$length <- all.edges[which(all.edges$node.to==tip.id),]$length + measurement.error[taxon.index]
+        }
       }
-        stop("ADD MEASUREMENT ERROR TO THE CODE")
     }
     return(all.edges)
 }
