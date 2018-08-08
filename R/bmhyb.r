@@ -1973,7 +1973,10 @@ ScaleAllEdges <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measure
         all.edges[which(all.edges$node.to==terminal.taxon),]$length <- all.edges[which(all.edges$node.to==terminal.taxon),]$length + SE
     }
     #TODO: add measurement error
-    if(measurement.error != 0) {
+    if(length(measurement.error)!=1 | measurement.error[1]!=0) {
+      if(length(measurement.error)==1) {
+        all.edges[which(all.edges$node.to==terminal.taxon),]$length <- all.edges[which(all.edges$node.to==terminal.taxon),]$length + measurement.error
+      }
         stop("ADD MEASUREMENT ERROR TO THE CODE")
     }
     return(all.edges)
