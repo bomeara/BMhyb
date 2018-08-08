@@ -28,6 +28,13 @@ test_that("VCV well formed", {
   expect_gte(kappa(VCV), 1)
 })
 
+test_that("Compute means works", {
+  utils::data("cichlid")
+  means <- ComputeMeans(cichlid$phy.graph, bt=2)
+  expect_equal(unname(means['Neolamprologus_brevis']),0)
+  expect_equal(unname(means['Neolamprologus_fasciatus']),log(2))
+})
+
 test_that("Issue 13 resolved", {
   create_paper_network <- function(gamma, t1, t2, t3){
     phy <- ape::read.tree(text = paste0("((R:", t3, ",Y:", t3, "):", t1 + t2, ",X:", t1 + t2 + t3, ");"))

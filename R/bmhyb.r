@@ -2092,6 +2092,7 @@ ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measuremen
 }
 
 ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+    phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
     means.vector <- rep(mu, ape::Ntip(phy.graph))
     hybrids <- GetHybridNodes(phy.graph, gamma)$hybrid.counts #hybrid.descendants=hybrid.descendants, immediate.hybrids, hybrid.counts
     #hybrids <- unique(c(hybrids$hybrid.descendants, hybrids$immediate.hybrids))
@@ -2114,6 +2115,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     for(i in seq_along(parameters)){
         assign(names(parameters)[i],parameters[i])
     }
+    phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
     means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
     V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
 

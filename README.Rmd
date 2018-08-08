@@ -33,17 +33,43 @@ devtools::install_github("bomeara/BMhyb")
 
 Input for the program is a phylogeny, trait data (currently just univariate), and a data.frame containing flow information. This tells the software where gene flow happened between lineages. This gene flow can appear to go forward in time due to flow to unsampled lineages before later hybridization, so one must specify both the time (height from root) of the start of the divergence of the hybridization event and the time at which the event completed (note, though, that it considers it as a single event, not ongoing gene flow through all this time). Here is a sample network for tobacco and relatives, after [Chase et al. 2003](https://doi.org/10.1093/aob/mcg087).
 
-```{r example, echo=FALSE, fig.height=12}
+```{r nic_tree, echo=FALSE, fig.height=12}
 library(BMhyb)
-library(ape)
+library(ape) # for plotting
 data(nicotiana)
 plot(nicotiana$phy.graph, arrows=2)
 ```
 
-Besides the univariate trait data, another kind of data that can be useful is what is commonly called "measurement error." This could mean actual measurement error: my ruler has markings every millimeter, so I have trouble figuring out if this beetle is 10.2 or 10.3 mm long. But it basically stands for all the variation that is present within a species. Brownian motion and related models are basically fitting data to a multivariate normal distribution. Covariances between species under basic models come from evolution on the same branches; variation of a tip value comes from both evolution along branches (Brownian motion "wiggling") and other sources of variation that don't stem from that evolutionary process: imprecision in the measurement, but also intraspecific variation (the processes model the "average" value for a species, but we know that intraspecific variation can be substantial and important) and other sources of noise. Most comparative methods are done assuming this uncertainty is zero: a single individual perfectly represents the mean value for its species. This forces the model to deal with any actual variation by forcing it to have happened on evolutionary branches, increasing the inferred rate of evolution (and also making the process look more like an Ornstein-Uhlenbeck one, assuming the true process is Brownian motion). By default, `BMhyb` instead tries to estimate this measurement error, though this is hard to do well. Better is inputing actual uncertainty from estimates in the data: this could be done by measuring multiple individuals in some or all species or even approaches as crude as saying that one expects 10% uncertainty on each trait value.
+And here is one for cichlids, after [Kobmuller et al. 2007](https://bmcevolbiol.biomedcentral.com/articles/10.1186/1471-2148-7-7)
 
-Once you have your data, tree, and flow, you can run analyses. By default, `BMhyb` tries models variation at hybridization events (vh) fixed at zero or free to vary, and expected ratio of increase or decrease in trait value at hybridization fixed at one or allowed to vary.
+```{r cic_tree, echo=FALSE, fig.height=10}
+library(BMhyb)
+library(ape)
+data(cichlid)
+plot(cichlid$phy.graph, arrows=2)
+```
 
-One common issue experienced in optimizing are problems with matrix condition -- basically, internally the algorithm tries to invert a matrix, but for some combinations of networks and parameter values, numerically the matrix cannot be inverted (see [Wikipedia](https://en.wikipedia.org/wiki/Condition_number) if you're curious about the details. Note we accept pull requests to improve the code). There are approaches to dealing with this, but they often work by increasing the values on the diagonals of the variance covariance matrix -- which biologically means artificially creating more "measurement error" in the model. We have various approaches to adjusting poorly conditioned matrices in `BMhyb`: most are turned off by default, and the one we do use we add a penalty to likelihood results that do use this. Make sure to look at your likelihoods to see if they seem reasonable, and in general poke around to make sure you believe the results the program gives you (this is good advice in general).
+Besides the univariate trait data, another kind of data that can be useful is what is commonly called "measurement error." This could mean actual measurement error: my ruler has markings every millimeter, so I have trouble figuring out if this beetle is 10.2 or 10.3 mm long. But it basically stands for all the variation that is present within a species. Brownian motion and related models are basically fitting data to a multivariate normal distribution. Covariances between species under basic models come from evolution on the same branches; variation of a tip value comes from both evolution along branches (Brownian motion "wiggling") and other sources of variation that don't stem from that evolutionary process: imprecision in the measurement, but also intraspecific variation (the processes model the "average" value for a species, but we know that intraspecific variation can be substantial and important) and other sources of noise. Most comparative methods are done assuming this uncertainty is zero: a single individual perfectly represents the mean value for its species. This forces the model to deal with any actual variation by forcing it to have happened on evolutionary branches, increasing the inferred rate of evolution (and also making the process look more like an Ornstein-Uhlenbeck one, assuming the true process is Brownian motion). By default, `BMhyb` instead tries to estimate this measurement error (the `SE` parameter, below) though this is hard to do well. Better is inputing actual uncertainty from estimates in the data: this could be done by measuring multiple individuals in some or all species or even approaches as crude as saying that one expects 10% uncertainty on each trait value.
+
+Once you have your data, tree, and flow, you can run analyses using the `BMhyb()` function. The free parameters one can use are:
+
+* `sigma.sq` = sigma squared, the basic rate of Brownian motion of traits.
+* `mu` = state at the root of the tree
+* `SE` = standard error of the measurements (see the paragraph above)
+* `bt` = beta, the expected change in state mean in hybridization events. Beta=1 means no expected change, beta=2 means an expected doubling in size, beta=0.5 means an expected halving in size, and so forth. Think of "hybrid vigor" and plant height
+* `vh` = extra variance in trait value as a result of being formed through hybridization: an extra burst in variation
+
+Passing in a vector of the free parameters you want will have the program optimize those; otherwise, it will use default values.
 
 Uncertainty is often substantial. Akaike weights are an estimate in the uncertainty in which model is best under the Akaike Information Criterion and are given by default. Parameter estimates are also uncertain. Fast ways to estimate the uncertainty involve looking at the curvature of the likelihood surface. Other approaches vary a single parameter at a time while holding the others at their maximum likelihood estimates and measuring the response. This can miss ridges: areas where one can vary one parameter at a time and quickly decline in value, but where one could vary both with little effect (for example, imagine looking at the plot of `x+y-10` and seeing where this was close to zero: if `y=5`, then x has to stay near 5 if we do not want the total to be far from 0, but if we allow both to vary, we can have an infinite array of values). To detect this, we vary all the points in an adaptive way to feel our way around an island of good likelihood to get estimates. Plots of this show points within a certain region (following Edwards, a ∆lnL of 2 is taken as the region) and points sampled outside.
+
+Here is a sample run. It generates `BMhybResult` class object. Simply plotting this object calls a dedicated function.
+
+```{r cichlid_run, echo=FALSE}
+utils::data("cichlid")
+result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, measurement.error=cichlid$final.se, free.parameter.names = c("sigma.sq", "mu", "bt"), confidence.points=1000)
+plot(result)
+```
+
+
+One common issue experienced in optimizing are problems with matrix condition -- basically, internally the algorithm tries to invert a matrix, but for some combinations of networks and parameter values, numerically the matrix cannot be inverted (see [Wikipedia](https://en.wikipedia.org/wiki/Condition_number) if you're curious about the details. Note we accept pull requests to improve the code). There are approaches to dealing with this, but they often work by increasing the values on the diagonals of the variance covariance matrix -- which biologically means artificially creating more "measurement error" in the model. We have various approaches to adjusting poorly conditioned matrices in `BMhyb`: most are turned off by default, and the one we do use we add a penalty to likelihood results that do use this. Make sure to look at your likelihoods to see if they seem reasonable, and in general poke around to make sure you believe the results the program gives you (this is good advice in general).
