@@ -109,7 +109,8 @@
     </div>
 
     <pre class="usage"><span class='fu'>SimulateTips</span>(<span class='no'>phy.graph</span>, <span class='kw'>sigma.sq</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>bt</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>vh</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>SE</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>measurement.error</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>gamma</span> <span class='kw'>=</span> <span class='fl'>0.5</span>)</pre>
+  <span class='kw'>SE</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>measurement.error</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>gamma</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='kw'>exclude.donors.recipients</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -145,6 +146,10 @@
     <tr>
       <th>gamma</th>
       <td><p>In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent</p></td>
+    </tr>
+    <tr>
+      <th>exclude.donors.recipients</th>
+      <td><p>If TRUE, do not generate for any donors or recipient placeholder taxa</p></td>
     </tr>
     </table>
     
