@@ -1251,26 +1251,27 @@ PruneDonorsRecipientsFromVCV <- function(VCV) {
   return(VCV)
 }
 
-PruneDonorsRecipientsFromPhyGraph <- function(phy.graph) {
+PruneRecipientsFromPhyGraph <- function(phy.graph) {
   new.phy.graph <- phy.graph
-  donor.ids <- which(grepl("donor_", phy.graph$tip.label))
   recipient.ids <- which(grepl("recipient_", phy.graph$tip.label))
-  for(r.index in seq_along(recipient.ids)) {
-    recipient.id <- recipient.ids[r.index]
-    recipient.ancestor.row <- which(phy.graph$edge[,2]==recipient.id)
-    recipient.ancestor.id <- phy.graph$edge[recipient.ancestor.row, 1]
-    new.phy.graph$reticulation[which(phy.graph$reticulation[,2]==recipient.id),2] <- recipient.ancestor.id
-    new.phy.graph$edge[recipient.ancestor.row,] <- c(NA, NA) # to delete later
-    new.phy.graph$edge.length[recipient.ancestor.row] <- NA
+  if(length(recipient.ids)>0) {
+    for(r.index in seq_along(recipient.ids)) {
+      recipient.id <- recipient.ids[r.index]
+      recipient.ancestor.row <- which(phy.graph$edge[,2]==recipient.id)
+      recipient.ancestor.id <- phy.graph$edge[recipient.ancestor.row, 1]
+      new.phy.graph$reticulation[which(phy.graph$reticulation[,2]==recipient.id),2] <- recipient.ancestor.id
+      new.phy.graph$edge[recipient.ancestor.row,] <- c(NA, NA) # to delete later
+      new.phy.graph$edge.length[recipient.ancestor.row] <- NA
+    }
+    recipient.ids <- sort(recipient.ids, decreasing=TRUE)
+    for (r.index in seq_along(recipient.ids)) {
+      new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] - 1
+      new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] - 1
+    }
+    new.phy.graph$edge <- new.phy.graph$edge[which(!is.na(new.phy.graph$edge[,1])),]
+    new.phy.graph$edge.length <- new.phy.graph$edge.length[which(!is.na(new.phy.graph$edge.length))]
+    new.phy.graph$tip.label <- new.phy.graph$tip.label[-recipient.ids]
   }
-  recipient.ids <- sort(recipient.ids, decreasing=TRUE)
-  for (r.index in seq_along(recipient.ids)) {
-    new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] - 1
-    new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] - 1
-  }
-  new.phy.graph$edge <- new.phy.graph$edge[which(!is.na(new.phy.graph$edge[,1])),]
-  new.phy.graph$edge.length <- new.phy.graph$edge.length[which(!is.na(new.phy.graph$edge.length))]
-  new.phy.graph$tip.label <- new.phy.graph$tip.label[-recipient.ids]
   return(new.phy.graph)
 }
 
@@ -1400,6 +1401,7 @@ AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NUL
 #' network <- SimulateNetwork(ntax=5, nhybridizations=2)
 #' tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
 SimulateTips <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+  phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
   means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
   V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
   tips <- MASS::mvrnorm(1, mu=means.modified, Sigma=V.modified, tol=1e-100)
@@ -1487,7 +1489,7 @@ SimulateNetwork <- function(ntax=100, nhybridizations=10, birth = 1, death = 1, 
         }
     }
     attr(phy.graph, "order")<- NULL
-    phy.graph <- RenumberPhygraph(phy.graph)
+    phy.graph <- PruneRecipientsFromPhyGraph(RenumberPhygraph(phy.graph))
     return(phy.graph)
 }
 
@@ -2052,7 +2054,7 @@ ComputePathPairs <- function(path) {
 }
 
 ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
-    phy.graph <- PruneDonorsRecipientsFromPhyGraph(phy.graph)
+    phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
     all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
     all.paths <- GetProbabilityOfAllPaths(phy.graph=phy.graph, all.edges=all.edges)
     VCV <- matrix(0, nrow=ape::Ntip(phy.graph), ncol=ape::Ntip(phy.graph))
