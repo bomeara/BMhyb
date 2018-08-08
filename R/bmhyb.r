@@ -1251,6 +1251,29 @@ PruneDonorsRecipientsFromVCV <- function(VCV) {
   return(VCV)
 }
 
+PruneDonorsRecipientsFromPhyGraph <- function(phy.graph) {
+  new.phy.graph <- phy.graph
+  donor.ids <- which(grepl("donor_", phy.graph$tip.label))
+  recipient.ids <- which(grepl("recipient_", phy.graph$tip.label))
+  for(r.index in seq_along(recipient.ids)) {
+    recipient.id <- recipient.ids[r.index]
+    recipient.ancestor.row <- which(phy.graph$edge[,2]==recipient.id)
+    recipient.ancestor.id <- phy.graph$edge[recipient.ancestor.row, 1]
+    new.phy.graph$reticulation[which(phy.graph$reticulation[,2]==recipient.id),2] <- recipient.ancestor.id
+    new.phy.graph$edge[recipient.ancestor.row,] <- c(NA, NA) # to delete later
+    new.phy.graph$edge.length[recipient.ancestor.row] <- NA
+  }
+  recipient.ids <- sort(recipient.ids, decreasing=TRUE)
+  for (r.index in seq_along(recipient.ids)) {
+    new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>recipient.ids[r.index])] - 1
+    new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>recipient.ids[r.index])] - 1
+  }
+  new.phy.graph$edge <- new.phy.graph$edge[which(!is.na(new.phy.graph$edge[,1])),]
+  new.phy.graph$edge.length <- new.phy.graph$edge.length[which(!is.na(new.phy.graph$edge.length))]
+  new.phy.graph$tip.label <- new.phy.graph$tip.label[-recipient.ids]
+  return(new.phy.graph)
+}
+
 RemoveZeroTerminalsPhygraph <- function(phy.graph) {
     new.phy.graph <- phy.graph
     terminal.nodes <- sequence(ape::Ntip(phy.graph)) #this is so as we delete taxa we don't lose track of which ones we've examined
@@ -1965,6 +1988,10 @@ GetHybridNodes <- function(phy.graph, gamma=0.5) {
 ScaleAllEdges <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
     all.edges <- ComputeAllEdges(phy.graph, gamma)
     all.edges$length <- all.edges$length*sigma.sq
+    if(any(all.edges$length<0)) {
+      warning(paste0("Some of the edges were negative in length. If this is tiny, don't worry about it; if not, do. The negative edge with largest magnitude was ", min(all.edges$length), ". We are converting all of the negative edges to zero length."))
+      all.edges$length[all.edges$length<0] <- 0
+    }
     immediates <- GetHybridNodes(phy.graph, gamma)$immediate.hybrids
     for (immediate.node.index in sequence(length(immediates))) {
         all.edges[which(all.edges$node.from==immediates[immediate.node.index]),]$length <- all.edges[which(all.edges$node.from==immediates[immediate.node.index]),]$length + vh
@@ -2025,6 +2052,7 @@ ComputePathPairs <- function(path) {
 }
 
 ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+    phy.graph <- PruneDonorsRecipientsFromPhyGraph(phy.graph)
     all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
     all.paths <- GetProbabilityOfAllPaths(phy.graph=phy.graph, all.edges=all.edges)
     VCV <- matrix(0, nrow=ape::Ntip(phy.graph), ncol=ape::Ntip(phy.graph))
@@ -2042,9 +2070,9 @@ ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measuremen
                     this.path.top <- ComputePathPairs(paths.top$paths[top.path.index])
                     weight.top <- paths.top$normalized.probabilities[top.path.index]
                     #matches <- this.path.left[this.path.left$node.fromto %in% this.path.top$node.fromto,]
-                    matches <- this.path.left[this.path.left[,'node.fromto'] %in% this.path.top[,'node.fromto'],]
-                    for (match.index in sequence(nrow(matches))) {
-                        value <- value + (weight.left * weight.top) * subset(all.edges, all.edges$node.from==matches[match.index, 'node.from'] & all.edges$node.to==matches[match.index, 'node.to'])$length
+                    matching.indices <- which(this.path.left[,'node.fromto'] %in% this.path.top[,'node.fromto'])
+                    for (match.index in seq_along(matching.indices)) {
+                        value <- value + (weight.left * weight.top) * subset(all.edges, all.edges$node.from==this.path.left[matching.indices[match.index], 'node.from'] & all.edges$node.to==this.path.left[matching.indices[match.index], 'node.to'])$length
                     }
                 }
             }

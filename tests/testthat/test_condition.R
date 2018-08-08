@@ -6,7 +6,7 @@
 
 test_that("Basic run can go", {
   utils::data("cichlid")
-  result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, confidence.points=100, max.steps=2, control=list(reltol=1e-1))
+  result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, confidence.points=100, max.steps=2, control=list(reltol=1e-1, trace=6))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 10)
 })
@@ -14,7 +14,7 @@ test_that("Basic run can go", {
 test_that("Simulation works", {
   network <- SimulateNetwork(ntax=5, nhybridizations=2)
   tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
-  result <- BMhyb(phy.graph=network, traits=tips, confidence.points=100, max.steps=2,  control=list(reltol=1e-1))
+  result <- BMhyb(phy.graph=network, traits=tips, confidence.points=100, max.steps=2,  control=list(reltol=1e-1, trace=6))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 2)
   expect_equal(nrow(result$bad.region) + nrow(result$good.region), 100)
