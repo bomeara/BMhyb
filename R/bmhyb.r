@@ -1095,15 +1095,15 @@ ComputeConfidenceIntervals <- function(par, fn, traits, desired.delta = 2, n.poi
     return(results)
 }
 
-GenerateRandomValues <- function(data, parameters, lower, upper) {
-    new.vals <- c(-Inf, Inf)
-    while(any(new.vals < lower) | any(new.vals>upper)) {
-        new.vals <- c(stats::rexp(1,10), stats::runif(1, min=min(data), max=max(data)), stats::rexp(1,1), stats::rexp(1,10), stats::rexp(1,10))
-        names(new.vals) <- GenerateParamLabels()
-        new.vals <- new.vals[names(parameters)]
-    }
-    return(new.vals)
-}
+# GenerateRandomValues <- function(data, parameters, lower, upper) {
+#     new.vals <- c(-Inf, Inf)
+#     while(any(new.vals < lower) | any(new.vals>upper)) {
+#         new.vals <- c(stats::rexp(1,10), stats::runif(1, min=min(data), max=max(data)), stats::rexp(1,1), stats::rexp(1,10), stats::rexp(1,10))
+#         names(new.vals) <- GenerateParamLabels()
+#         new.vals <- new.vals[names(parameters)]
+#     }
+#     return(new.vals)
+# }
 
 GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, examined.max, examined.min) {
     if(is.null(lower)) {
@@ -1138,21 +1138,21 @@ GenerateValues <- function(par, lower, upper, max.tries=100, expand.prob=0, exam
     return(new.vals)
 }
 
-GetClade <- function(phy, clade.size) {
-    nodes <- phy$edge[,1]
-    subtrees <- lapply(nodes, ape::extract.clade, phy=phy)
-    counts <- sapply(subtrees, ape::Ntip)
-    matches<-subtrees[which(counts==clade.size)]
-    if(length(matches)==0) {
-        return(NA)
-    }
-    lucky <- matches[sample.int(length(matches),1)][[1]]
-    return(phytools::findMRCA(phy, tips=lucky$tip.label, type="node"))
-}
-
-GetAncestor <- function(phy, node) {
-    return(phy$edge[which(phy$edge[,2]==node),1])
-}
+# GetClade <- function(phy, clade.size) {
+#     nodes <- phy$edge[,1]
+#     subtrees <- lapply(nodes, ape::extract.clade, phy=phy)
+#     counts <- sapply(subtrees, ape::Ntip)
+#     matches<-subtrees[which(counts==clade.size)]
+#     if(length(matches)==0) {
+#         return(NA)
+#     }
+#     lucky <- matches[sample.int(length(matches),1)][[1]]
+#     return(phytools::findMRCA(phy, tips=lucky$tip.label, type="node"))
+# }
+#
+# GetAncestor <- function(phy, node) {
+#     return(phy$edge[which(phy$edge[,2]==node),1])
+# }
 
 
 # AttemptDeletionFix <- function(phy, flow, params=c(1,0,0.1, 0, 0), m.vector = c(1,2)) {
@@ -1245,11 +1245,11 @@ RenumberPhygraph <- function(phy.graph) {
     return(new.phy.graph)
 }
 
-PruneDonorsRecipientsFromVCV <- function(VCV) {
-  VCV <- VCV[!grepl("donor_", rownames(VCV)), !grepl("donor_", colnames(VCV))]
-  VCV <- VCV[!grepl("recipient_", rownames(VCV)), !grepl("recipient_", colnames(VCV))]
-  return(VCV)
-}
+# PruneDonorsRecipientsFromVCV <- function(VCV) {
+#   VCV <- VCV[!grepl("donor_", rownames(VCV)), !grepl("donor_", colnames(VCV))]
+#   VCV <- VCV[!grepl("recipient_", rownames(VCV)), !grepl("recipient_", colnames(VCV))]
+#   return(VCV)
+# }
 
 PruneRecipientsFromPhyGraph <- function(phy.graph) {
   new.phy.graph <- phy.graph
@@ -1274,43 +1274,43 @@ PruneRecipientsFromPhyGraph <- function(phy.graph) {
   }
   return(new.phy.graph)
 }
-
-RemoveZeroTerminalsPhygraph <- function(phy.graph) {
-    new.phy.graph <- phy.graph
-    terminal.nodes <- sequence(ape::Ntip(phy.graph)) #this is so as we delete taxa we don't lose track of which ones we've examined
-    for (terminal.index in sequence(ape::Ntip(phy.graph))) {
-        if(new.phy.graph$edge.length[which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index])]==0) {
-            ancestral.node <- new.phy.graph$edge[which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index]),1]
-            new.phy.graph$reticulation[which(new.phy.graph$reticulation==terminal.nodes[terminal.index])] <- ancestral.node
-            new.phy.graph$tip.label <- new.phy.graph$tip.label[-terminal.nodes[terminal.index]] #delete from tips
-            new.phy.graph$edge.length <- new.phy.graph$edge.length[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index])] # and from brlen
-            new.phy.graph$edge <- new.phy.graph$edge[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index]),] #delete from edges
-
-            #renumber
-            new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] - 1
-            new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] - 1
-
-            terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] <- terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] - 1
-        }
-    }
-    return(new.phy.graph)
-}
-
-ReorderPhygraph <- function(phy.graph, order="cladewise") {
-    new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="pruning",index.only=TRUE) #doing this b/c if just do default cladewise ape doesn't actually reorder
-    phy.graph$edge <- phy.graph$edge[new.order,]
-    phy.graph$edge.length <- phy.graph$edge[new.order]
-
-    new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="post",index.only=TRUE)
-    phy.graph$edge <- phy.graph$edge[new.order,]
-    phy.graph$edge.length <- phy.graph$edge[new.order]
-
-    new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order=order,index.only=TRUE)
-    phy.graph$edge <- phy.graph$edge[new.order,]
-    phy.graph$edge.length <- phy.graph$edge[new.order]
-
-    return(phy.graph)
-}
+#
+# RemoveZeroTerminalsPhygraph <- function(phy.graph) {
+#     new.phy.graph <- phy.graph
+#     terminal.nodes <- sequence(ape::Ntip(phy.graph)) #this is so as we delete taxa we don't lose track of which ones we've examined
+#     for (terminal.index in sequence(ape::Ntip(phy.graph))) {
+#         if(new.phy.graph$edge.length[which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index])]==0) {
+#             ancestral.node <- new.phy.graph$edge[which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index]),1]
+#             new.phy.graph$reticulation[which(new.phy.graph$reticulation==terminal.nodes[terminal.index])] <- ancestral.node
+#             new.phy.graph$tip.label <- new.phy.graph$tip.label[-terminal.nodes[terminal.index]] #delete from tips
+#             new.phy.graph$edge.length <- new.phy.graph$edge.length[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index])] # and from brlen
+#             new.phy.graph$edge <- new.phy.graph$edge[-which(new.phy.graph$edge[,2]==terminal.nodes[terminal.index]),] #delete from edges
+#
+#             #renumber
+#             new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] <- new.phy.graph$edge[which(new.phy.graph$edge>terminal.nodes[terminal.index])] - 1
+#             new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] <- new.phy.graph$reticulation[which(new.phy.graph$reticulation>terminal.nodes[terminal.index])] - 1
+#
+#             terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] <- terminal.nodes[which(terminal.nodes>terminal.nodes[terminal.index])] - 1
+#         }
+#     }
+#     return(new.phy.graph)
+# }
+#
+# ReorderPhygraph <- function(phy.graph, order="cladewise") {
+#     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="pruning",index.only=TRUE) #doing this b/c if just do default cladewise ape doesn't actually reorder
+#     phy.graph$edge <- phy.graph$edge[new.order,]
+#     phy.graph$edge.length <- phy.graph$edge[new.order]
+#
+#     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order="post",index.only=TRUE)
+#     phy.graph$edge <- phy.graph$edge[new.order,]
+#     phy.graph$edge.length <- phy.graph$edge[new.order]
+#
+#     new.order <- ape::reorder.phylo(ape::as.phylo(phy.graph), order=order,index.only=TRUE)
+#     phy.graph$edge <- phy.graph$edge[new.order,]
+#     phy.graph$edge.length <- phy.graph$edge[new.order]
+#
+#     return(phy.graph)
+# }
 
 #' Convert phylo object to evonet
 #'
@@ -1362,12 +1362,17 @@ AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NUL
     recipient.node <- which(phy.graph$tip.label==to.clade)
   }
   donor.height.from.root <- NA
+
+  donor.node.anc <- phy.graph$edge[which(phy.graph$edge[,2]==donor.node),1]
+  recipient.node.anc <- phy.graph$edge[which(phy.graph$edge[,2]==recipient.node),1]
+
+
   if(!is.null(time.from.root)) {
     donor.height.from.root <- time.from.root
   } else if (!is.null(time.from.tip)) {
     donor.height.from.root <- max(ape::vcv(phy.graph)) - time.from.tip
   } else {
-    donor.height.from.root <- max(c(heights[donor.node], heights[recipient.node]))
+    donor.height.from.root <- max(c(heights[donor.node.anc], heights[recipient.node.anc]))
   }
   recipient.height.from.root <- donor.height.from.root + ghost.length
   new.donor <- ape::Ntip(phy.graph) + 1
@@ -1684,15 +1689,15 @@ LumpIntoClades <- function(phy, flow) {
     return(data.frame(donor.clades = donor.clades, recipient.clades=recipient.clades, gamma=gamma.clades, time.from.root.donor=time.from.root.donor.clades, time.from.root.recipient = time.from.root.recipient.clades, stringsAsFactors=FALSE))
 }
 
-UnlumpIntoTaxa <- function(lumped.flow) {
-    flow <- data.frame()
-    for (event.index in sequence(nrow(lumped.flow))) {
-        donor.taxa <- strsplit(lumped.flow$donor.clades[event.index], ",")[[1]]
-        recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
-        flow <- rbind(flow, expand.grid(donor=donor.taxa, recipient=recipient.taxa, gamma=lumped.flow$gamma[event.index], time.from.root.donor = lumped.flow$time.from.root.donor[event.index], time.from.root.recipient =  lumped.flow$time.from.root.recipient[event.index], event=event.index))
-    }
-    return(flow)
-}
+# UnlumpIntoTaxa <- function(lumped.flow) {
+#     flow <- data.frame()
+#     for (event.index in sequence(nrow(lumped.flow))) {
+#         donor.taxa <- strsplit(lumped.flow$donor.clades[event.index], ",")[[1]]
+#         recipient.taxa <- strsplit(lumped.flow$recipient.clades[event.index], ",")[[1]]
+#         flow <- rbind(flow, expand.grid(donor=donor.taxa, recipient=recipient.taxa, gamma=lumped.flow$gamma[event.index], time.from.root.donor = lumped.flow$time.from.root.donor[event.index], time.from.root.recipient =  lumped.flow$time.from.root.recipient[event.index], event=event.index))
+#     }
+#     return(flow)
+# }
 
 # AttachHybridsToDonor <- function(phy, flow, suffix="_DUPLICATE") {
 #     flow.clades <- LumpIntoClades(phy, flow)
