@@ -13,7 +13,7 @@
 #' @format A list with two items:
 #' \describe{
 #'   \item{phy.graph}{the phylogenetic network in ape::evonet format}
-#'   \item{traits}{a vector of trait data}
+#'   \item{trait}{a vector of trait data}
 #' }
 "nicotiana"
 
@@ -37,6 +37,7 @@
 #' @format A list with two items:
 #' \describe{
 #'   \item{phy.graph}{the phylogenetic network in ape::evonet format}
-#'   \item{traits_and SE}{a data.frame of standard length and estimates of standard error}
+#'   \item{trait}{a vector of trait data}
+#'   \item{final.se}{a vector of standard error}
 #' }
 "cichlid"

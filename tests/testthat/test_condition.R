@@ -6,9 +6,7 @@
 
 test_that("Basic run can go", {
   utils::data("cichlid")
-  traits.only <- cichlid$traits_and_SE$trait # TODO change this when have new object
-  names(traits.only) <- rownames(cichlid$traits_and_SE)
-  result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only, confidence.points=100, max.steps=2, control=list(reltol=1e-1))
+  result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, confidence.points=100, max.steps=2, control=list(reltol=1e-1))
   expect_equal(class(result), "BMhybResult")
   expect_gte(result$best$NegLogLik, 10)
 })

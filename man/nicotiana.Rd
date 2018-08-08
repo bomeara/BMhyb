@@ -7,7 +7,7 @@
 \format{A list with two items:
 \describe{
   \item{phy.graph}{the phylogenetic network in ape::evonet format}
-  \item{traits}{a vector of trait data}
+  \item{trait}{a vector of trait data}
 }}
 \usage{
 nicotiana
