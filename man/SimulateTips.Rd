@@ -5,7 +5,8 @@
 \title{Simulate trait data}
 \usage{
 SimulateTips(phy.graph, sigma.sq = 1, mu = 0, bt = 1, vh = 0,
-  SE = 0, measurement.error = 0, gamma = 0.5)
+  SE = 0, measurement.error = 0, gamma = 0.5,
+  exclude.donors.recipients = TRUE)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
@@ -23,6 +24,8 @@ SimulateTips(phy.graph, sigma.sq = 1, mu = 0, bt = 1, vh = 0,
 \item{measurement.error}{Uncertainty at the tips, especially if it varies between species}
 
 \item{gamma}{In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent}
+
+\item{exclude.donors.recipients}{If TRUE, do not generate for any donors or recipient placeholder taxa}
 }
 \value{
 A vector of trait values

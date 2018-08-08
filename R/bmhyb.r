@@ -1400,16 +1400,21 @@ AddHybridization <- function(phy.graph, from.clade, to.clade, time.from.root=NUL
 #' @param SE Uniform uncertainty at the tips
 #' @param measurement.error Uncertainty at the tips, especially if it varies between species
 #' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
+#' @param exclude.donors.recipients If TRUE, do not generate for any donors or recipient placeholder taxa
 #' @return A vector of trait values
 #' @export
 #' @examples
 #' network <- SimulateNetwork(ntax=5, nhybridizations=2)
 #' tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
-SimulateTips <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
+SimulateTips <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5, exclude.donors.recipients=TRUE) {
   phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
   means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
   V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
   tips <- MASS::mvrnorm(1, mu=means.modified, Sigma=V.modified, tol=1e-100)
+  if(exclude.donors.recipients) {
+    tips <- tips[!grepl("donor_", names(tips))]
+    tips <- tips[!grepl("recipient_", names(tips))]
+  }
   return(tips)
 }
 

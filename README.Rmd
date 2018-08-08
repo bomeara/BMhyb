@@ -65,7 +65,7 @@ Uncertainty is often substantial. Akaike weights are an estimate in the uncertai
 
 Here is a sample run. It generates `BMhybResult` class object. Simply plotting this object calls a dedicated function.
 
-```{r cichlid_run, echo=FALSE}
+```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 utils::data("cichlid")
 result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, measurement.error=cichlid$final.se, free.parameter.names = c("sigma.sq", "mu", "bt"), confidence.points=1000)
 plot(result)
