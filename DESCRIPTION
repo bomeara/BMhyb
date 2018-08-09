@@ -1,6 +1,6 @@
 Package: BMhyb
-Version: 2.0.2
-Date: 2018-08-06
+Version: 2.0.3
+Date: 2018-08-09
 Type: Package
 Title: PCM for Hybridization
 Author: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu> and Brian C. O'Meara
@@ -16,7 +16,6 @@ Imports:
     geiger,
     ape,
     TreeSim,
-    phylobase,
     mvtnorm,
     methods,
     lhs,
