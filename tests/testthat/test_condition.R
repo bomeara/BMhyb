@@ -12,6 +12,19 @@ test_that("Basic run can go", {
   expect_gte(result$best$NegLogLik, 10)
 })
 
+test_that("Likelihood of BM works", {
+  utils::data("nicotiana")
+  nicotiana$phy.graph$edge.length[which(nicotiana$phy.graph$edge.length<0)] <- 0
+  phy <- nicotiana$phy.graph
+  class(phy) <- "phylo"
+  phy$reticulation <- NULL
+  p2 <- nicotiana$phy.graph
+  p2$reticulation <- p2$reticulation[-sequence(nrow(p2$reticulation)),]
+  result_geiger <- geiger::fitContinuous(phy, nicotiana$trait, model="BM", bounds=c(1,1))
+  result_BMhyb <- BMhyb:::ComputeLikelihood(c(sigma.sq=result_geiger$opt$sigsq, mu=result_geiger$opt$z0), phy.graph=p2, traits=nicotiana$trait)
+  expect_equal(-result_geiger$opt$lnL, result_BMhyb, tolerance = .01)
+})
+
 test_that("Simulation works", {
   network <- SimulateNetwork(ntax=5, nhybridizations=2)
   tips <- SimulateTips(network, mu=1.1, bt=3, vh=1.1, SE=1)
@@ -96,6 +109,7 @@ test_that("Issue 15 resolved", {
   VCV <- ComputeVCV(phy.graph)
   expect_equal(VCV['R', 'R'], 0.7)
 })
+
 
 # test_that("ConditionBadCichlid", {
 #   utils::data("cichlid")

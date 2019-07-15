@@ -1245,11 +1245,17 @@ RenumberPhygraph <- function(phy.graph) {
     return(new.phy.graph)
 }
 
-# PruneDonorsRecipientsFromVCV <- function(VCV) {
-#   VCV <- VCV[!grepl("donor_", rownames(VCV)), !grepl("donor_", colnames(VCV))]
-#   VCV <- VCV[!grepl("recipient_", rownames(VCV)), !grepl("recipient_", colnames(VCV))]
-#   return(VCV)
-# }
+PruneDonorsRecipientsFromVCV <- function(VCV) {
+  VCV <- VCV[!grepl("donor_", rownames(VCV)), !grepl("donor_", colnames(VCV))]
+  VCV <- VCV[!grepl("recipient_", rownames(VCV)), !grepl("recipient_", colnames(VCV))]
+  return(VCV)
+}
+
+PruneDonorsRecipientsFromMeans <- function(x) {
+  x <- x[!grepl("donor_", names(x))]
+  x <- x[!grepl("recipient_", names(x))]
+  return(x)
+}
 
 PruneRecipientsFromPhyGraph <- function(phy.graph) {
   new.phy.graph <- phy.graph
@@ -2110,7 +2116,7 @@ ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurem
     return(means.vector)
 }
 
-ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
     badval<-(0.5)*.Machine$double.xmax
     sigma.sq=1
     mu=0
@@ -2123,6 +2129,50 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
     phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
     means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
     V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+
+    if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
+        return(badval)
+    }
+
+
+    V.chol <- chol(PruneDonorsRecipientsFromVCV(V.modified))
+
+    traits <- traits[match(rownames(V.chol), names(traits))] #reorder so traits in same order as VCV and means
+  #  traits <-
+#    try(NegLogML_raw <- ((ncol(V.modified)/2)*log(2*pi)+(1/2)*t(traits[!is.na(names(traits))]-(means.modified))%*%corpcor::pseudoinverse(V.modified)%*%(traits[!is.na(names(traits))]-(means.modified)) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus)[1,1])
+#    print(NegLogML_raw)
+
+
+    traits.modified <- solve((V.chol)) %*% (traits-means.modified)
+
+    #PruneDonorsRecipientsFromMeans(means.modified)
+    #means.modified <- solve((V.chol)) %*% PruneDonorsRecipientsFromMeans(means.modified)
+
+   #print(solve(t(V.chol))%*%t(V.chol) )
+
+
+    NegLogML <- NULL
+    #try(NegLogML <- (ncol(V.chol)/2)*log(2*pi)+(1/2)*t(traits.modified-means.modified)%*%diag(ncol(V.chol))%*%(traits.modified-means.modified), silent=TRUE)
+    try(NegLogML <- -(sum(dnorm(traits.modified, log=TRUE))))
+    if(is.null(NegLogML)) {
+        NegLogML <- badval
+    }
+    return(NegLogML[1])
+}
+
+ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+    badval<-(0.5)*.Machine$double.xmax
+    sigma.sq=1
+    mu=0
+    bt=1
+    vh=0
+    SE=0
+    for(i in seq_along(parameters)){
+        assign(names(parameters)[i],parameters[i])
+    }
+    phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
+    means.modified <- PruneDonorsRecipientsFromMeans(ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma))
+    V.modified <- PruneDonorsRecipientsFromVCV(ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma))
 
     if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
         return(badval)
@@ -2163,6 +2213,8 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
         V.modified <- V.modified[-which(rownames(V.modified) %in% prune.taxa), -which(colnames(V.modified) %in% prune.taxa)]
         means.modified <- means.modified[-which(names(means.modified) %in% prune.taxa)]
     }
+
+
 
     NegLogML <- NULL
     try(NegLogML <- ((ncol(V.modified)/2)*log(2*pi)+(1/2)*t(traits-means.modified)%*%corpcor::pseudoinverse(V.modified)%*%(traits-means.modified) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus + likelihood.penalty)[1,1], silent=TRUE)
