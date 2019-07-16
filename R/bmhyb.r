@@ -2244,7 +2244,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @param confidence.lnl For figuring out the confidence interval, how wide you want the confidence region to be in lnL space
 #' @param control List of options to pass to optim. ?optim for help.
 #'
-#' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
+#' @return Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in), and free.parameter.names.
 #'
 #' @examples
 #' \dontrun{
@@ -2266,7 +2266,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 
     interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
     interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
-    result.object <- list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out, phy.graph=phy.graph, traits=traits)
+    result.object <- list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out, phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names)
     class(result.object) <- "BMhybResult"
     return(result.object)
 }

@@ -39,7 +39,7 @@ BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE",
 \item{control}{List of options to pass to optim. ?optim for help.}
 }
 \value{
-Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in).
+Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in), and free.parameter.names.
 }
 \description{
 Fits a BMhyb model to your data.
