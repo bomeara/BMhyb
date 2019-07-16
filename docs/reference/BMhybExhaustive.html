@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Optimize model — BMhyb • BMhyb</title>
+<title>Optimize model — BMhybExhaustive • BMhyb</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Optimize model — BMhyb" />
+<meta property="og:title" content="Optimize model — BMhybExhaustive" />
 
-<meta property="og:description" content="Fits a BMhyb model to your data." />
+<meta property="og:description" content="Fits all possible BMhyb models to your data." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -101,21 +101,16 @@
     <div class="page-header">
     <h1>Optimize model</h1>
     <small class="dont-index">Source: <a href='https://github.com/bomeara/BMhyb/blob/master/R/bmhyb.r'><code>R/bmhyb.r</code></a></small>
-    <div class="hidden name"><code>BMhyb.Rd</code></div>
+    <div class="hidden name"><code>BMhybExhaustive.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Fits a BMhyb model to your data.</p>
+    <p>Fits all possible BMhyb models to your data.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>BMhyb</span>(<span class='no'>phy.graph</span>, <span class='no'>traits</span>, <span class='kw'>free.parameter.names</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"sigma.sq"</span>, <span class='st'>"mu"</span>, <span class='st'>"SE"</span>,
-  <span class='st'>"bt"</span>, <span class='st'>"vh"</span>), <span class='kw'>confidence.points</span> <span class='kw'>=</span> <span class='fl'>5000</span>, <span class='kw'>measurement.error</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>gamma</span> <span class='kw'>=</span> <span class='fl'>0.5</span>, <span class='kw'>do.Higham.correction</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>do.Brissette.correction</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>likelihood.precision</span> <span class='kw'>=</span> <span class='fl'>0.01</span>, <span class='kw'>max.steps</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>confidence.lnl</span> <span class='kw'>=</span> <span class='fl'>2</span>,
-  <span class='kw'>control</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>reltol</span> <span class='kw'>=</span> <span class='fl'>0.001</span>))</pre>
+    <pre class="usage"><span class='fu'>BMhybExhaustive</span>(<span class='no'>phy.graph</span>, <span class='no'>traits</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -129,54 +124,14 @@
       <td><p>A vector of trait values, with names equal to the names of taxa on the phylogeny</p></td>
     </tr>
     <tr>
-      <th>free.parameter.names</th>
-      <td><p>What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh</p></td>
-    </tr>
-    <tr>
-      <th>confidence.points</th>
-      <td><p>How many points to use to estimate parameter uncertainty</p></td>
-    </tr>
-    <tr>
-      <th>measurement.error</th>
-      <td><p>How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa</p></td>
-    </tr>
-    <tr>
-      <th>gamma</th>
-      <td><p>In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent</p></td>
-    </tr>
-    <tr>
-      <th>do.Higham.correction</th>
-      <td><p>Variance-covariance matrices for this model are sometimes poorly conditioned; this is a hack to reduce the impact of that</p></td>
-    </tr>
-    <tr>
-      <th>do.Brissette.correction</th>
-      <td><p>Applies method of Brissette et al. 2007 to also try to fix matrix condition</p></td>
-    </tr>
-    <tr>
-      <th>verbose</th>
-      <td><p>If TRUE, BMhyb will chat about its progress</p></td>
-    </tr>
-    <tr>
-      <th>likelihood.precision</th>
-      <td><p>When optimizing, how much of a lnL improvement is required to restart optimization between starts</p></td>
-    </tr>
-    <tr>
-      <th>max.steps</th>
-      <td><p>The number of restarts without improvement it will attempt</p></td>
-    </tr>
-    <tr>
-      <th>confidence.lnl</th>
-      <td><p>For figuring out the confidence interval, how wide you want the confidence region to be in lnL space</p></td>
-    </tr>
-    <tr>
-      <th>control</th>
-      <td><p>List of options to pass to optim. ?optim for help.</p></td>
+      <th>...</th>
+      <td><p>All other parameters to pass to BMhyb (see ?BMhyb)</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>Returns an object of class BMhybResult which contains best (a data.frame of the solution), good.region (data.frame of the points making up those in the confidence.lnl region), bad.region (all the other points sampled), phy.graph (same as what you put in), traits (same as what you put in), and free.parameter.names.</p>
+    <p>Returns a list of objects of class BMhybResult (results) and a summary data frame (summary.df).</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
@@ -188,7 +143,8 @@
 <span class='kw pkg'>utils</span><span class='kw ns'>::</span><span class='fu'><a href='https://www.rdocumentation.org/packages/utils/topics/data'>data</a></span>(<span class='st'>"cichlid"</span>)
 <span class='no'>traits.only</span> <span class='kw'>&lt;-</span> <span class='no'>cichlid</span>$<span class='no'>traits_and_SE</span>$<span class='no'>trait</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/names'>names</a></span>(<span class='no'>traits.only</span>) <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/colnames'>rownames</a></span>(<span class='no'>cichlid</span>$<span class='no'>traits_and_SE</span>)
-<span class='no'>result</span> <span class='kw'>&lt;-</span> <span class='fu'>BMhyb</span>(<span class='kw'>phy.graph</span><span class='kw'>=</span><span class='no'>cichlid</span>$<span class='no'>phy.graph</span>, <span class='kw'>traits</span><span class='kw'>=</span><span class='no'>traits.only</span>)
+<span class='no'>all.models</span> <span class='kw'>&lt;-</span> <span class='fu'>BMhybExhaustive</span>(<span class='kw'>phy.graph</span><span class='kw'>=</span><span class='no'>cichlid</span>$<span class='no'>phy.graph</span>, <span class='kw'>traits</span><span class='kw'>=</span><span class='no'>traits.only</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/print'>print</a></span>(<span class='no'>all.models</span>$<span class='no'>summary.df</span>)
 <span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
