@@ -9,6 +9,8 @@ Status](https://travis-ci.org/bomeara/BMhyb.svg)](https://travis-ci.org/bomeara/
 <img class="badge" src="https://www.r-pkg.org/badges/version/BMhyb">
 <img class="badge" src="http://cranlogs.r-pkg.org/badges/grand-total/BMhyb">
 
+Please see our help page at https://bomeara.github.io/BMhyb/.
+
 While we often think of evolution as happening on a bifurcating
 evolutionary tree, in reality gene flow between distinct lineages is
 common. Until recently, there was little one could do about it. Our

@@ -19,8 +19,6 @@ library(kableExtra)
 
 [![Build Status](https://travis-ci.org/bomeara/BMhyb.svg)](https://travis-ci.org/bomeara/BMhyb) [![codecov](https://codecov.io/gh/bomeara/BMhyb/branch/master/graph/badge.svg)](https://codecov.io/gh/bomeara/BMhyb)  <img class="badge" src="https://www.r-pkg.org/badges/version/BMhyb"> <img class="badge" src="http://cranlogs.r-pkg.org/badges/grand-total/BMhyb">
 
-Please see our help page at https://bomeara.github.io/BMhyb/.
-
 
 While we often think of evolution as happening on a bifurcating evolutionary tree, in reality gene flow between distinct lineages is common. Until recently, there was little one could do about it. Our BMhyb package allows for fitting models of evolution to phylogenetic networks (also see [Bastide et al. 2018](https://doi.org/10.1093/sysbio/syy033) for a similar approach, which is implemented in the Julia package [PhyloNetworks](https://github.com/crsl4/PhyloNetworks.jl)). We have several models implemented that are restrictions of a general model. In the most general case, we assume Brownian motion of a trait on a phylogenetic network. Sometimes, lineages come together to form hybrids. We typically assume the hybrids receive equal input from both parents, but this can be altered. At the hybridization event, several things can happen: there could be increased variation (due to transgressive segregation, as in sunflowers) and/or there can be a shift in mean (as in ligers and tigons).
 
