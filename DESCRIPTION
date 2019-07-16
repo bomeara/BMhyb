@@ -1,5 +1,5 @@
 Package: BMhyb
-Version: 2.0.5
+Version: 2.0.6
 Date: 2019-07-16
 Type: Package
 Title: PCM for Hybridization
@@ -27,7 +27,8 @@ Imports:
     grDevices,
     graphics,
     stats,
-    phytools
+    phytools,
+    dplyr
 Depends: R (>= 2.10)
 Suggests: testthat
 Description: The BMhyb package analyzes the phenotypic evolution of species

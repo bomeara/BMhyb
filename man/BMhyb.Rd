@@ -6,7 +6,7 @@
 \usage{
 BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE",
   "bt", "vh"), confidence.points = 5000, measurement.error = 0,
-  gamma = 0.5, do.Higham.correction = TRUE,
+  gamma = 0.5, do.Higham.correction = FALSE,
   do.Brissette.correction = FALSE, verbose = TRUE,
   likelihood.precision = 0.01, max.steps = 10, confidence.lnl = 2,
   control = list(reltol = 0.001))

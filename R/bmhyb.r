@@ -2254,7 +2254,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
 #' }
 #' @export
-BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
+BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
     if(verbose) {
       print("Now starting analysis")
     }
@@ -2269,6 +2269,47 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
     result.object <- list(best=local.df, good.region=interval.results.in, bad.region=interval.results.out, phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameter.names)
     class(result.object) <- "BMhybResult"
     return(result.object)
+}
+
+#' Optimize model
+#'
+#' Fits all possible BMhyb models to your data.
+#'
+#' This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
+#'
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
+#' @param free.parameter.names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh. It will try all reasonable subsets of these (will include sigma.sq and mu always).
+#' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
+#'
+#' @return Returns a list of objects of class BMhybResult (results) and a summary data frame (summary.df).
+#'
+#' @examples
+#' \dontrun{
+#' utils::data("cichlid")
+#' traits.only <- cichlid$traits_and_SE$trait
+#' names(traits.only) <- rownames(cichlid$traits_and_SE)
+#' all.models <- BMhybExhaustive(phy.graph=cichlid$phy.graph, traits=traits.only)
+#' print(all.models$summary.df)
+#' }
+#' @export
+BMhybExhaustive <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), ...) {
+  results <- list()
+  summary.df <- data.frame()
+
+  for (model.index in sequence(nrow(free.parameter.matrix))) {
+    free.parameter.row <- free.parameter.matrix[model.index,]
+    free.parameters <- colnames(free.parameter.row)[unlist(free.parameter.row)]
+
+    result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, ...)
+    results[[model.index]] <- result
+    summary.df <- dplyr::rbind.fill(summary.df, result$best)
+  }
+
+  summary.df$deltaAICc <- summary.df$AICc - min(summary.df$AICc)
+  rel.lik <- exp(-0.5* summary.df$deltaAICc)
+  summary.df$AkaikeWeight <- rel.lik / sum(rel.lik)
+  return(list(results=results, summary.df=summary.df))
 }
 
 #' Plot BMhyb result
