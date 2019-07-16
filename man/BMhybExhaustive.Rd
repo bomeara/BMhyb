@@ -4,15 +4,12 @@
 \alias{BMhybExhaustive}
 \title{Optimize model}
 \usage{
-BMhybExhaustive(phy.graph, traits, free.parameter.names = c("sigma.sq",
-  "mu", "SE", "bt", "vh"), ...)
+BMhybExhaustive(phy.graph, traits, ...)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
 
 \item{traits}{A vector of trait values, with names equal to the names of taxa on the phylogeny}
-
-\item{free.parameter.names}{What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh. It will try all reasonable subsets of these (will include sigma.sq and mu always).}
 
 \item{...}{All other parameters to pass to BMhyb (see ?BMhyb)}
 }

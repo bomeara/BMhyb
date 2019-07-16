@@ -2279,7 +2279,6 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
-#' @param free.parameter.names What parameters you want to optimize rather than use defaults; options are sigma.sq, mu, SE, bt, and vh. It will try all reasonable subsets of these (will include sigma.sq and mu always).
 #' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
 #'
 #' @return Returns a list of objects of class BMhybResult (results) and a summary data frame (summary.df).
@@ -2293,9 +2292,11 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #' print(all.models$summary.df)
 #' }
 #' @export
-BMhybExhaustive <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), ...) {
+BMhybExhaustive <- function(phy.graph, traits, ...) {
   results <- list()
   summary.df <- data.frame()
+  free.parameter.matrix <- expand.grid(mu=TRUE, sigma.sq=TRUE, SE=c(TRUE, FALSE), bt=c(TRUE, FALSE), vh=c(TRUE, FALSE))
+
 
   for (model.index in sequence(nrow(free.parameter.matrix))) {
     free.parameter.row <- free.parameter.matrix[model.index,]
