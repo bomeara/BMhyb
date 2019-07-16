@@ -2304,7 +2304,7 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
 
     result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, ...)
     results[[model.index]] <- result
-    summary.df <- dplyr::rbind.fill(summary.df, result$best)
+    summary.df <- plyr::rbind.fill(summary.df, result$best)
   }
 
   summary.df$deltaAICc <- summary.df$AICc - min(summary.df$AICc)
