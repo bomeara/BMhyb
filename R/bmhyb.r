@@ -2160,6 +2160,12 @@ ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measuremen
     return(NegLogML[1])
 }
 
+TryComputeLikelihood <- function(...) {
+  NegLogL<-(0.5)*.Machine$double.xmax
+  try(NegLogL <- ComputeLikelihood(...))
+  return(NegLogL)
+}
+
 ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
     badval<-(0.5)*.Machine$double.xmax
     sigma.sq=1
@@ -2262,7 +2268,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 
     local.df <- data.frame(t(best.results$par), AICc=ComputeAICc(n=ape::Ntip(phy.graph),k=length(best.results$par), LogLik=best.results$value),  NegLogLik=best.results$value, K=length(best.results$par))
 
-    interval.results <- ComputeConfidenceIntervals(best.results$par, fn=ComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points,  best.lnl = best.results$value, likelihood.precision=likelihood.precision,  measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
+    interval.results <- ComputeConfidenceIntervals(best.results$par, fn=TryComputeLikelihood, phy.graph=phy.graph, traits=traits, confidence.points=confidence.points,  best.lnl = best.results$value, likelihood.precision=likelihood.precision,  measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction )
 
     interval.results.in <- interval.results[which(interval.results[,1]-min(interval.results[,1])<=confidence.lnl),]
     interval.results.out <- interval.results[which(interval.results[,1]-min(interval.results[,1])>confidence.lnl),]
@@ -2357,7 +2363,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
       print("Starting with initial values")
       print(starting.values)
     }
-    best.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
+    best.run <- stats::optim(par=starting.values, fn=TryComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
     attempts <- 1
     step.count <- 1
     while(best.run$convergence!=0 && attempts < 10){#want to get a convergence code 0
@@ -2368,7 +2374,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
         }
         new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
-        best.run <- stats::optim(par=new.starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
+        best.run <- stats::optim(par=new.starting.values, fn=TryComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
         attempts <- attempts+1
     }
     if(verbose) {
@@ -2384,7 +2390,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
     while(times.without.improvement<max.steps) {
         times.without.improvement <- times.without.improvement+1
         step.count <- step.count + 1
-        new.run <- stats::optim(par=starting.values, fn=ComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
+        new.run <- stats::optim(par=starting.values, fn=TryComputeLikelihood, traits=traits, phy.graph=phy.graph, measurement.error=measurement.error, gamma=gamma, do.Higham.correction=do.Higham.correction, do.Brissette.correction=do.Brissette.correction, control=control)
         new.starting.values <- stats::runif(length(starting.values), min=starting.values - attempts*.1*starting.values, max=starting.values + attempts*.1*starting.values)
         names(new.starting.values) <- names(starting.values)
         starting.values <- new.starting.values
