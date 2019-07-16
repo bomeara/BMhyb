@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • BMhyb</title>
+<title>Compute the variance-covariance matrix — ComputeVCV • BMhyb</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,7 +30,10 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Compute the variance-covariance matrix — ComputeVCV" />
+
+<meta property="og:description" content="Creates a variance-covariance matrix for a network and parameters." />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -47,7 +50,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -94,108 +97,73 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Compute the variance-covariance matrix</h1>
+    <small class="dont-index">Source: <a href='https://github.com/bomeara/BMhyb/blob/master/R/bmhyb.r'><code>R/bmhyb.r</code></a></small>
+    <div class="hidden name"><code>ComputeVCV.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    
+    <p>Creates a variance-covariance matrix for a network and parameters.</p>
+    
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        
-        <td>
-          <p><code><a href="AddHybridization.html">AddHybridization()</a></code> </p>
-        </td>
-        <td><p>Add hybrid events to a phy.graph</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="BMhyb.html">BMhyb()</a></code> </p>
-        </td>
-        <td><p>Optimize model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="BMhybExhaustive.html">BMhybExhaustive()</a></code> </p>
-        </td>
-        <td><p>Exhaustively evaluate models</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="ComputeLikelihood.html">ComputeLikelihood()</a></code> </p>
-        </td>
-        <td><p>Compute the likelihood for a set of parameters</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="ComputeVCV.html">ComputeVCV()</a></code> </p>
-        </td>
-        <td><p>Compute the variance-covariance matrix</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="ConvertEvonetToIgraphWithNodeNumbers.html">ConvertEvonetToIgraphWithNodeNumbers()</a></code> </p>
-        </td>
-        <td><p>Convert an evonet object into igraph</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="CreateHybridlessEvonet.html">CreateHybridlessEvonet()</a></code> </p>
-        </td>
-        <td><p>Convert phylo object to evonet</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="SimulateNetwork.html">SimulateNetwork()</a></code> </p>
-        </td>
-        <td><p>Simulate a phylogenetic network</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="SimulateTips.html">SimulateTips()</a></code> </p>
-        </td>
-        <td><p>Simulate trait data</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="cichlid.html">cichlid</a></code> </p>
-        </td>
-        <td><p>Cichlid dataset</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="nicotiana.html">nicotiana</a></code> </p>
-        </td>
-        <td><p>Nicotiana dataset</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plot.BMhybResult.html">plot(<i>&lt;BMhybResult&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Plot BMhyb result</p></td>
-      </tr>
-    </tbody>
+    <pre class="usage"><span class='fu'>ComputeVCV</span>(<span class='no'>phy.graph</span>, <span class='kw'>sigma.sq</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>bt</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>vh</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>SE</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>measurement.error</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>gamma</span> <span class='kw'>=</span> <span class='fl'>0.5</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>phy.graph</th>
+      <td><p>An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)</p></td>
+    </tr>
+    <tr>
+      <th>sigma.sq</th>
+      <td><p>Value for sigma squared</p></td>
+    </tr>
+    <tr>
+      <th>mu</th>
+      <td><p>Value for state at the root</p></td>
+    </tr>
+    <tr>
+      <th>bt</th>
+      <td><p>Value for beta parameter</p></td>
+    </tr>
+    <tr>
+      <th>vh</th>
+      <td><p>Value for Vh, the variance that comes from a hybridization event</p></td>
+    </tr>
+    <tr>
+      <th>SE</th>
+      <td><p>Standard error</p></td>
+    </tr>
+    <tr>
+      <th>measurement.error</th>
+      <td><p>How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa</p></td>
+    </tr>
+    <tr>
+      <th>gamma</th>
+      <td><p>In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent</p></td>
+    </tr>
     </table>
-  </div>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>Returns the variance-covariance matrix</p>
+    
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+      <li><a href="#arguments">Arguments</a></li>
+      
+      <li><a href="#value">Value</a></li>
+          </ul>
+
   </div>
 </div>
 

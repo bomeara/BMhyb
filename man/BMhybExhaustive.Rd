@@ -2,7 +2,7 @@
 % Please edit documentation in R/bmhyb.r
 \name{BMhybExhaustive}
 \alias{BMhybExhaustive}
-\title{Optimize model}
+\title{Exhaustively evaluate models}
 \usage{
 BMhybExhaustive(phy.graph, traits, ...)
 }

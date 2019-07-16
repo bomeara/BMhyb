@@ -61,7 +61,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #We may write a utility function for dealing with this case in the future.
 #Note the use of all updates of V.modified based on V.original; we don't want to add v_h to A three different times, for example, for one migration event (so we replace the variance three times based on transformations of the original variance)
 #Note that we do not assume an ultrametric tree
-# BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds=c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+# BMhyb <- function(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds=c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, n.random.start.points=5000, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=FALSE) {
 #     preset.starting.parameters = NULL
 #     flow.problems <- CheckFlow(phy, flow)$problem.taxa
 #     if(length(flow.problems)>0) {
@@ -367,7 +367,7 @@ AkaikeWeight<-function(Delta.AICc.Array){
 #     return(list(data=data, phy=phy, flow=flow, number.of.attempts=number.of.attempts))
 # }
 
-# BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds = c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE) {
+# BMhybGrid <- function(data, phy, flow, models=c(1,2,3,4), verbose=TRUE, get.se=TRUE, plot.se=TRUE, store.sims=TRUE, precision=2, auto.adjust=FALSE, likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000, measurement.error=NULL, do.kappa.check=FALSE, number.of.proportions=101, number.of.proportions.adaptive=101, allow.restart=TRUE, lower.bounds = c(sigma.sq = 0, mu = -Inf, bt = 1e-06, vh = 0, SE = 0), upper.bounds = c(sigma.sq = 10, mu = Inf,bt = 100,vh = 100,SE = 100), badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, starting.values=NULL, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=FALSE) {
 #     flow.problems <- CheckFlow(phy, flow)$problem.taxa
 #     if(length(flow.problems)>0) {
 #         stop(paste("Sorry, the algorithm cannot work with overlapping hybridization (where any taxon has a history with more than one hybridization event leading to it). In this case, it is multiple events leading to taxon/taxa", paste(flow.problems, collapse=", "), "that are causing the issue. You can edit your flow data.frame manually; you may also use AdjustFlow to randomly delete hybridization events or taxa of hybrid origin."))
@@ -808,7 +808,7 @@ BrissetteEtAlCorrection <- function(V.modified, min.eigenvalue=1e-6, max.attempt
 # }
 
 #precision is the cutoff at which we think the estimates become unreliable due to ill conditioned matrix
-# CalculateLikelihood <- function(x, data, phy, flow, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=TRUE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
+# CalculateLikelihood <- function(x, data, phy, flow, precision=2, proportion.mix.with.diag=0, allow.extrapolation=FALSE, measurement.error, do.kappa.check=FALSE, number.of.proportions=101, lower.b=c(0, -Inf, 0.000001, 0, 0), upper.b=c(10,Inf,100,100,100), badval.if.not.positive.definite=TRUE, do.Brissette.correction=FALSE, do.Higham.correction=FALSE, do.DE.correction=FALSE, return.penalty=FALSE, ...) {
 #     badval<-(0.5)*.Machine$double.xmax
 #     bt <- 1
 #     vh <- 0
@@ -2069,6 +2069,21 @@ ComputePathPairs <- function(path) {
     return(t(result))
 }
 
+#' Compute the variance-covariance matrix
+#'
+#' Creates a variance-covariance matrix for a network and parameters.
+#'
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param sigma.sq Value for sigma squared
+#' @param mu Value for state at the root
+#' @param bt Value for beta parameter
+#' @param vh Value for Vh, the variance that comes from a hybridization event
+#' @param SE Standard error
+#' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
+#' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
+#'
+#' @return Returns the variance-covariance matrix
+#' @export
 ComputeVCV <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurement.error=0, gamma=0.5) {
     phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
     all.edges <- ScaleAllEdges(phy.graph=phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
@@ -2116,7 +2131,7 @@ ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurem
     return(means.vector)
 }
 
-ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
     badval<-(0.5)*.Machine$double.xmax
     sigma.sq=1
     mu=0
@@ -2166,7 +2181,23 @@ TryComputeLikelihood <- function(...) {
   return(NegLogL)
 }
 
-ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+#' Compute the likelihood for a set of parameters
+#'
+#' Computes likelihood for a given network, set of traits, and parameters.
+#'
+#' This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
+#'
+#' @param parameters Named vector of parameter values; expected names are sigma.sq, mu, SE, bt, and vh
+#' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
+#' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
+#' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
+#' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
+#' @param do.Higham.correction Variance-covariance matrices for this model are sometimes poorly conditioned; this is a hack to reduce the impact of that
+#' @param do.Brissette.correction Applies method of Brissette et al. 2007 to also try to fix matrix condition
+#'
+#' @return Returns the negative log likelihood
+#' @export
+ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
     badval<-(0.5)*.Machine$double.xmax
     sigma.sq=1
     mu=0
@@ -2277,7 +2308,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
     return(result.object)
 }
 
-#' Optimize model
+#' Exhaustively evaluate models
 #'
 #' Fits all possible BMhyb models to your data.
 #'
@@ -2354,7 +2385,7 @@ plot.BMhybResult <- function(x,...) {
 # }
 
 
-OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), measurement.error=0, gamma=0.5, do.Higham.correction=TRUE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, control=list()) {
+OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, control=list()) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
     starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
     starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
