@@ -2348,6 +2348,25 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
   return(list(results=results, summary.df=summary.df))
 }
 
+#' Get convex hull at a given threshold
+#'
+#' For a given delta lnL, get the convex hull (blob encircling the points) for two dimensions
+#'
+#' @param threshold What value to exclude numbers worse than
+#' @param df The data.frame
+#' @param height The variable name to use for the height threshold
+#' @param x The first variable to look at for the hull
+#' @param y The second variable to look at for the hull
+#'
+GetConvexHull <- function(threshold=2, df, height, x, y) {
+  df <- df[df[,height]<= threshold,]
+  df <- df[grDevices::chull(df[,x], df[,y]),]
+  df$x <- df[,x]
+  df$y <- df[,y]
+  df$z <- df[,height]
+  return(df)
+}
+
 #' Plot BMhyb result
 #'
 #' Shows the plot of confidence regions with MLEs indicated (red dots) or a plot of pairs of traits together. Note that for the latter plot, it converts the sampled points to an even grid with interpolation; it sets any points with likelihood worse than ten units to just ten units worse so that you can see the colors near the area of the optimum.
@@ -2369,29 +2388,67 @@ plot.BMhybResult <- function(x,style="univariate", ...) {
           graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
       }
     } else {
-      contour_plot <- function(data, x, y, x.best, y.best) {
-        # using interpolation advice from https://stackoverflow.com/questions/35018971/3d-data-with-ggplot
+      contour_plot <- function(data, x, y, x.best, y.best, breaks= c(1,2,5,10)) {
         data$delta_likelihood <- data$negloglik-min(data$negloglik)
-        im <- akima::interp(x=data[,x], y=data[,y], z=data[,"delta_likelihood"], nx = 500, ny = 500, extrap=TRUE, linear=FALSE)
-        df2 <- data.frame(expand.grid(x = im$x, y = im$y), delta_likelihood = c(im$z))
-        df2$delta_likelihood[which(df2$delta_likelihood>10)] <- 10
-        colnames(df2) <- c(x, y, "delta_likelihood")
-        return(ggplot2::ggplot(df2, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + metR::geom_contour_fill(ggplot2::aes(fill = ..level..)) +
-        ggplot2::geom_contour(color = "red", size = .5, breaks=c(2)) + ggplot2::scale_fill_gradient(low="black", high="white", breaks=sequence(12)) + ggplot2::geom_point(ggplot2::aes_string(x=x.best, y=y.best), colour="red") + theme(legend.position = "none"))
+        p <- ggplot2::ggplot(data, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + ggplot2::scale_fill_gradient(low="black", high="white", breaks=breaks)
+        #print(p)
+        breaks <- sort(breaks, decreasing=TRUE)
+        for (break_index in seq_along(breaks)) {
+          polygon_points <- GetConvexHull(threshold=breaks[break_index], df=data, height="delta_likelihood", x=x, y=y)
+          p <- p + ggplot2::geom_polygon(data=polygon_points, ggplot2::aes(x=x,y=y))
+          #print(p)
+        }
+        polygon_points <- GetConvexHull(threshold=2, df=data, height="delta_likelihood", x=x, y=y)
+        p <- p + ggplot2::geom_polygon(data=polygon_points, ggplot2::aes(x=x,y=y), color="red", fill=NA)
+        p <- p + ggplot2::theme(legend.position = "none")
+        p <- p+ ggplot2::geom_point(data=data, ggplot2::aes_string(x=x.best, y=y.best), colour="red")
+      #  print(p)
+        return(p)
       }
+      breaks <- sequence(10)
       x$par <- x$best[1:(length(x$best)-3)]
       all.results <- rbind(x$good.region, x$bad.region)
+      #all.results <- x$good.region
       plotlist <- list()
       for(i in sequence(length(x$par))) {
         for (j in sequence(length(x$par))) {
           if (i < j) {
-            plotlist[[length(plotlist)+1]] <- contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(unlist(x$par[i])[1]), unname(unlist(x$par[j])[1]))
+            plotlist[[length(plotlist)+1]] <- contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(unlist(x$par[i])[1]), unname(unlist(x$par[j])[1]), breaks=breaks)
             #print(contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(x$par[i][1,1]), unname(x$par[j][1,1])))
           }
         }
       }
       cowplot::plot_grid(plotlist=plotlist)
-      #return(cowplot::plot_grid(plotlist=plotlist))
+
+
+
+
+
+
+      # contour_plot <- function(data, x, y, x.best, y.best) {
+      #   # using interpolation advice from https://stackoverflow.com/questions/35018971/3d-data-with-ggplot
+      #   data$delta_likelihood <- data$negloglik-min(data$negloglik)
+      #   im <- akima::interp(x=data[,x], y=data[,y], z=data[,"delta_likelihood"], nx = 500, ny = 500, extrap=TRUE, linear=FALSE)
+      #   df2 <- data.frame(expand.grid(x = im$x, y = im$y), delta_likelihood = c(im$z))
+      #   df2$delta_likelihood[which(df2$delta_likelihood>10)] <- 10
+      #   colnames(df2) <- c(x, y, "delta_likelihood")
+      #   return(ggplot2::ggplot(df2, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + metR::geom_contour_fill(ggplot2::aes(fill = ..level..)) +
+      #   ggplot2::geom_contour(color = "red", size = .5, breaks=c(2)) + ggplot2::scale_fill_gradient(low="black", high="white", breaks=sequence(12)) + ggplot2::geom_point(ggplot2::aes_string(x=x.best, y=y.best), colour="red") + ggplot2::theme(legend.position = "none"))
+      # }
+      # x$par <- x$best[1:(length(x$best)-3)]
+      # all.results <- rbind(x$good.region, x$bad.region)
+      # #all.results <- x$good.region
+      # plotlist <- list()
+      # for(i in sequence(length(x$par))) {
+      #   for (j in sequence(length(x$par))) {
+      #     if (i < j) {
+      #       plotlist[[length(plotlist)+1]] <- contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(unlist(x$par[i])[1]), unname(unlist(x$par[j])[1]))
+      #       #print(contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(x$par[i][1,1]), unname(x$par[j][1,1])))
+      #     }
+      #   }
+      # }
+      # cowplot::plot_grid(plotlist=plotlist)
+      # #return(cowplot::plot_grid(plotlist=plotlist))
 
     }
 }
