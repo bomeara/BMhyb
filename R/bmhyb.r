@@ -2390,7 +2390,7 @@ plot.BMhybResult <- function(x,style="univariate", ...) {
     } else {
       contour_plot <- function(data, x, y, x.best, y.best, breaks= c(1,2,5,10)) {
         data$delta_likelihood <- data$negloglik-min(data$negloglik)
-        p <- ggplot2::ggplot(data, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + ggplot2::scale_fill_gradient(low="black", high="white", breaks=breaks)
+        p <- ggplot2::ggplot(data, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + ggplot2::scale_fill_gradient(low="gray33", high="white", breaks=breaks)
         #print(p)
         breaks <- sort(breaks, decreasing=TRUE)
         for (break_index in seq_along(breaks)) {
