@@ -14,5 +14,5 @@
 \item{...}{Other arguments to pass to plot}
 }
 \description{
-Shows the plot of confidence regions with MLEs indicated (red dots)
+Shows the plot of confidence regions with MLEs indicated (red dots) or a plot of pairs of traits together. Note that for the latter plot, it converts the sampled points to an even grid with interpolation; it sets any points with likelihood worse than ten units to just ten units worse so that you can see the colors near the area of the optimum.
 }

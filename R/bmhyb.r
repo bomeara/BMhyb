@@ -2350,7 +2350,7 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
 
 #' Plot BMhyb result
 #'
-#' Shows the plot of confidence regions with MLEs indicated (red dots)
+#' Shows the plot of confidence regions with MLEs indicated (red dots) or a plot of pairs of traits together. Note that for the latter plot, it converts the sampled points to an even grid with interpolation; it sets any points with likelihood worse than ten units to just ten units worse so that you can see the colors near the area of the optimum.
 #'
 #' @param x A BMhyb object (result of a BMhyb() call)
 #' @param style Either univariate or contour
@@ -2371,12 +2371,13 @@ plot.BMhybResult <- function(x,style="univariate", ...) {
     } else {
       contour_plot <- function(data, x, y, x.best, y.best) {
         # using interpolation advice from https://stackoverflow.com/questions/35018971/3d-data-with-ggplot
-        all.results$delta_likelihood <- all.results$negloglik-min(all.results$negloglik)
-        im <- akima::interp(x=all.results[,x], y=all.results[,y], z=all.results[,"delta_likelihood"], nx = 500, ny = 500, extrap=TRUE, linear=FALSE)
+        data$delta_likelihood <- data$negloglik-min(data$negloglik)
+        im <- akima::interp(x=data[,x], y=data[,y], z=data[,"delta_likelihood"], nx = 500, ny = 500, extrap=TRUE, linear=FALSE)
         df2 <- data.frame(expand.grid(x = im$x, y = im$y), delta_likelihood = c(im$z))
+        df2$delta_likelihood[which(df2$delta_likelihood>10)] <- 10
         colnames(df2) <- c(x, y, "delta_likelihood")
-        ggplot(df2, aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + metR::geom_contour_fill(aes(fill = ..level..)) +
-        geom_contour(color = "red", size = .5, breaks=c(2)) + scale_fill_gradient(low="black", high="white") + geom_point(aes_string(x=x.best, y=y.best), colour="red")
+        return(ggplot2::ggplot(df2, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + metR::geom_contour_fill(ggplot2::aes(fill = ..level..)) +
+        ggplot2::geom_contour(color = "red", size = .5, breaks=c(2)) + ggplot2::scale_fill_gradient(low="black", high="white", breaks=sequence(12)) + ggplot2::geom_point(ggplot2::aes_string(x=x.best, y=y.best), colour="red") + theme(legend.position = "none"))
       }
       x$par <- x$best[1:(length(x$best)-3)]
       all.results <- rbind(x$good.region, x$bad.region)
@@ -2384,11 +2385,13 @@ plot.BMhybResult <- function(x,style="univariate", ...) {
       for(i in sequence(length(x$par))) {
         for (j in sequence(length(x$par))) {
           if (i < j) {
-            plotlist <- append(contour_plot(x, names(x$par)[i], names(x$par)[j], x$par[i], x$par[j]))
+            plotlist[[length(plotlist)+1]] <- contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(unlist(x$par[i])[1]), unname(unlist(x$par[j])[1]))
+            #print(contour_plot(all.results, names(x$par)[i], names(x$par)[j], unname(x$par[i][1,1]), unname(x$par[j][1,1])))
           }
         }
       }
-      return(cowplot::plot_grid(plotlist))
+      cowplot::plot_grid(plotlist=plotlist)
+      #return(cowplot::plot_grid(plotlist=plotlist))
 
     }
 }
