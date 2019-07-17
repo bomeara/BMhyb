@@ -2286,9 +2286,7 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @examples
 #' \dontrun{
 #' utils::data("cichlid")
-#' traits.only <- cichlid$traits_and_SE$trait
-#' names(traits.only) <- rownames(cichlid$traits_and_SE)
-#' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
+#' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, free.parameter.names=c("sigma.sq", "mu"))
 #' }
 #' @export
 BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
@@ -2355,18 +2353,43 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
 #' Shows the plot of confidence regions with MLEs indicated (red dots)
 #'
 #' @param x A BMhyb object (result of a BMhyb() call)
+#' @param style Either univariate or contour
 #' @param ... Other arguments to pass to plot
 #' @export
 #' @rawNamespace S3method(plot, BMhybResult)
-plot.BMhybResult <- function(x,...) {
-    x$par <- x$best[1:(length(x$best)-3)]
-    graphics::par(mfcol=c(1, length(x$par)))
-    all.results <- rbind(x$good.region, x$bad.region)
-    for(parameter in sequence(length(x$par))) {
-        graphics::plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10),...)
-        graphics::points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
-        graphics::points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
-        graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+plot.BMhybResult <- function(x,style="univariate", ...) {
+    if(style=="univariate") {
+      x$par <- x$best[1:(length(x$best)-3)]
+      graphics::par(mfcol=c(1, length(x$par)))
+      all.results <- rbind(x$good.region, x$bad.region)
+      for(parameter in sequence(length(x$par))) {
+          graphics::plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10),...)
+          graphics::points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
+          graphics::points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
+          graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+      }
+    } else {
+      contour_plot <- function(data, x, y, x.best, y.best) {
+        # using interpolation advice from https://stackoverflow.com/questions/35018971/3d-data-with-ggplot
+        all.results$delta_likelihood <- all.results$negloglik-min(all.results$negloglik)
+        im <- akima::interp(x=all.results[,x], y=all.results[,y], z=all.results[,"delta_likelihood"], nx = 500, ny = 500, extrap=TRUE, linear=FALSE)
+        df2 <- data.frame(expand.grid(x = im$x, y = im$y), delta_likelihood = c(im$z))
+        colnames(df2) <- c(x, y, "delta_likelihood")
+        ggplot(df2, aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + metR::geom_contour_fill(aes(fill = ..level..)) +
+        geom_contour(color = "red", size = .5, breaks=c(2)) + scale_fill_gradient(low="black", high="white") + geom_point(aes_string(x=x.best, y=y.best), colour="red")
+      }
+      x$par <- x$best[1:(length(x$best)-3)]
+      all.results <- rbind(x$good.region, x$bad.region)
+      plotlist <- list()
+      for(i in sequence(length(x$par))) {
+        for (j in sequence(length(x$par))) {
+          if (i < j) {
+            plotlist <- append(contour_plot(x, names(x$par)[i], names(x$par)[j], x$par[i], x$par[j]))
+          }
+        }
+      }
+      return(cowplot::plot_grid(plotlist))
+
     }
 }
 

@@ -4,10 +4,12 @@
 \alias{plot.BMhybResult}
 \title{Plot BMhyb result}
 \usage{
-\method{plot}{BMhybResult}(x, ...)
+\method{plot}{BMhybResult}(x, style = "univariate", ...)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}
+
+\item{style}{Either univariate or contour}
 
 \item{...}{Other arguments to pass to plot}
 }

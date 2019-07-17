@@ -50,8 +50,6 @@ This takes an ape::evonet object. If all you have is a tree (an ape::phylo objec
 \examples{
 \dontrun{
 utils::data("cichlid")
-traits.only <- cichlid$traits_and_SE$trait
-names(traits.only) <- rownames(cichlid$traits_and_SE)
-result <- BMhyb(phy.graph=cichlid$phy.graph, traits=traits.only)
+result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, free.parameter.names=c("sigma.sq", "mu"))
 }
 }

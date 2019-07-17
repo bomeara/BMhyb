@@ -11,6 +11,7 @@ Authors@R: as.person(c(
   ))
 Maintainer: Dwueng-Chwuan Jhwueng <djhwueng@umail.iu.edu>
 Imports:
+    akima,
     corpcor,
     numDeriv,
     geiger,
@@ -25,10 +26,14 @@ Imports:
     igraph,
     MASS,
     grDevices,
+    ggplot2,
+    cowplot,
     graphics,
     stats,
+    metR,
     phytools,
-    plyr
+    plyr,
+    dplyr
 Depends: R (>= 2.10)
 Suggests: testthat
 Description: The BMhyb package analyzes the phenotypic evolution of species
