@@ -20,7 +20,7 @@ test_that("Likelihood of BM works", {
   phy$reticulation <- NULL
   p2 <- nicotiana$phy.graph
   p2$reticulation <- p2$reticulation[-sequence(nrow(p2$reticulation)),]
-  result_geiger <- geiger::fitContinuous(phy, nicotiana$trait, model="BM", bounds=c(1,1))
+  result_geiger <- geiger::fitContinuous(phy, nicotiana$trait, model="BM", bounds=c(1,1), ncores=1)
   result_BMhyb <- BMhyb:::TryComputeLikelihood(c(sigma.sq=result_geiger$opt$sigsq, mu=result_geiger$opt$z0), phy.graph=p2, traits=nicotiana$trait)
   expect_equal(-result_geiger$opt$lnL, result_BMhyb, tolerance = .01)
 })

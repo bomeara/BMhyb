@@ -22,6 +22,8 @@ ComputeLikelihood(parameters, phy.graph, traits, measurement.error = 0,
 \item{do.Higham.correction}{Variance-covariance matrices for this model are sometimes poorly conditioned; this is a hack to reduce the impact of that}
 
 \item{do.Brissette.correction}{Applies method of Brissette et al. 2007 to also try to fix matrix condition}
+
+\item{do.DE.correction}{Inspired by Mishra, Sudhanshu K. "The nearest correlation matrix problem: Solution by differential evolution method of global optimization." (2007)}
 }
 \value{
 Returns the negative log likelihood

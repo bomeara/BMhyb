@@ -2131,49 +2131,49 @@ ComputeMeans <- function(phy.graph, sigma.sq=1, mu=0, bt=1, vh=0, SE=0, measurem
     return(means.vector)
 }
 
-ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
-    badval<-(0.5)*.Machine$double.xmax
-    sigma.sq=1
-    mu=0
-    bt=1
-    vh=0
-    SE=0
-    for(i in seq_along(parameters)){
-        assign(names(parameters)[i],parameters[i])
-    }
-    phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
-    means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
-    V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
-
-    if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
-        return(badval)
-    }
-
-
-    V.chol <- chol(PruneDonorsRecipientsFromVCV(V.modified))
-
-    traits <- traits[match(rownames(V.chol), names(traits))] #reorder so traits in same order as VCV and means
-  #  traits <-
-#    try(NegLogML_raw <- ((ncol(V.modified)/2)*log(2*pi)+(1/2)*t(traits[!is.na(names(traits))]-(means.modified))%*%corpcor::pseudoinverse(V.modified)%*%(traits[!is.na(names(traits))]-(means.modified)) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus)[1,1])
-#    print(NegLogML_raw)
-
-
-    traits.modified <- solve((V.chol)) %*% (traits-means.modified)
-
-    #PruneDonorsRecipientsFromMeans(means.modified)
-    #means.modified <- solve((V.chol)) %*% PruneDonorsRecipientsFromMeans(means.modified)
-
-   #print(solve(t(V.chol))%*%t(V.chol) )
-
-
-    NegLogML <- NULL
-    #try(NegLogML <- (ncol(V.chol)/2)*log(2*pi)+(1/2)*t(traits.modified-means.modified)%*%diag(ncol(V.chol))%*%(traits.modified-means.modified), silent=TRUE)
-    try(NegLogML <- -(sum(dnorm(traits.modified, log=TRUE))))
-    if(is.null(NegLogML)) {
-        NegLogML <- badval
-    }
-    return(NegLogML[1])
-}
+# ComputeLikelihoodUsingChol <- function(parameters, phy.graph, traits, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE) {
+#     badval<-(0.5)*.Machine$double.xmax
+#     sigma.sq=1
+#     mu=0
+#     bt=1
+#     vh=0
+#     SE=0
+#     for(i in seq_along(parameters)){
+#         assign(names(parameters)[i],parameters[i])
+#     }
+#     phy.graph <- PruneRecipientsFromPhyGraph(phy.graph)
+#     means.modified <- ComputeMeans(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+#     V.modified <- ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error, gamma=gamma)
+#
+#     if(sigma.sq <0 || vh<0 || bt <= 0.0000001 || SE < 0) {
+#         return(badval)
+#     }
+#
+#
+#     V.chol <- chol(PruneDonorsRecipientsFromVCV(V.modified))
+#
+#     traits <- traits[match(rownames(V.chol), names(traits))] #reorder so traits in same order as VCV and means
+#   #  traits <-
+# #    try(NegLogML_raw <- ((ncol(V.modified)/2)*log(2*pi)+(1/2)*t(traits[!is.na(names(traits))]-(means.modified))%*%corpcor::pseudoinverse(V.modified)%*%(traits[!is.na(names(traits))]-(means.modified)) + (1/2)*determinant(V.modified, logarithm=TRUE)$modulus)[1,1])
+# #    print(NegLogML_raw)
+#
+#
+#     traits.modified <- solve((V.chol)) %*% (traits-means.modified)
+#
+#     #PruneDonorsRecipientsFromMeans(means.modified)
+#     #means.modified <- solve((V.chol)) %*% PruneDonorsRecipientsFromMeans(means.modified)
+#
+#    #print(solve(t(V.chol))%*%t(V.chol) )
+#
+#
+#     NegLogML <- NULL
+#     #try(NegLogML <- (ncol(V.chol)/2)*log(2*pi)+(1/2)*t(traits.modified-means.modified)%*%diag(ncol(V.chol))%*%(traits.modified-means.modified), silent=TRUE)
+#     try(NegLogML <- -(sum(dnorm(traits.modified, log=TRUE))))
+#     if(is.null(NegLogML)) {
+#         NegLogML <- badval
+#     }
+#     return(NegLogML[1])
+# }
 
 TryComputeLikelihood <- function(...) {
   NegLogL<-(0.5)*.Machine$double.xmax
@@ -2194,6 +2194,7 @@ TryComputeLikelihood <- function(...) {
 #' @param gamma In a hybridization event, what proportion of the trait comes from the donating parent. 0.5 means half comes from each parent
 #' @param do.Higham.correction Variance-covariance matrices for this model are sometimes poorly conditioned; this is a hack to reduce the impact of that
 #' @param do.Brissette.correction Applies method of Brissette et al. 2007 to also try to fix matrix condition
+#' @param do.DE.correction Inspired by Mishra, Sudhanshu K. "The nearest correlation matrix problem: Solution by differential evolution method of global optimization." (2007)
 #'
 #' @return Returns the negative log likelihood
 #' @export
@@ -2286,7 +2287,8 @@ ComputeLikelihood <- function(parameters, phy.graph, traits, measurement.error=0
 #' @examples
 #' \dontrun{
 #' utils::data("cichlid")
-#' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, free.parameter.names=c("sigma.sq", "mu"))
+#' result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait,
+#'   free.parameter.names=c("sigma.sq", "mu"))
 #' }
 #' @export
 BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), confidence.points = 5000, measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, confidence.lnl = 2, control=list(reltol=1e-3)) {
@@ -2318,6 +2320,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
+#' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
 #' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
 #'
 #' @return Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models, the model averaged result weighted by AICc weights (model.average), and the best model (best.model).
@@ -2331,7 +2334,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #' print(all.models$summary.df)
 #' }
 #' @export
-BMhybExhaustive <- function(phy.graph, traits, ...) {
+BMhybExhaustive <- function(phy.graph, traits, measurement.error=0,...) {
   results <- list()
   summary.df <- data.frame()
   free.parameter.matrix <- expand.grid(mu=TRUE, sigma.sq=TRUE, SE=c(TRUE, FALSE), bt=c(TRUE, FALSE), vh=c(TRUE, FALSE))
@@ -2342,7 +2345,7 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
     free.parameter.row <- free.parameter.matrix[model.index,]
     free.parameters <- colnames(free.parameter.row)[unlist(free.parameter.row)]
 
-    result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, ...)
+    result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, measurement.error=measurement.error, ...)
     results[[model.index]] <- result
     summary.df <- plyr::rbind.fill(summary.df, result$best)
 
@@ -2525,11 +2528,11 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
       if(verbose) {
         print("Initial starting values were in an area where the precision of the likelihood would be low (due to poor condition of the VCV matrix), so we're trying in a new area")
       }
-      starting.values <- rnorm(length(starting.values), mean=starting.values, sd=abs(starting.values)/10)
-      if(runif(1) < 0.1) { # lest we wander too far from good values, let's restart periodically near the original estimates
-        starting.values <- rnorm(length(original.starting.values), mean=starting.values, sd=abs(starting.values)/10)
+      starting.values <- stats::rnorm(length(starting.values), mean=starting.values, sd=abs(starting.values)/10)
+      if(stats::runif(1) < 0.1) { # lest we wander too far from good values, let's restart periodically near the original estimates
+        starting.values <- stats::rnorm(length(original.starting.values), mean=starting.values, sd=abs(starting.values)/10)
       }
-      if(runif(1) < 0.1) { # maybe try some more normal values, too.
+      if(stats::runif(1) < 0.1) { # maybe try some more normal values, too.
         starting.values <- original.starting.values
         if("vh" %in% names(starting.values)) {
           starting.values$vh <- 0

@@ -4,12 +4,14 @@
 \alias{BMhybExhaustive}
 \title{Exhaustively evaluate models}
 \usage{
-BMhybExhaustive(phy.graph, traits, ...)
+BMhybExhaustive(phy.graph, traits, measurement.error = 0, ...)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
 
 \item{traits}{A vector of trait values, with names equal to the names of taxa on the phylogeny}
+
+\item{measurement.error}{How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa}
 
 \item{...}{All other parameters to pass to BMhyb (see ?BMhyb)}
 }
