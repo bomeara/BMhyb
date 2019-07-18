@@ -2312,11 +2312,15 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #'
 #' This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
 #'
+#' This will return a list with one model result per element: you can plot these individually (see ?plot.BMhybResult). By default, these results will include the information about uncertainty. We also compute a summary table so you can see the point estimates for each model and the likelihoods. It is often advisable to average across models, weighting each by its AICc weight, so this is also done automatically. We also return the single best model as an object for convenience, though for most users, we would suggest using the model average and looking at a set of fairly good models rather than look only at the single best one: there are often others that are nearly as good.
+#'
+#' We do not expect large AIC difference between models unless you have a really large tree, and so you may get a warning if this happens. It is likely something has gone wrong with optimization. Look at all the models and examine for outliers. This issue can come up with certain combinations of networks and parameters (even, very rarely, in Brownian motion with no hybridization), where a step in the likelihood (inverting a matrix) does not yield a numerically stable result (the matrix is poorly conditioned). The 'likelihoods' in such cases are wrong, and they can look too good or too bad. Neither is ideal, but you should especially beware cases where the 'best' model has likelihoods much below some of the other models -- you will often see bad parameter estimates, too. If you get this, do not believe the results -- perhaps look at models with better condition.
+#'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
 #' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
 #'
-#' @return Returns a list of objects of class BMhybResult (results) and a summary data frame (summary.df).
+#' @return Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models, the model averaged result weighted by AICc weights (model.average), and the best model (best.model).
 #'
 #' @examples
 #' \dontrun{
@@ -2332,6 +2336,7 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
   summary.df <- data.frame()
   free.parameter.matrix <- expand.grid(mu=TRUE, sigma.sq=TRUE, SE=c(TRUE, FALSE), bt=c(TRUE, FALSE), vh=c(TRUE, FALSE))
 
+  matrix.conditions <- c()
 
   for (model.index in sequence(nrow(free.parameter.matrix))) {
     free.parameter.row <- free.parameter.matrix[model.index,]
@@ -2340,12 +2345,42 @@ BMhybExhaustive <- function(phy.graph, traits, ...) {
     result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, ...)
     results[[model.index]] <- result
     summary.df <- plyr::rbind.fill(summary.df, result$best)
+
+    sigma.sq=1
+    mu=0
+    bt=1
+    vh=0
+    SE=0
+    best.values <- unlist(result$best[1,1:(length(result$best)-3)])
+    for(i in seq_along(best.values)){
+        assign(names(best.values)[i],best.values[i])
+    }
+
+    final.VCV <- PruneDonorsRecipientsFromVCV(ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, measurement.error=measurement.error))
+    matrix.conditions <- c(matrix.conditions, kappa(final.VCV))
   }
 
   summary.df$deltaAICc <- summary.df$AICc - min(summary.df$AICc)
   rel.lik <- exp(-0.5* summary.df$deltaAICc)
   summary.df$AkaikeWeight <- rel.lik / sum(rel.lik)
-  return(list(results=results, summary.df=summary.df))
+
+  input.for.average <- summary.df
+  input.for.average$vh[which(is.na(input.for.average$vh))] <- 0
+  input.for.average$bt[which(is.na(input.for.average$bt))] <- 1
+  input.for.average$SE[which(is.na(input.for.average$SE))] <- 0
+  model.average <- data.frame(t(apply(input.for.average, 2, stats::weighted.mean, w=input.for.average$AkaikeWeight)))
+
+  if(max(summary.df$deltaAICc)>100) {
+    warning("Large differences in AICc values suggest something is wrong. See the documentation for this function and look at the MatrixConditions in the summary.df")
+  }
+
+  best.model <- results[[which(summary.df$deltaAICc==0)]]
+
+  summary.df$ModelType <- paste0(ifelse(is.na(summary.df$sigma.sq), "_", "S"), ifelse(is.na(summary.df$mu), "_", "M"), ifelse(is.na(summary.df$vh), "_", "V"), ifelse(is.na(summary.df$bt), "_", "B"), ifelse(is.na(summary.df$SE), "_", "E"))
+
+  summary.df$MatrixCondition <- matrix.conditions
+
+  return(list(results=results, summary.df=summary.df, model.average=model.average, best.model=best.model))
 }
 
 #' Get convex hull at a given threshold
@@ -2473,6 +2508,48 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
     starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
     starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     starting.values <- starting.values[free.parameter.names]
+
+    # now test initial values to make sure not in a bad part of matrix condition
+    sigma.sq=1
+    mu=0
+    bt=1
+    vh=0
+    SE=0
+    for(i in seq_along(starting.values)){
+        assign(names(starting.values)[i],starting.values[i])
+    }
+
+    starting.VCV <- PruneDonorsRecipientsFromVCV(ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, measurement.error=measurement.error))
+    original.starting.values <- starting.values
+    while(log(kappa(starting.VCV))>15) { # really hard to get accurate likelihood scores here
+      if(verbose) {
+        print("Initial starting values were in an area where the precision of the likelihood would be low (due to poor condition of the VCV matrix), so we're trying in a new area")
+      }
+      starting.values <- rnorm(length(starting.values), mean=starting.values, sd=abs(starting.values)/10)
+      if(runif(1) < 0.1) { # lest we wander too far from good values, let's restart periodically near the original estimates
+        starting.values <- rnorm(length(original.starting.values), mean=starting.values, sd=abs(starting.values)/10)
+      }
+      if(runif(1) < 0.1) { # maybe try some more normal values, too.
+        starting.values <- original.starting.values
+        if("vh" %in% names(starting.values)) {
+          starting.values$vh <- 0
+        }
+        if("bt" %in% names(starting.values)) {
+          starting.values$bt <- 1
+        }
+        if("SE" %in% names(starting.values)) {
+          starting.values$SE <- 0
+        }
+      }
+      for (i in seq_along(starting.values)){
+          if(any(grepl(names(starting.values)[i], c("sigma.sq", "vh", "bt", "SE")))) {
+            starting.values[i] <- abs(starting.values[i])
+          }
+      }
+    }
+
+
+
     if(verbose) {
       print("Starting with initial values")
       print(starting.values)

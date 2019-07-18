@@ -14,13 +14,17 @@ BMhybExhaustive(phy.graph, traits, ...)
 \item{...}{All other parameters to pass to BMhyb (see ?BMhyb)}
 }
 \value{
-Returns a list of objects of class BMhybResult (results) and a summary data frame (summary.df).
+Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models, the model averaged result weighted by AICc weights (model.average), and the best model (best.model).
 }
 \description{
 Fits all possible BMhyb models to your data.
 }
 \details{
 This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
+
+This will return a list with one model result per element: you can plot these individually (see ?plot.BMhybResult). By default, these results will include the information about uncertainty. We also compute a summary table so you can see the point estimates for each model and the likelihoods. It is often advisable to average across models, weighting each by its AICc weight, so this is also done automatically. We also return the single best model as an object for convenience, though for most users, we would suggest using the model average and looking at a set of fairly good models rather than look only at the single best one: there are often others that are nearly as good.
+
+We do not expect large AIC difference between models unless you have a really large tree, and so you may get a warning if this happens. It is likely something has gone wrong with optimization. Look at all the models and examine for outliers. This issue can come up with certain combinations of networks and parameters (even, very rarely, in Brownian motion with no hybridization), where a step in the likelihood (inverting a matrix) does not yield a numerically stable result (the matrix is poorly conditioned). The 'likelihoods' in such cases are wrong, and they can look too good or too bad. Neither is ideal, but you should especially beware cases where the 'best' model has likelihoods much below some of the other models -- you will often see bad parameter estimates, too. If you get this, do not believe the results -- perhaps look at models with better condition.
 }
 \examples{
 \dontrun{
