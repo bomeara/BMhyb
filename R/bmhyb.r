@@ -2323,6 +2323,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
 #' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
+#' @param ncores Number of cores to use. By default, uses parallel package to detect what's available and uses all but one.
 #' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
 #'
 #' @return Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models where we do not see obvious problems, a summary data frame of all the models, whether or no they seemed to fail (original.summary.df), the model averaged result weighted by AICc weights of the unproblematic models (model.average), and the best unproblematic model (best.model).
@@ -2336,27 +2337,41 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #' print(all.models$summary.df)
 #' }
 #' @export
-BMhybExhaustive <- function(phy.graph, traits, measurement.error=0,...) {
+BMhybExhaustive <- function(phy.graph, traits, measurement.error=0, ncores=max(c(1, parallel::detectCores()-1), na.rm=TRUE),...) {
   results <- list()
   summary.df <- data.frame()
   free.parameter.matrix <- expand.grid(mu=TRUE, sigma.sq=TRUE, SE=c(TRUE, FALSE), bt=c(TRUE, FALSE), vh=c(TRUE, FALSE))
 
   matrix.conditions <- c()
 
-  for (model.index in sequence(nrow(free.parameter.matrix))) {
+  if(ncores>1) {
+    print("Note that BMhyb will chattily print results as they go, but with parallel runs, the results from different models running in parallel will all be mixed together. You could pass verbose=FALSE to suppress much of the output")
+  }
+
+  do_single_model <- function(model.index, free.parameter.matrix, phy.graph, traits, measurement.error, ...) {
     free.parameter.row <- free.parameter.matrix[model.index,]
     free.parameters <- colnames(free.parameter.row)[unlist(free.parameter.row)]
 
     result <- BMhyb::BMhyb(phy.graph=phy.graph, traits=traits, free.parameter.names=free.parameters, measurement.error=measurement.error, ...)
-    results[[model.index]] <- result
-    summary.df <- plyr::rbind.fill(summary.df, result$best)
+    return(result)
+  }
+
+  results <- parallel::mclapply(sequence(nrow(free.parameter.matrix)), do_single_model, free.parameter.matrix=free.parameter.matrix, phy.graph=phy.graph, traits=traits, measurement.error=measurement.error, ..., mc.cores=ncores)
+
+  # for (model.index in sequence(nrow(free.parameter.matrix))) {
+  #   results[[model.index]] <- result
+  # }
+
+  for (model.index in sequence(nrow(free.parameter.matrix))) {
+
+    summary.df <- plyr::rbind.fill(summary.df, results[[model.index]]$best)
 
     sigma.sq=1
     mu=0
     bt=1
     vh=0
     SE=0
-    best.values <- unlist(result$best[1,1:(length(result$best)-3)])
+    best.values <- unlist(results[[model.index]]$best[1,1:(length(results[[model.index]]$best)-3)])
     for(i in seq_along(best.values)){
         assign(names(best.values)[i],best.values[i])
     }
@@ -2540,7 +2555,8 @@ plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.c
 
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, control=list()) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
-    starting.from.geiger <- geiger::fitContinuous(simple.phy, traits, model="BM", SE=NA, ncores=1)$opt
+    cleaned <- geiger::treedata(simple.phy, traits, warnings=FALSE, sort=TRUE)
+    starting.from.geiger <- geiger::fitContinuous(cleaned$phy, cleaned$data, model="BM", SE=NA, ncores=1)$opt
     starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
     starting.values <- starting.values[free.parameter.names]
 

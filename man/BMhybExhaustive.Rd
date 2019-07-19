@@ -4,7 +4,8 @@
 \alias{BMhybExhaustive}
 \title{Exhaustively evaluate models}
 \usage{
-BMhybExhaustive(phy.graph, traits, measurement.error = 0, ...)
+BMhybExhaustive(phy.graph, traits, measurement.error = 0,
+  ncores = max(c(1, parallel::detectCores() - 1), na.rm = TRUE), ...)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
@@ -12,6 +13,8 @@ BMhybExhaustive(phy.graph, traits, measurement.error = 0, ...)
 \item{traits}{A vector of trait values, with names equal to the names of taxa on the phylogeny}
 
 \item{measurement.error}{How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa}
+
+\item{ncores}{Number of cores to use. By default, uses parallel package to detect what's available and uses all but one.}
 
 \item{...}{All other parameters to pass to BMhyb (see ?BMhyb)}
 }
