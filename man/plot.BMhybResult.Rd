@@ -7,7 +7,7 @@
 \method{plot}{BMhybResult}(x, style = "univariate",
   focal.color = "red", inregion.color = "black",
   outregion.color = "gray", gradientworst.color = "white",
-  gradientbest.color = "gray33", contour.color = "red",
+  gradientbest.color = "darkgray", contour.color = "red",
   contour.threshold = 2, ...)
 }
 \arguments{

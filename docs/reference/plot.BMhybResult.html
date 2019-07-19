@@ -32,7 +32,7 @@
 
 <meta property="og:title" content="Plot BMhyb result — plot.BMhybResult" />
 
-<meta property="og:description" content="Shows the plot of confidence regions with MLEs indicated (red dots)" />
+<meta property="og:description" content="Shows the plot of confidence regions with MLEs indicated (red dots) or a plot of pairs of traits together. Note that for the latter plot, it converts the sampled points to an even grid with interpolation; it sets any points with likelihood worse than ten units to just ten units worse so that you can see the colors near the area of the optimum." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">BMhyb</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.1</span>
       </span>
     </div>
 
@@ -106,12 +106,16 @@
 
     <div class="ref-description">
     
-    <p>Shows the plot of confidence regions with MLEs indicated (red dots)</p>
+    <p>Shows the plot of confidence regions with MLEs indicated (red dots) or a plot of pairs of traits together. Note that for the latter plot, it converts the sampled points to an even grid with interpolation; it sets any points with likelihood worse than ten units to just ten units worse so that you can see the colors near the area of the optimum.</p>
     
     </div>
 
     <pre class="usage"><span class='co'># S3 method for BMhybResult</span>
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>x</span>, <span class='kw'>style</span> <span class='kw'>=</span> <span class='st'>"univariate"</span>,
+  <span class='kw'>focal.color</span> <span class='kw'>=</span> <span class='st'>"red"</span>, <span class='kw'>inregion.color</span> <span class='kw'>=</span> <span class='st'>"black"</span>,
+  <span class='kw'>outregion.color</span> <span class='kw'>=</span> <span class='st'>"gray"</span>, <span class='kw'>gradientworst.color</span> <span class='kw'>=</span> <span class='st'>"white"</span>,
+  <span class='kw'>gradientbest.color</span> <span class='kw'>=</span> <span class='st'>"gray33"</span>, <span class='kw'>contour.color</span> <span class='kw'>=</span> <span class='st'>"red"</span>,
+  <span class='kw'>contour.threshold</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -121,8 +125,40 @@
       <td><p>A BMhyb object (result of a BMhyb() call)</p></td>
     </tr>
     <tr>
+      <th>style</th>
+      <td><p>Either univariate or contour</p></td>
+    </tr>
+    <tr>
+      <th>focal.color</th>
+      <td><p>Color for the point showing the maximum likelihood estimate</p></td>
+    </tr>
+    <tr>
+      <th>inregion.color</th>
+      <td><p>Color for univariate plot, points in the good region</p></td>
+    </tr>
+    <tr>
+      <th>outregion.color</th>
+      <td><p>Color for univariate plot, points in the bad region</p></td>
+    </tr>
+    <tr>
+      <th>gradientworst.color</th>
+      <td><p>Color for contour plot, color of the worst contour region</p></td>
+    </tr>
+    <tr>
+      <th>gradientbest.color</th>
+      <td><p>Color for contour plot, color of the best contour region</p></td>
+    </tr>
+    <tr>
+      <th>contour.color</th>
+      <td><p>Color showing the contour line for the best threshold</p></td>
+    </tr>
+    <tr>
+      <th>contour.threshold</th>
+      <td><p>What delta log likelihood to use for the best/worst threshold for the contour plot</p></td>
+    </tr>
+    <tr>
       <th>...</th>
-      <td><p>Other arguments to pass to plot</p></td>
+      <td><p>Other arguments to pass to plot (for univariate only; the contour plot uses ggplot2)</p></td>
     </tr>
     </table>
     
