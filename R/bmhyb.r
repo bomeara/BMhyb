@@ -2318,12 +2318,14 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #'
 #' We do not expect large AIC difference between models unless you have a really large tree, and so you may get a warning if this happens. It is likely something has gone wrong with optimization. Look at all the models and examine for outliers. This issue can come up with certain combinations of networks and parameters (even, very rarely, in Brownian motion with no hybridization), where a step in the likelihood (inverting a matrix) does not yield a numerically stable result (the matrix is poorly conditioned). The 'likelihoods' in such cases are wrong, and they can look too good or too bad. Neither is ideal, but you should especially beware cases where the 'best' model has likelihoods much below some of the other models -- you will often see bad parameter estimates, too. If you get this, do not believe the results -- perhaps look at models with better condition.
 #'
+#' To try to help with this, if one or more of the models has poor condition at the maximum likelihood estimate, we report this as it having an obvious problem. It is still returned in the results and the original.summary.df objects, but it is excluded from model averaging, the summary.df, and the best.model return (though note the ModelNumber column in summary.df allowing you to get the matching model in the results list). A model not having an obvious problem does *not* mean it worked well, just that it does not exhibit one particular problematic issue. Essentially we're saying, "This model does not have a lion eating its foot" -- which suggest it's not unhealthy in that way, but doesn't mean there's not a crocodile eating its hand. User beware. Plotting the confidence using the plot functions can help.
+#'
 #' @param phy.graph An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)
 #' @param traits A vector of trait values, with names equal to the names of taxa on the phylogeny
 #' @param measurement.error How much uncertainty there is in tip values; a single number is applied to all taxa, a vector is applied to the corresponding taxa
 #' @param ... All other parameters to pass to BMhyb (see ?BMhyb)
 #'
-#' @return Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models, the model averaged result weighted by AICc weights (model.average), and the best model (best.model).
+#' @return Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models where we do not see obvious problems, a summary data frame of all the models, whether or no they seemed to fail (original.summary.df), the model averaged result weighted by AICc weights of the unproblematic models (model.average), and the best unproblematic model (best.model).
 #'
 #' @examples
 #' \dontrun{
@@ -2363,27 +2365,50 @@ BMhybExhaustive <- function(phy.graph, traits, measurement.error=0,...) {
     matrix.conditions <- c(matrix.conditions, kappa(final.VCV))
   }
 
-  summary.df$deltaAICc <- summary.df$AICc - min(summary.df$AICc)
-  rel.lik <- exp(-0.5* summary.df$deltaAICc)
-  summary.df$AkaikeWeight <- rel.lik / sum(rel.lik)
+  summary.df$MatrixCondition <- matrix.conditions
 
-  input.for.average <- summary.df
-  input.for.average$vh[which(is.na(input.for.average$vh))] <- 0
-  input.for.average$bt[which(is.na(input.for.average$bt))] <- 1
-  input.for.average$SE[which(is.na(input.for.average$SE))] <- 0
-  model.average <- data.frame(t(apply(input.for.average, 2, stats::weighted.mean, w=input.for.average$AkaikeWeight)))
-
-  if(max(summary.df$deltaAICc)>100) {
-    warning("Large differences in AICc values suggest something is wrong. See the documentation for this function and look at the MatrixConditions in the summary.df")
-  }
-
-  best.model <- results[[which(summary.df$deltaAICc==0)]]
+  summary.df$ObviousProblem <- (log(summary.df$MatrixCondition)>10)
 
   summary.df$ModelType <- paste0(ifelse(is.na(summary.df$sigma.sq), "_", "S"), ifelse(is.na(summary.df$mu), "_", "M"), ifelse(is.na(summary.df$vh), "_", "V"), ifelse(is.na(summary.df$bt), "_", "B"), ifelse(is.na(summary.df$SE), "_", "E"))
 
-  summary.df$MatrixCondition <- matrix.conditions
 
-  return(list(results=results, summary.df=summary.df, model.average=model.average, best.model=best.model))
+  summary.df$ModelNumber <- sequence(nrow(summary.df))
+
+  original.summary.df <- summary.df
+
+  summary.df <- summary.df[!summary.df$ObviousProblem,]
+
+
+  model.average <- NULL
+  best.model <- NULL
+
+  if(nrow(summary.df)>0) {
+
+    summary.df$deltaAICc <- summary.df$AICc - min(summary.df$AICc)
+    rel.lik <- exp(-0.5* summary.df$deltaAICc)
+    summary.df$AkaikeWeight <- rel.lik / sum(rel.lik)
+
+
+    input.for.average <- summary.df[,-which(colnames(summary.df) %in% c("ModelNumber", "ModelType"))]
+    input.for.average$vh[which(is.na(input.for.average$vh))] <- 0
+    input.for.average$bt[which(is.na(input.for.average$bt))] <- 1
+    input.for.average$SE[which(is.na(input.for.average$SE))] <- 0
+    model.average <- data.frame(t(apply(input.for.average, 2, stats::weighted.mean, w=input.for.average$AkaikeWeight)))
+
+    if(max(summary.df$deltaAICc)>100) {
+      warning("Large differences in AICc values suggest something is wrong. See the documentation for this function and look at the MatrixConditions in the summary.df", immediate.=TRUE)
+    }
+    best.model <- results[[summary.df$ModelNumber[which(summary.df$deltaAICc==0)]]]
+
+  } else {
+    warning("no models seemed good (well conditioned) so the likelihoods and thus parameter estimates are unreliable. Try enabling some of the corrections (see ?BMhyb) to try to improve this", immediate.=TRUE)
+  }
+
+
+
+
+
+  return(list(results=results, summary.df=summary.df, original.summary.df=original.summary.df, model.average=model.average, best.model=best.model))
 }
 
 #' Get convex hull at a given threshold
@@ -2411,24 +2436,31 @@ GetConvexHull <- function(threshold=2, df, height, x, y) {
 #'
 #' @param x A BMhyb object (result of a BMhyb() call)
 #' @param style Either univariate or contour
-#' @param ... Other arguments to pass to plot
+#' @param focal.color Color for the point showing the maximum likelihood estimate
+#' @param inregion.color Color for univariate plot, points in the good region
+#' @param outregion.color Color for univariate plot, points in the bad region
+#' @param gradientworst.color Color for contour plot, color of the worst contour region
+#' @param gradientbest.color Color for contour plot, color of the best contour region
+#' @param contour.color Color showing the contour line for the best threshold
+#' @param contour.threshold What delta log likelihood to use for the best/worst threshold for the contour plot
+#' @param ... Other arguments to pass to plot (for univariate only; the contour plot uses ggplot2)
 #' @export
 #' @rawNamespace S3method(plot, BMhybResult)
-plot.BMhybResult <- function(x,style="univariate", ...) {
+plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.color = "black", outregion.color="gray", gradientworst.color="white", gradientbest.color="darkgray", contour.color="red", contour.threshold=2, ...) {
     if(style=="univariate") {
       x$par <- x$best[1:(length(x$best)-3)]
       graphics::par(mfcol=c(1, length(x$par)))
       all.results <- rbind(x$good.region, x$bad.region)
       for(parameter in sequence(length(x$par))) {
           graphics::plot(x=all.results[,parameter+1], y=all.results[,1], type="n", xlab=names(x$par)[parameter], ylab="NegLnL", bty="n", ylim=c(min(all.results[,1]), min(all.results[,1])+10),...)
-          graphics::points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col="black")
-          graphics::points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col="gray")
-          graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col="red", cex=1.5)
+          graphics::points(x=x$good.region[,parameter+1], y=x$good.region[,1], pch=16, col=inregion.color)
+          graphics::points(x=x$bad.region[,parameter+1], y=x$bad.region[,1], pch=16, col=outregion.color)
+          graphics::points(x= x$best[parameter], y= x$best['NegLogLik'], pch=1, col=focal.color, cex=1.5)
       }
     } else {
       contour_plot <- function(data, x, y, x.best, y.best, breaks= c(1,2,5,10)) {
         data$delta_likelihood <- data$negloglik-min(data$negloglik)
-        p <- ggplot2::ggplot(data, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + ggplot2::scale_fill_gradient(low="gray33", high="white", breaks=breaks)
+        p <- ggplot2::ggplot(data, ggplot2::aes_string(x=x, y=y, z="delta_likelihood", fill="delta_likelihood")) + ggplot2::scale_fill_gradient(low=gradientbest.color, high=gradientworst.color, breaks=breaks)
         #print(p)
         breaks <- sort(breaks, decreasing=TRUE)
         for (break_index in seq_along(breaks)) {
@@ -2436,10 +2468,10 @@ plot.BMhybResult <- function(x,style="univariate", ...) {
           p <- p + ggplot2::geom_polygon(data=polygon_points, ggplot2::aes(x=x,y=y))
           #print(p)
         }
-        polygon_points <- GetConvexHull(threshold=2, df=data, height="delta_likelihood", x=x, y=y)
-        p <- p + ggplot2::geom_polygon(data=polygon_points, ggplot2::aes(x=x,y=y), color="red", fill=NA)
+        polygon_points <- GetConvexHull(threshold=contour.threshold, df=data, height="delta_likelihood", x=x, y=y)
+        p <- p + ggplot2::geom_polygon(data=polygon_points, ggplot2::aes(x=x,y=y), color=contour.color, fill=NA)
         p <- p + ggplot2::theme(legend.position = "none")
-        p <- p+ ggplot2::geom_point(data=data, ggplot2::aes_string(x=x.best, y=y.best), colour="red")
+        p <- p+ ggplot2::geom_point(data=data, ggplot2::aes_string(x=x.best, y=y.best), colour=focal.color)
       #  print(p)
         return(p)
       }

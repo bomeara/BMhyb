@@ -16,7 +16,7 @@ BMhybExhaustive(phy.graph, traits, measurement.error = 0, ...)
 \item{...}{All other parameters to pass to BMhyb (see ?BMhyb)}
 }
 \value{
-Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models, the model averaged result weighted by AICc weights (model.average), and the best model (best.model).
+Returns a list of objects of class BMhybResult (results), a summary data frame (summary.df) with parameter estimates and weights for all models where we do not see obvious problems, a summary data frame of all the models, whether or no they seemed to fail (original.summary.df), the model averaged result weighted by AICc weights of the unproblematic models (model.average), and the best unproblematic model (best.model).
 }
 \description{
 Fits all possible BMhyb models to your data.
@@ -27,6 +27,8 @@ This takes an ape::evonet object. If all you have is a tree (an ape::phylo objec
 This will return a list with one model result per element: you can plot these individually (see ?plot.BMhybResult). By default, these results will include the information about uncertainty. We also compute a summary table so you can see the point estimates for each model and the likelihoods. It is often advisable to average across models, weighting each by its AICc weight, so this is also done automatically. We also return the single best model as an object for convenience, though for most users, we would suggest using the model average and looking at a set of fairly good models rather than look only at the single best one: there are often others that are nearly as good.
 
 We do not expect large AIC difference between models unless you have a really large tree, and so you may get a warning if this happens. It is likely something has gone wrong with optimization. Look at all the models and examine for outliers. This issue can come up with certain combinations of networks and parameters (even, very rarely, in Brownian motion with no hybridization), where a step in the likelihood (inverting a matrix) does not yield a numerically stable result (the matrix is poorly conditioned). The 'likelihoods' in such cases are wrong, and they can look too good or too bad. Neither is ideal, but you should especially beware cases where the 'best' model has likelihoods much below some of the other models -- you will often see bad parameter estimates, too. If you get this, do not believe the results -- perhaps look at models with better condition.
+
+To try to help with this, if one or more of the models has poor condition at the maximum likelihood estimate, we report this as it having an obvious problem. It is still returned in the results and the original.summary.df objects, but it is excluded from model averaging, the summary.df, and the best.model return (though note the ModelNumber column in summary.df allowing you to get the matching model in the results list). A model not having an obvious problem does *not* mean it worked well, just that it does not exhibit one particular problematic issue. Essentially we're saying, "This model does not have a lion eating its foot" -- which suggest it's not unhealthy in that way, but doesn't mean there's not a crocodile eating its hand. User beware. Plotting the confidence using the plot functions can help.
 }
 \examples{
 \dontrun{
