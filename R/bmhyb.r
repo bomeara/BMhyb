@@ -2556,8 +2556,8 @@ plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.c
 OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "SE", "bt", "vh"), measurement.error=0, gamma=0.5, do.Higham.correction=FALSE, do.Brissette.correction=FALSE, do.DE.correction=FALSE, verbose=TRUE, likelihood.precision=0.01, max.steps=10, control=list()) {
     simple.phy <- ape::collapse.singles(ape::as.phylo(phy.graph))
     cleaned <- geiger::treedata(simple.phy, traits, warnings=FALSE, sort=TRUE)
-    starting.from.geiger <- geiger::fitContinuous(cleaned$phy, cleaned$data, model="BM", SE=NA, ncores=1)$opt
-    starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=starting.from.geiger$SE) #sigma.sq, mu, beta, vh, SE
+    starting.from.geiger <- geiger::fitContinuous(cleaned$phy, cleaned$data, model="BM", SE=0, ncores=1)$opt
+    starting.values <- c(sigma.sq=starting.from.geiger$sigsq, mu=starting.from.geiger$z0, bt=1,  vh=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy)), SE=0.01*starting.from.geiger$sigsq*max(ape::vcv(simple.phy))) #sigma.sq, mu, beta, vh, SE
     starting.values <- starting.values[free.parameter.names]
 
     # now test initial values to make sure not in a bad part of matrix condition
@@ -2570,7 +2570,7 @@ OptimizeThoroughly <- function(phy.graph, traits, free.parameter.names=c("sigma.
         assign(names(starting.values)[i],starting.values[i])
     }
 
-    starting.VCV <- PruneDonorsRecipientsFromVCV(ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, measurement.error=measurement.error))
+    starting.VCV <- PruneDonorsRecipientsFromVCV(ComputeVCV(phy.graph, sigma.sq=sigma.sq, mu=mu, bt=bt, vh=vh, SE=SE, measurement.error=measurement.error))
     original.starting.values <- starting.values
     while(log(kappa(starting.VCV))>15) { # really hard to get accurate likelihood scores here
       if(verbose) {
