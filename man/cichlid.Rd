@@ -10,6 +10,9 @@
   \item{trait}{a vector of trait data}
   \item{final.se}{a vector of standard error}
 }}
+\usage{
+cichlid
+}
 \description{
 A dataset containing a phylogenetic network and trait data for cichlid species
 }

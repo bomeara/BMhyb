@@ -9,3 +9,4 @@ README.md
 ^README-.*\.png$
 ^_pkgdown\.yml$
 ^docs$
+README_cache

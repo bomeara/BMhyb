@@ -30,11 +30,14 @@ Imports:
     parallel,
     phytools,
     plyr
-Depends: R (>= 2.10)
+Depends: R (>= 3.5.0)
 Suggests: testthat
-Description: This package analyzes the phenotypic evolution of species
-    of hybrid origin on a phylogenetic network. This package can detect a burst of variation at formation of a hybrid as well as a bias in typical hybrid values. Parameters are estimated by maximum likelihood, as well as returning regular Brownian motion parameters such as the rate of evolution and the root state.
-    Users need to enter a comparative data set and a phylogenetic network.
+Description: Analyze the phenotypic evolution of species
+    of hybrid origin on a phylogenetic network. This can detect a burst of variation
+    at the formation of a hybrid as well as an increase or decrease in trait
+    value at a hybridization event. Parameters are estimated by maximum
+    likelihood, and model averaging can be done automatically. Users need to
+    enter a comparative data set and a phylogenetic network.
 License: GPL (>=2)
 URL: http://github.com/bomeara/BMhyb
 BugReports: https://github.com/bomeara/BMhyb/issues
