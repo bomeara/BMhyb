@@ -4,10 +4,15 @@
 \alias{summary.BMhybExhaustiveResult}
 \title{Summarize BMhybExhaustive result}
 \usage{
-\method{summary}{BMhybExhaustiveResult}(x)
+\method{summary}{BMhybExhaustiveResult}(object, ...)
 }
 \arguments{
-\item{x}{A BMhybExhaustive object (result of a BMhybExhaustive() call)}
+\item{object}{A BMhybExhaustive object (result of a BMhybExhaustive() call)}
+
+\item{...}{Other arguments to pass to this function}
+}
+\value{
+A data.frame with summarized results
 }
 \description{
 Summarize BMhybExhaustive result

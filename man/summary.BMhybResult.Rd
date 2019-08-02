@@ -4,10 +4,15 @@
 \alias{summary.BMhybResult}
 \title{Summarize BMhyb result}
 \usage{
-\method{summary}{BMhybResult}(x)
+\method{summary}{BMhybResult}(object, ...)
 }
 \arguments{
-\item{x}{A BMhyb object (result of a BMhyb() call)}
+\item{object}{A BMhyb object (result of a BMhyb() call)}
+
+\item{...}{Other arguments to pass to this function}
+}
+\value{
+A data.frame with summarized results
 }
 \description{
 Summarize BMhyb result

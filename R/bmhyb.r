@@ -2314,7 +2314,7 @@ BMhyb <- function(phy.graph, traits, free.parameter.names=c("sigma.sq", "mu", "S
 #'
 #' This takes an ape::evonet object. If all you have is a tree (an ape::phylo object), you can use CreateHybridlessEvonet() to convert the tree to an evonet object. You can then use the AddHybridization() function to add hybrid events to this object. Note that networks created in this way can, by chance, result in orders of nodes in the internal edge matrix that cause ape's reorder.phylo function to crash, which is called in many of the plot and write functions. You can still use the plot functions in this package, however.
 #'
-#' This will return a list with one model result per element: you can plot these individually (see ?plot.BMhybResult). By default, these results will include the information about uncertainty. We also compute a summary table so you can see the point estimates for each model and the likelihoods. It is often advisable to average across models, weighting each by its AICc weight, so this is also done automatically. We also return the single best model as an object for convenience, though for most users, we would suggest using the model average and looking at a set of fairly good models rather than look only at the single best one: there are often others that are nearly as good.
+#' This will return a list with one model result per element: you can plot these individually (see ?hybResult). By default, these results will include the information about uncertainty. We also compute a summary table so you can see the point estimates for each model and the likelihoods. It is often advisable to average across models, weighting each by its AICc weight, so this is also done automatically. We also return the single best model as an object for convenience, though for most users, we would suggest using the model average and looking at a set of fairly good models rather than look only at the single best one: there are often others that are nearly as good.
 #'
 #' We do not expect large AIC difference between models unless you have a really large tree, and so you may get a warning if this happens. It is likely something has gone wrong with optimization. Look at all the models and examine for outliers. This issue can come up with certain combinations of networks and parameters (even, very rarely, in Brownian motion with no hybridization), where a step in the likelihood (inverting a matrix) does not yield a numerically stable result (the matrix is poorly conditioned). The 'likelihoods' in such cases are wrong, and they can look too good or too bad. Neither is ideal, but you should especially beware cases where the 'best' model has likelihoods much below some of the other models -- you will often see bad parameter estimates, too. If you get this, do not believe the results -- perhaps look at models with better condition.
 #'
@@ -2491,10 +2491,11 @@ GetConvexHull <- function(threshold=2, df, height, x, y) {
 #' @param gradientbest.color Color for contour plot, color of the best contour region
 #' @param contour.color Color showing the contour line for the best threshold
 #' @param contour.threshold What delta log likelihood to use for the best/worst threshold for the contour plot
+#' @param nrow The number of rows to plot in the grid for contour (will set it automatically if NULL)
 #' @param ... Other arguments to pass to plot (for univariate only; the contour plot uses ggplot2)
 #' @export
 #' @rawNamespace S3method(plot, BMhybResult)
-plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.color = "black", outregion.color="gray", gradientworst.color="black", gradientbest.color="white", contour.color="red", contour.threshold=2, ...) {
+plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.color = "black", outregion.color="gray", gradientworst.color="black", gradientbest.color="white", contour.color="red", contour.threshold=2, nrow=NULL, ...) {
     if(style=="univariate") {
       x$par <- x$best[1:(length(x$best)-3)]
       graphics::par(mfcol=c(1, length(x$par)))
@@ -2536,7 +2537,7 @@ plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.c
           }
         }
       }
-      cowplot::plot_grid(plotlist=plotlist)
+      cowplot::plot_grid(plotlist=plotlist, nrow=nrow)
 
 
 
@@ -2574,20 +2575,23 @@ plot.BMhybResult <- function(x,style="univariate", focal.color="red", inregion.c
 #' Print BMhyb result
 #'
 #' @param x A BMhyb object (result of a BMhyb() call)
+#' @param ... Other arguments to pass to this function
 #' @export
-print.BMhybResult <- function(x) {
-  print(summary.BMhybResult(x))
+print.BMhybResult <- function(x, ...) {
+  print(summary.BMhybResult(x,...))
 }
 
 #' Summarize BMhyb result
 #'
-#' @param x A BMhyb object (result of a BMhyb() call)
+#' @param object A BMhyb object (result of a BMhyb() call)
+#' @param ... Other arguments to pass to this function
+#' @return A data.frame with summarized results
 #' @export
-summary.BMhybResult <- function(x) {
-  best <- data.frame(matrix(x$best, nrow=1))
-  colnames(best) <- names(x$best)
-  min.good <- apply(x$good.region, 2, min)[-1]
-  max.good <- apply(x$good.region, 2, max)[-1]
+summary.BMhybResult <- function(object, ...) {
+  best <- data.frame(matrix(object$best, nrow=1))
+  colnames(best) <- names(object$best)
+  min.good <- apply(object$good.region, 2, min)[-1]
+  max.good <- apply(object$good.region, 2, max)[-1]
   results <- plyr::rbind.fill(best=best, lower=as.data.frame(t(min.good)), upper=as.data.frame(t(max.good)))
   rownames(results) <- c("MLE", "lower", "upper")
   return(results)
@@ -2596,44 +2600,40 @@ summary.BMhybResult <- function(x) {
 #' Print BMhybExhaustive result
 #'
 #' @param x A BMhybExhaustive object (result of a BMhybExhaustive() call)
+#' @param ... Other arguments to pass to this function
 #' @export
-print.BMhybExhaustiveResult <- function(x) {
-  print(summary.BMhybExhaustiveResult(x))
+print.BMhybExhaustiveResult <- function(x, ...) {
+  print(summary.BMhybExhaustiveResult(x, ...))
 }
 
 #' Summarize BMhybExhaustive result
 #'
-#' @param x A BMhybExhaustive object (result of a BMhybExhaustive() call)
+#' @param object A BMhybExhaustive object (result of a BMhybExhaustive() call)
+#' @param ... Other arguments to pass to this function
+#' @return A data.frame with summarized results
 #' @export
-summary.BMhybExhaustiveResult <- function(x) {
-  x$model.average$MatrixCondition <- NULL
-  x$model.average$ObviousProblem <- NULL
-  x$model.average$deltaAICc <- NULL
-  x$model.average$AICc <- NULL
-  x$model.average$NegLogLik <- NULL
+summary.BMhybExhaustiveResult <- function(object, ...) {
+  object$model.average$MatrixCondition <- NULL
+  object$model.average$ObviousProblem <- NULL
+  object$model.average$deltaAICc <- NULL
+  object$model.average$AICc <- NULL
+  object$model.average$NegLogLik <- NULL
 
-  x$model.average$AkaikeWeight <- NULL
-  merged <- MergeExhaustiveForPlotting(x)
+  object$model.average$AkaikeWeight <- NULL
+  merged <- MergeExhaustiveForPlotting(object)
   summary.merged <-  summary.BMhybResult(merged)
-  results <- plyr::rbind.fill(as.data.frame((x$model.average)),summary.merged['lower',], summary.merged['upper',], as.data.frame((x$best.model$best)), x$summary.df)
-  rownames(results) <- c("model.average", "lower", "upper", "best.model", paste0("model.", sequence(nrow(x$summary.df))))
+  results <- plyr::rbind.fill(as.data.frame((object$model.average)),summary.merged['lower',], summary.merged['upper',], as.data.frame((object$best.model$best)), object$summary.df)
+  rownames(results) <- c("model.average", "lower", "upper", "best.model", paste0("model.", sequence(nrow(object$summary.df))))
   return(results)
 }
 
-#' Print BMhybExhaustive result
-#'
-#' @param x A BMhybExhaustive object (result of a BMhybExhaustive() call)
-#' @export
-print.BMhybExhaustiveResult <- function(x) {
-  print(summary.BMhybExhaustiveResult(x))
-}
 
 #' Plot BMhybExhaustive result
 #'
 #' Note this aggregates the info from all the model runs and plots the MLE across all of them and the contours from all the sims
 #'
 #' @param x A BMhybExhaustive object (result of a BMhybExhaustive() call)
-#' @param ... Other parameters to pass to plot.BMhybResult
+#' @param ... Other parameters to pass to hybResult
 #' @export
 plot.BMhybExhaustiveResult <- function(x,...) {
   x <- MergeExhaustiveForPlotting(x)

@@ -4,17 +4,13 @@
 \alias{print.BMhybExhaustiveResult}
 \title{Print BMhybExhaustive result}
 \usage{
-\method{print}{BMhybExhaustiveResult}(x)
-
-\method{print}{BMhybExhaustiveResult}(x)
+\method{print}{BMhybExhaustiveResult}(x, ...)
 }
 \arguments{
 \item{x}{A BMhybExhaustive object (result of a BMhybExhaustive() call)}
 
-\item{x}{A BMhybExhaustive object (result of a BMhybExhaustive() call)}
+\item{...}{Other arguments to pass to this function}
 }
 \description{
-Print BMhybExhaustive result
-
 Print BMhybExhaustive result
 }

@@ -4,10 +4,12 @@
 \alias{print.BMhybResult}
 \title{Print BMhyb result}
 \usage{
-\method{print}{BMhybResult}(x)
+\method{print}{BMhybResult}(x, ...)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}
+
+\item{...}{Other arguments to pass to this function}
 }
 \description{
 Print BMhyb result

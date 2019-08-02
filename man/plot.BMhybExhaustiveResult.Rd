@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{A BMhybExhaustive object (result of a BMhybExhaustive() call)}
 
-\item{...}{Other parameters to pass to plot.BMhybResult}
+\item{...}{Other parameters to pass to hybResult}
 }
 \description{
 Note this aggregates the info from all the model runs and plots the MLE across all of them and the contours from all the sims

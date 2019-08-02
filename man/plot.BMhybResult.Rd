@@ -8,7 +8,7 @@
   focal.color = "red", inregion.color = "black",
   outregion.color = "gray", gradientworst.color = "black",
   gradientbest.color = "white", contour.color = "red",
-  contour.threshold = 2, ...)
+  contour.threshold = 2, nrow = NULL, ...)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}
@@ -28,6 +28,8 @@
 \item{contour.color}{Color showing the contour line for the best threshold}
 
 \item{contour.threshold}{What delta log likelihood to use for the best/worst threshold for the contour plot}
+
+\item{nrow}{The number of rows to plot in the grid for contour (will set it automatically if NULL)}
 
 \item{...}{Other arguments to pass to plot (for univariate only; the contour plot uses ggplot2)}
 }
