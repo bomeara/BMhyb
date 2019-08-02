@@ -10,7 +10,7 @@
   \item{trait}{a vector of trait data}
 }}
 \usage{
-nicotiana
+utils::data(nicotiana, package="BMhyb")
 }
 \description{
 A dataset containing a phylogenetic network and trait data for Nicotiana species

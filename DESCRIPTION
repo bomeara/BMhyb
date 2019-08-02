@@ -1,8 +1,8 @@
 Package: BMhyb
-Version: 2.1.4
+Version: 2.1.5
 Date: 2019-08-02
 Type: Package
-Title: PCM for Hybridization
+Title: Comparative Methods for Phylogenetic Networks
 Authors@R: c(person("Dwueng-Chwuan", "Jhwueng", role = c("aut", "cre"),
                      email = "djhwueng@umail.iu.edu"),
           person("Brian C.", "O'Meara", role = c("aut"),
@@ -31,9 +31,8 @@ Imports:
     phytools,
     plyr
 Depends: R (>= 2.10)
-Suggests: testthat,
-    akima
-Description: The BMhyb package analyzes the phenotypic evolution of species
+Suggests: testthat
+Description: This package analyzes the phenotypic evolution of species
     of hybrid origin on a phylogenetic network. This package can detect a burst of variation at formation of a hybrid as well as a bias in typical hybrid values. Parameters are estimated by maximum likelihood, as well as returning regular Brownian motion parameters such as the rate of evolution and the root state.
     Users need to enter a comparative data set and a phylogenetic network.
 License: GPL (>=2)

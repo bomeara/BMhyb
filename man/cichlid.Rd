@@ -11,7 +11,7 @@
   \item{final.se}{a vector of standard error}
 }}
 \usage{
-cichlid
+utils::data(cichlid, package="BMhyb")
 }
 \description{
 A dataset containing a phylogenetic network and trait data for cichlid species

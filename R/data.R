@@ -15,6 +15,8 @@
 #'   \item{phy.graph}{the phylogenetic network in ape::evonet format}
 #'   \item{trait}{a vector of trait data}
 #' }
+#' @usage
+#' utils::data(nicotiana, package="BMhyb")
 "nicotiana"
 
 #' Cichlid dataset
@@ -40,4 +42,6 @@
 #'   \item{trait}{a vector of trait data}
 #'   \item{final.se}{a vector of standard error}
 #' }
+#' @usage
+#' utils::data(cichlid, package="BMhyb")
 "cichlid"
