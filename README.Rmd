@@ -73,13 +73,13 @@ plot(result)
 
 You can also do a bivariate confidence plot:
 
-```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+```{r cichlid_run_plot, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 plot(result, style="contour")
 ```
 
 You may want to try a variety of models that fix certain parameter values. If you want to search exhaustively across all of them, you can use `BMhybExhaustive`:
 
-```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+```{r cichlid_run_exhaustive, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 utils::data("cichlid", package="BMhyb")
 result <- BMhybExhaustive(phy.graph=cichlid$phy.graph, traits=cichlid$trait, measurement.error=cichlid$final.se, free.parameter.names = c("sigma.sq", "mu", "bt"), confidence.points=1000)
 print(result)
