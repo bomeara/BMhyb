@@ -36,7 +36,7 @@ Input for the program is a phylogeny, trait data (currently just univariate), an
 ```{r nic_tree, echo=FALSE, fig.height=12}
 library(BMhyb)
 library(ape) # for plotting
-data(nicotiana)
+utils::data(nicotiana, package="BMhyb")
 plot(nicotiana$phy.graph, arrows=2)
 ```
 
@@ -45,7 +45,7 @@ And here is one for cichlids, after [Kobmuller et al. 2007](https://bmcevolbiol.
 ```{r cic_tree, echo=FALSE, fig.height=10}
 library(BMhyb)
 library(ape)
-data(cichlid)
+utils::data(cichlid, package="BMhyb")
 plot(cichlid$phy.graph, arrows=2)
 ```
 
@@ -66,10 +66,25 @@ Uncertainty is often substantial. Akaike weights are an estimate in the uncertai
 Here is a sample run. It generates `BMhybResult` class object. Simply plotting this object calls a dedicated function.
 
 ```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
-utils::data("cichlid")
+utils::data("cichlid", package="BMhyb")
 result <- BMhyb(phy.graph=cichlid$phy.graph, traits=cichlid$trait, measurement.error=cichlid$final.se, free.parameter.names = c("sigma.sq", "mu", "bt"), confidence.points=1000)
 plot(result)
 ```
 
+You can also do a bivariate confidence plot:
 
-One common issue experienced in optimizing are problems with matrix condition -- basically, internally the algorithm tries to invert a matrix, but for some combinations of networks and parameter values, numerically the matrix cannot be inverted (see [Wikipedia](https://en.wikipedia.org/wiki/Condition_number) if you're curious about the details. Note we accept pull requests to improve the code). There are approaches to dealing with this, but they often work by increasing the values on the diagonals of the variance covariance matrix -- which biologically means artificially creating more "measurement error" in the model. We have various approaches to adjusting poorly conditioned matrices in `BMhyb`: most are turned off by default, and the one we do use we add a penalty to likelihood results that do use this. Make sure to look at your likelihoods to see if they seem reasonable, and in general poke around to make sure you believe the results the program gives you (this is good advice in general).
+```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+plot(result, style="contour")
+```
+
+You may want to try a variety of models that fix certain parameter values. If you want to search exhaustively across all of them, you can use `BMhybExhaustive`:
+
+```{r cichlid_run, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+utils::data("cichlid", package="BMhyb")
+result <- BMhybExhaustive(phy.graph=cichlid$phy.graph, traits=cichlid$trait, measurement.error=cichlid$final.se, free.parameter.names = c("sigma.sq", "mu", "bt"), confidence.points=1000)
+print(result)
+```
+
+This stores information from each model, computes a model averaged result, and checks for some (but not all) numerical issues in some of the models.
+
+One issue that can be experienced in optimizing are problems with matrix condition -- basically, internally the algorithm tries to invert a matrix, but for some combinations of networks and parameter values, numerically the matrix cannot be inverted (see [Wikipedia](https://en.wikipedia.org/wiki/Condition_number) if you're curious about the details. Note we accept pull requests to improve the code). There are approaches to dealing with this, but they often work by increasing the values on the diagonals of the variance covariance matrix -- which biologically means artificially creating more "measurement error" in the model. We have various approaches to adjusting poorly conditioned matrices in `BMhyb`: all are turned off by default, and the one we do use we add a penalty to likelihood results that do use this. Make sure to look at your likelihoods to see if they seem reasonable, and in general poke around to make sure you believe the results the program gives you (this is good advice in general).
