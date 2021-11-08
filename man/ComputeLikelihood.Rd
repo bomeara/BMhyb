@@ -4,9 +4,16 @@
 \alias{ComputeLikelihood}
 \title{Compute the likelihood for a set of parameters}
 \usage{
-ComputeLikelihood(parameters, phy.graph, traits, measurement.error = 0,
-  gamma = 0.5, do.Higham.correction = FALSE,
-  do.Brissette.correction = FALSE, do.DE.correction = FALSE)
+ComputeLikelihood(
+  parameters,
+  phy.graph,
+  traits,
+  measurement.error = 0,
+  gamma = 0.5,
+  do.Higham.correction = FALSE,
+  do.Brissette.correction = FALSE,
+  do.DE.correction = FALSE
+)
 }
 \arguments{
 \item{parameters}{Named vector of parameter values; expected names are sigma.sq, mu, SE, bt, and vh}

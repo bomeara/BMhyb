@@ -4,29 +4,22 @@
 \alias{BMhyb}
 \title{Optimize model}
 \usage{
-<<<<<<< Updated upstream
-BMhyb(phy.graph, traits, free.parameter.names = c("sigma.sq", "mu", "SE",
-  "bt", "vh"), confidence.points = 5000, measurement.error = 0,
-  gamma = 0.5, do.Higham.correction = FALSE,
-  do.Brissette.correction = FALSE, verbose = TRUE,
-  likelihood.precision = 0.01, max.steps = 10, confidence.lnl = 2,
-  control = list(reltol = 0.001))
+BMhyb(
+  phy.graph,
+  traits,
+  free.parameter.names = c("sigma.sq", "mu", "SE", "bt", "vh"),
+  confidence.points = 5000,
+  measurement.error = 0,
+  gamma = 0.5,
+  do.Higham.correction = FALSE,
+  do.Brissette.correction = FALSE,
+  verbose = TRUE,
+  likelihood.precision = 0.01,
+  max.steps = 10,
+  confidence.lnl = 2,
+  control = list(reltol = 0.001)
+)
 }
-=======
-	BMhyb(data, phy, flow, opt.method="Nelder-Mead", models=c(1,2,3,4), verbose=TRUE,
-	      get.se=TRUE, plot.se=TRUE, store.sims=FALSE, precision=2, auto.adjust=FALSE,
-	      likelihood.precision=0.001, allow.extrapolation=FALSE, n.points=5000,
-              measurement.error = 0, do.kappa.check=FALSE, number.of.proportions = 101,
-  	      number.of.proportions.adaptive = 101, allow.restart=TRUE,
-  	      lower.bounds = c(0, -Inf, 0.000001, 0, 0), 
- 	      upper.bounds=c(10,Inf,100,100,100), 
-   	      badval.if.not.positive.definite=TRUE, attempt.deletion.fix=FALSE, 
-	      starting.values=NULL, n.random.start.points=5000, 
-	      do.Brissette.correction=FALSE, 
-	      do.Higham.correction=TRUE, do.DE.correction=FALSE)
-	      }
-
->>>>>>> Stashed changes
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
 

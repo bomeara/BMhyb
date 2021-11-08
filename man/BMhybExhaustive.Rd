@@ -4,8 +4,13 @@
 \alias{BMhybExhaustive}
 \title{Exhaustively evaluate models}
 \usage{
-BMhybExhaustive(phy.graph, traits, measurement.error = 0,
-  ncores = max(c(1, parallel::detectCores() - 1), na.rm = TRUE), ...)
+BMhybExhaustive(
+  phy.graph,
+  traits,
+  measurement.error = 0,
+  ncores = max(c(1, parallel::detectCores() - 1), na.rm = TRUE),
+  ...
+)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}

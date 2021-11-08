@@ -4,8 +4,14 @@
 \alias{AddHybridization}
 \title{Add hybrid events to a phy.graph}
 \usage{
-AddHybridization(phy.graph, from.clade, to.clade, time.from.root = NULL,
-  time.from.tip = NULL, ghost.length = 0)
+AddHybridization(
+  phy.graph,
+  from.clade,
+  to.clade,
+  time.from.root = NULL,
+  time.from.tip = NULL,
+  ghost.length = 0
+)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}

@@ -4,11 +4,16 @@
 \name{nicotiana}
 \alias{nicotiana}
 \title{Nicotiana dataset}
-\format{A list with two items:
+\format{
+A list with two items:
 \describe{
   \item{phy.graph}{the phylogenetic network in ape::evonet format}
   \item{trait}{a vector of trait data}
-}}
+}
+}
+\usage{
+nicotiana
+}
 \description{
 A dataset containing a phylogenetic network and trait data for Nicotiana species
 }

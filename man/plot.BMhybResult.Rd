@@ -4,11 +4,19 @@
 \alias{plot.BMhybResult}
 \title{Plot BMhyb result}
 \usage{
-\method{plot}{BMhybResult}(x, style = "univariate",
-  focal.color = "red", inregion.color = "black",
-  outregion.color = "gray", gradientworst.color = "black",
-  gradientbest.color = "white", contour.color = "red",
-  contour.threshold = 2, nrow = NULL, ...)
+\method{plot}{BMhybResult}(
+  x,
+  style = "univariate",
+  focal.color = "red",
+  inregion.color = "black",
+  outregion.color = "gray",
+  gradientworst.color = "black",
+  gradientbest.color = "white",
+  contour.color = "red",
+  contour.threshold = 2,
+  nrow = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{A BMhyb object (result of a BMhyb() call)}

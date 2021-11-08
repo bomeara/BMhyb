@@ -4,12 +4,17 @@
 \name{cichlid}
 \alias{cichlid}
 \title{Cichlid dataset}
-\format{A list with two items:
+\format{
+A list with two items:
 \describe{
   \item{phy.graph}{the phylogenetic network in ape::evonet format}
   \item{trait}{a vector of trait data}
   \item{final.se}{a vector of standard error}
-}}
+}
+}
+\usage{
+cichlid
+}
 \description{
 A dataset containing a phylogenetic network and trait data for cichlid species
 }

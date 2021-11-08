@@ -4,9 +4,17 @@
 \alias{SimulateTips}
 \title{Simulate trait data}
 \usage{
-SimulateTips(phy.graph, sigma.sq = 1, mu = 0, bt = 1, vh = 0,
-  SE = 0, measurement.error = 0, gamma = 0.5,
-  exclude.donors.recipients = TRUE)
+SimulateTips(
+  phy.graph,
+  sigma.sq = 1,
+  mu = 0,
+  bt = 1,
+  vh = 0,
+  SE = 0,
+  measurement.error = 0,
+  gamma = 0.5,
+  exclude.donors.recipients = TRUE
+)
 }
 \arguments{
 \item{phy.graph}{An ape::evonet object (a phylogeny stored in phylo format that also includes a reticulation matrix)}
